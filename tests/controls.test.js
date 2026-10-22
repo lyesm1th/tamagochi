@@ -1,0 +1,11 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+test('four-button flow: adopt, cancel death, confirm death, choose replacement',async()=>{
+ class El{constructor(){this.hidden=false;this.disabled=false;this.children=[];this.value='';this.textContent='';this.classList={toggle(){}};}append(...items){this.children.push(...items);}replaceChildren(...items){this.children=items;}setAttribute(){}addEventListener(){}getContext(){return {clearRect(){},save(){},translate(){},fillRect(){},restore(){},fillText(){}};}}
+ const nodes=new Map(),get=id=>{if(!nodes.has(id))nodes.set(id,new El());return nodes.get(id);};get('#lanes').children=[new El(),new El(),new El()];get('#cursor-lanes').children=[new El(),new El(),new El()];
+ const previous={window:globalThis.window,document:globalThis.document,localStorage:globalThis.localStorage,matchMedia:globalThis.matchMedia,requestAnimationFrame:globalThis.requestAnimationFrame,setInterval:globalThis.setInterval};
+ const memory=new Map();Object.assign(globalThis,{window:{},document:{querySelector:get,querySelectorAll:s=>s==='.species-card'?get('#species').children:[],createElement:()=>new El(),addEventListener(){}},localStorage:{getItem:k=>memory.get(k)??null,setItem:(k,v)=>memory.set(k,v)},matchMedia:()=>({matches:true}),requestAnimationFrame:()=>0,setInterval:()=>0});
+ try{await import('../public/app.js');const click=async id=>{get('#button-'+id).onclick();await new Promise(resolve=>setImmediate(resolve));};await click('right');await click('ok');assert.equal(JSON.parse(memory.get('hamagochi-v1')).species,'corgi');assert.equal(get('#care').hidden,false);
+ await click('left');await click('ok');assert.equal(get('#confirm-panel').hidden,false);await click('ok');assert.equal(JSON.parse(memory.get('hamagochi-v1')).dead,false);
+ await new Promise(resolve=>setTimeout(resolve,660));await click('ok');await click('right');await click('ok');assert.equal(JSON.parse(memory.get('hamagochi-v1')).dead,true);await click('ok');assert.equal(get('#adoption').hidden,false);await click('right');await click('ok');assert.equal(JSON.parse(memory.get('hamagochi-v1')).species,'frog');assert.equal(JSON.parse(memory.get('hamagochi-v1')).dead,false);
+ }finally{Object.assign(globalThis,previous);}
+});

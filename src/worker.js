@@ -40,7 +40,7 @@ export class PetRoom{
  if(path==='/api/adopt'){
  if(s&&!s.dead)return json({error:'У тебе вже є друг.'},409);
  if(!species.some(p=>p.id===body.species))return json({error:'Невідомий вид'},400);
- s=fresh(body.species);if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'Ну привіт. Тепер ти за мене відповідаєш!'};
+ s=fresh(body.species);if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'Ну привіт. Я твій маленький буркотун. Обійми входять у комплект.'};
  }else if(path==='/api/state'){s=tick(s);result={state:s||null};}
  else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action);s=result.state||s;}
  else return json({error:'Not found'},404);
