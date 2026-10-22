@@ -6,6 +6,23 @@ export function drawYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduced=fal
  const eyes=(x,y,gap=14)=>{if(sleeping){r(x,y+2,4,2);r(x+gap,y+2,4,2);}else{r(x,y,3,baby?4:5);r(x+gap,y,3,baby?4:5);}};
  const mouth=(x,y)=>{r(x,y,3,2);};
  const step=sleeping||reduced?0:Math.floor(frame/350)%2*2;
+ if(age==='Дитина'){
+  if(id==='bunny'){box(49,30,7,20);box(70,32,7,18);}
+  if(id==='cat'||id==='corgi'){r(47,37,10,17);r(71,37,10,17);r(50,41,4,10,color);r(74,41,4,10,color);}
+  if(id==='bear'){box(43,43,10,10);box(74,43,10,10);}
+  if(id==='dog'){box(40,49,12,7);box(77,49,12,7);r(51,41,3,8,'#bfa36a');r(74,41,3,8,'#bfa36a');}
+  if(id==='frog'){box(45,43,13,12);box(69,43,13,12);r(79,70,13,4,color);}
+  if(id==='chicken'){r(58,40,5,10,'#b78239');r(64,42,4,8,'#b78239');}
+  if(id==='dino'){r(76,46,6,8,'#527b65');r(78,69,13,5,color);}
+  box(47,51,33,27);r(53,76,21,5,color);
+  eyes(53,56,17);
+  if(id==='dog'){r(48,52,9,8);box(52,63,23,10,pink);r(57,66,3,2);r(68,66,3,2);}
+  else if(id==='chicken'){r(61,63,9,5,'#c17c32');r(43,63,4,10,'#c1a345');r(80,63,4,10,'#c1a345');}
+  else if(id==='frog'){r(54,66,20,2);r(55,70,18,5,'#b9d284');}
+  else{r(55,65,17,9,cream);mouth(63,65);}
+  r(48,80,10,4+step);r(70,80,10,6-step);return;
+ }
+
  if(id==='frog'){
   if(baby){r(76,65,17,5);r(88,61,8,5);r(94,57,5,5);box(50,52,26,22);eyes(56,57,11);mouth(63,66);r(55,72,15,3,'#c1d88b');}
   else{box(43,42,13,13);box(71,42,13,13);box(46,53,34,23);r(41,73,14,5);r(73,73,14,5);r(42,77,12,4,color);r(74,77,12,4,color);eyes(47,46,28);r(55,65,17,2);r(56,68,15,4,'#b9d284');}

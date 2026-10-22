@@ -8,16 +8,51 @@ export const species = [
  {id:'dino',name:'Динозаврик',nick:'Кусьозавр',color:'#7cb3a0'},
  {id:'bunny',name:'Кролик',nick:'Вухань',color:'#e4bacb'}
 ];
-export const fresh = (id,now=Date.now()) => ({species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0});
+export const fresh = (id,now=Date.now()) => ({species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0,careScore:80,discipline:70,treatStreak:0,poopClock:0,adultCare:null,lifeRules:2});
 const clamp=n=>Math.max(0,Math.min(100,n));
+export const MINUTE=60000,HOUR=3600000,DAY=86400000;
+export const life={egg:3*MINUTE,baby:3*MINUTE+HOUR,child:3*MINUTE+HOUR+2*DAY,teen:3*MINUTE+HOUR+5*DAY};
+export function care(s){return clamp((s.careScore??80)*.7+(s.discipline??70)*.3);}
+export function temperament(s){const c=s.adultCare??care(s);return c>=80?'Лагідний розумник':c>=50?'Ласкавий буркотун':'Неслухняний бешкетник';}
+export function seniorAt(s){return life.teen+(7+7*(s.adultCare??care(s))/100)*DAY;}
+export function stage(s,now=Date.now()){const age=now-s.born;return age<life.egg?'Яєчко':age<life.baby?'Малюк':age<life.child?'Дитина':age<life.teen?'Підліток':age<seniorAt(s)?'Дорослий':'Старенький';}
+export function ratesFor(s,now=Date.now()){
+ const st=stage(s,now),poor=(s.adultCare??care(s))<50;
+ if(st==='Яєчко')return {hunger:0,happy:0,clean:0,energy:0,poop:Infinity};
+ if(st==='Малюк')return {hunger:55,happy:65,clean:45,energy:25,poop:7*MINUTE};
+ if(st==='Дитина')return {hunger:6,happy:5,clean:5,energy:5,poop:2*HOUR};
+ if(st==='Підліток')return {hunger:7,happy:7,clean:6,energy:6,poop:1.5*HOUR};
+ if(st==='Старенький')return {hunger:8,happy:5,clean:8,energy:8,poop:HOUR};
+ return {hunger:poor?8:5,happy:poor?7:4,clean:poor?9:4,energy:5,poop:(poor?1:3)*HOUR};
+}
 export function tick(s,now=Date.now()) {
  if(!s||s.dead)return s;
- const h=Math.max(0,now-s.updated)/3600000;
- s.hunger=clamp(s.hunger-h*6);s.happy=clamp(s.happy-h*4);s.clean=clamp(s.clean-h*5);
- s.energy=clamp(s.energy+h*(s.sleeping?18:-5));
- s.poop=Math.min(3,s.poop+Math.max(0,Math.floor((now-s.born)/7200000)-Math.floor((s.updated-s.born)/7200000)));
- const bad=s.hunger<15||s.clean<15||s.energy<5;
- s.health=clamp(s.health+h*(bad?-8:2));s.dead=s.health<=0;s.updated=now;return s;
+ // Old saves keep their birthday and stats. New fields are added in place.
+ s.careScore??=80;s.discipline??=70;s.treatStreak??=0;s.poopClock??=0;
+ // Integrate by fifteen-minute slices so offline neglect matches online time.
+ let cursor=s.updated,steps=0;
+ while(cursor<now&&!s.dead&&steps++<12000){
+ const age=cursor-s.born,st=stage(s,cursor),r=ratesFor(s,cursor);
+ if(st==='Дорослий'&&s.adultCare==null)s.adultCare=care(s);
+ const boundaries=[life.egg,life.baby-5*MINUTE,life.baby,life.child,life.teen,seniorAt(s),seniorAt(s)+3*DAY].map(t=>s.born+t).filter(t=>t>cursor);
+ const end=Math.min(now,cursor+15*MINUTE,...boundaries),h=(end-cursor)/HOUR;
+ if(st!=='Яєчко'){
+ const nap=st==='Малюк'&&age>=life.baby-5*MINUTE,asleep=s.sleeping||nap;
+ s.hunger=clamp(s.hunger-h*r.hunger);s.happy=clamp(s.happy-h*r.happy);s.clean=clamp(s.clean-h*r.clean);s.energy=clamp(s.energy+h*(asleep?22:-r.energy));
+ s.poopClock+=end-cursor;const droppings=Math.floor(s.poopClock/r.poop);if(droppings){s.poop=Math.min(4,s.poop+droppings);s.poopClock%=r.poop;}
+ const neglected=st==='Малюк'?(s.hunger<50||s.happy<50||s.clean<50):(s.hunger<25||s.happy<20||s.clean<25||s.energy<5);
+ if(neglected)s.careScore=clamp(s.careScore-h*(st==='Малюк'?20:3));
+ if(st==='Дитина'||st==='Підліток')s.discipline=clamp(s.discipline-h*.35);
+ const ill=s.hunger<15||s.clean<15||s.energy<5;
+ if(st==='Малюк')s.health=Math.max(1,s.health);else s.health=clamp(s.health+h*(ill?-(st==='Старенький'?12:8):2));
+ s.dead=s.health<=0;
+ }
+ cursor=end;
+ if(cursor===s.born+life.baby&&st==='Малюк')s.sleeping=false;
+ if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;}
+ }
+ s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
+ if(s.dead){s.sleeping=false;s.napping=false;}return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
@@ -36,18 +71,20 @@ export function act(state,action,now=Date.now()) {
  if(s.dead)return {state:s,error:'Друг уже на веселці. Можна обрати нового.'};
  if(now-s.lastAction<650)return {state:s,error:'Не поспішай, у мене лапки.'};
  if(action==='endLife'){s.health=0;s.dead=true;s.sleeping=false;s.updated=now;s.lastAction=now;return {state:s,text:'Прощавай, людино. У нас були хороші обійми. ♡'};}
+ if(stage(s,now)==='Яєчко')return {state:s,error:'Тссс. У яйці хтось росте. Поки просто почекай.'};
+ if(s.napping)return {state:s,error:'Малюк дрімає перед дорослішанням. Не буди його.'};
  if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю. Дай ще п’ять хвилиночок, буркотун.'};
  let text='';
  switch(action){
- case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);text=line('feed');break;
- case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);text=line('treat');break;
- case 'clean':s.clean=100;s.poop=0;text=line('clean');break;
- case 'pet':s.happy=clamp(s.happy+9);text=line('pet');break;
+ case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?'Хлюп-хлюп. Молочко! Дякую, моя людино.':line('feed');break;
+ case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);s.treatStreak++;if(s.treatStreak>2){s.health=clamp(s.health-4);s.careScore=clamp(s.careScore-5);s.discipline=clamp(s.discipline-3);}text=stage(s,now)==='Малюк'?'Хлюп. Для малюка — ще трошки молочка.':line('treat');break;
+ case 'clean':s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean');break;
+ case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+9);text=line('pet');break;
  case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Я в люлю. Посидь поруч, тільки не шаруди.':'Я прокинувся! Де моя людина й мій сніданок?';break;
+ case 'discipline':if(s.discipline>90)return {state:s,error:'Я чемний! Можна вже просто обійняти?'};s.discipline=clamp(s.discipline+18);s.careScore=clamp(s.careScore+1);text='Добре-добре, я зрозумів. Але обійняти після виховання треба.';break;
  case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine');break;
  case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text=line('play');break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
  s.xp+=1;s.lastAction=now;return {state:s,text};
 }
-export function stage(s,now=Date.now()){const h=(now-s.born)/3600000;return h<1/6?'Яєчко':h<24?'Малюк':h<72?'Підліток':'Дорослий';}

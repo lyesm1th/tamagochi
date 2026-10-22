@@ -1,6 +1,7 @@
 // Short, synthesized pocket-pet sounds: no downloads or network latency.
 // [start seconds, duration, start Hz, end Hz, volume, waveform]
 export const reactions={
+ milk:[[0,.12,260,160,.04,'sine'],[.18,.13,290,150,.04,'sine'],[.38,.16,230,100,.04,'triangle'],[.6,.12,310,210,.03,'sine']],
  feed:[[0,.09,180,80,.07,'triangle'],[.13,.07,240,110,.06,'sine'],[.26,.09,170,75,.07,'triangle'],[.39,.08,260,100,.06,'sine'],[.55,.13,310,240,.04,'sine']],
  treat:[[0,.08,230,100,.06,'triangle'],[.12,.08,270,110,.06,'triangle'],[.28,.12,500,700,.035,'sine'],[.43,.16,700,850,.03,'sine']],
  sleep:[[0,.45,180,430,.035,'sine'],[.32,.5,430,115,.04,'triangle'],[.9,.22,100,65,.025,'sine']],
