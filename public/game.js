@@ -23,17 +23,17 @@ export function act(state,action,now=Date.now()) {
  const s=tick(structuredClone(state),now);
  if(!s)return {error:'Спочатку обери друга.'};
  if(s.dead)return {state:s,error:'Малюк пішов на веселку. Можна почати нове життя.'};
- if(now-s.lastAction<650)return {state:s,error:'Тихіше, я не встигаю!'};
- if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю, блін. Вимкни світло!'};
+ if(now-s.lastAction<650)return {state:s,error:'Не дрочи кнопки, я не встигаю!'};
+ if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю, бляха. Відʼїбись до ранку.'};
  let text='';
  switch(action){
- case 'feed':if(s.hunger>95)return {state:s,error:'Я ж не бездонний, йопт!'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);text='О, хавчик! Ну ти й лапочка, коли годуєш.';break;
- case 'treat':if(s.coins<5)return {state:s,error:'Де гроші, Лебовські? Треба 5 монет.'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);text='За смаколик і обійняти можу. Один раз.';break;
- case 'clean':s.clean=100;s.poop=0;text='Оце так сервіс! Дупця тепер як у короля.';break;
- case 'pet':s.happy=clamp(s.happy+9);text='Мур-мур… Ще почухай. Я дозволяю, людино.';break;
- case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Все, я в люлю. Не шаруди, бляха.':'Доброго ранку, мій персональний годувальнику.';break;
- case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Зароби у грі.'};s.coins-=10;s.health=clamp(s.health+35);text='Фу, гидота. Але дякую, що не забив на мене.';break;
- case 'play':if(s.energy<12)return {state:s,error:'Я задовбався. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text='Ха! Оце ми дали! Тримай 3 монетки.';break;
+ case 'feed':if(s.hunger>95)return {state:s,error:'Куди ще пхати? Я вже обожрався, бляха!'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);text='Нарешті хавчик. А то я вже збирався жерти тебе.';break;
+ case 'treat':if(s.coins<5)return {state:s,error:'Де гроші, Лебовські? Треба 5 монет.'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);text='О, підкуп! Працює, зараза. Давай ще.';break;
+ case 'clean':s.clean=100;s.poop=0;text='Підтер? Красавчик. Скоро знов насру.';break;
+ case 'pet':s.happy=clamp(s.happy+9);text='Мур, бляха… Не зупиняйся. Ти мені потрібен, засранець.';break;
+ case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Все, я спати. Хто розбудить — той мудак.':'Я встав. Де сніданок, обслуго?';break;
+ case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Зароби у грі.'};s.coins-=10;s.health=clamp(s.health+35);text='Гірке гівно. Але дякую, що витягнув, придурку.';break;
+ case 'play':if(s.energy<12)return {state:s,error:'Я заїбався. Сам бігай, дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text='Ха! Наїбали жука! +3 монети, бізнесмени хрінові.';break;
  default:return {state:s,error:'Не зрозумів, що ти хочеш.'};
  }
  s.xp+=1;s.lastAction=now;return {state:s,text};
