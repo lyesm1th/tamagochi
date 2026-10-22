@@ -4,7 +4,7 @@ export const species = [
  {id:'corgi',name:'Коргі',nick:'Батон',color:'#e5a05a'},
  {id:'frog',name:'Жабка',nick:'Квасик',color:'#9bbf63'},
  {id:'bear',name:'Ведмедик',nick:'Буркотун',color:'#b38a69'},
- {id:'dog',name:'Песик',nick:'Бублик',color:'#d6b690'},
+ {id:'dog',name:'Корівка',nick:'Мукалка',color:'#f2eee1'},
  {id:'dino',name:'Динозаврик',nick:'Кусьозавр',color:'#7cb3a0'},
  {id:'bunny',name:'Кролик',nick:'Вухань',color:'#e4bacb'}
 ];

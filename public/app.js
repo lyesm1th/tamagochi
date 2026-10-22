@@ -18,17 +18,19 @@ function draw(canvas,id,frame=0,s=null,preview=false){const c=canvas.getContext(
  const body=spec.color;
  if(id==='bunny'){box(46,18,9,25,body);box(69,15,9,28,body);r(49,21,3,17,'#bd8293');r(72,18,3,18,'#bd8293');}
  if(id==='cat'){r(43,29,13,19);r(70,29,13,19);r(46,33,7,10,body);r(73,33,7,10,body);}
- if(id==='bear'||id==='dog'||id==='corgi'){box(40,32,id==='bear'?12:13,id==='bear'?12:25,body);box(76,32,12,id==='bear'?12:25,body);}
+ if(id==='bear'||id==='corgi'){box(40,32,id==='bear'?12:13,id==='bear'?12:25,body);box(76,32,12,id==='bear'?12:25,body);}
+ if(id==='dog'){box(36,38,13,9,body);box(79,38,13,9,body);r(47,28,5,13,'#bfa36a');r(76,28,5,13,'#bfa36a');r(45,26,5,5,'#bfa36a');r(78,26,5,5,'#bfa36a');}
  if(id==='frog'){box(41,30,16,16,body);box(71,30,16,16,body);}
  if(id==='chicken'){r(54,27,7,14,'#a55339');r(63,24,7,16,'#a55339');r(69,29,6,11,'#a55339');}
  if(id==='dino'){r(80,38,7,8,'#4f7958');r(84,47,8,8,'#4f7958');r(87,58,8,8,'#4f7958');r(82,67,16,8);r(88,62,10,8,body);}
  box(43,40,40,29,body);box(47,65,33,14,body);
  if(['corgi','dog','bear','bunny'].includes(id)){r(53,52,21,16,light);r(57,67,14,10,light);}
+ if(id==='dog'){r(44,41,12,9,ink);r(73,41,9,13,ink);r(49,69,10,8,ink);box(52,55,25,13,'#dc9ca4');r(57,59,3,4,ink);r(69,59,3,4,ink);}
  if(id==='corgi'){r(60,40,7,15,light);r(56,49,15,7,light);}
  if(id==='chicken'){r(59,54,11,7,'#b47e36');r(62,61,5,5,'#a55339');r(40,53,6,13,'#b7a044');r(81,53,6,13,'#b7a044');}
  if(id==='frog'){r(44,34,8,9,light);r(75,34,8,9,light);r(47,36,4,6);r(76,36,4,6);r(50,60,27,2);}
  const blink=s?.sleeping||(!preview&&frame%3900<150);if(id!=='frog'){if(blink){r(51,49,6,2);r(71,49,6,2);}else{r(52,47,4,6);r(72,47,4,6);r(52,47,1,1,light);r(72,47,1,1,light);}}
- if(id!=='chicken'&&id!=='frog'){r(62,56,5,3);r(59,61,3,2);r(67,61,3,2);r(62,63,5,2);}
+ if(id!=='chicken'&&id!=='frog'&&id!=='dog'){r(62,56,5,3);r(59,61,3,2);r(67,61,3,2);r(62,63,5,2);}
  if(id==='cat'){r(37,56,11,2);r(80,56,11,2);r(38,61,9,2);r(81,61,9,2);}
  const step=preview||s?.sleeping||reduced?0:Math.floor(frame/350)%2*2;
  r(45,78,13,5+step);r(70,78,13,7-step);
