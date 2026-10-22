@@ -50,4 +50,4 @@ export function act(state,action,now=Date.now()) {
  }
  s.xp+=1;s.lastAction=now;return {state:s,text};
 }
-export function stage(s,now=Date.now()){const h=(now-s.born)/3600000;return h<.05?'Яєчко':h<24?'Малюк':h<72?'Підліток':'Дорослий';}
+export function stage(s,now=Date.now()){const h=(now-s.born)/3600000;return h<1/6?'Яєчко':h<24?'Малюк':h<72?'Підліток':'Дорослий';}

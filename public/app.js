@@ -1,3 +1,4 @@
+import {drawYoungPet} from './young-pets.js';
 import {species,fresh,act,tick,stage,line} from './game.js';
 import {createSound} from './sound.js';
 const $=s=>document.querySelector(s),tg=window.Telegram?.WebApp,online=!!tg?.initData;
@@ -13,11 +14,16 @@ function beep(freq){return audio.beep(freq);}
 function save(){try{localStorage.setItem('hamagochi-v1',JSON.stringify(state));}catch{}}
 async function api(path,body={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);try{const r=await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Telegram-Init-Data':tg.initData},body:JSON.stringify(body),signal:controller.signal});let data;try{data=await r.json();}catch{throw new Error('Сервер не відповів коректно. Спробуй ще раз.');}if(!r.ok)throw new Error(data.error||'Не вдалося зберегти. Спробуй ще.');return data;}catch(e){if(e.name==='AbortError')throw new Error('Сервер довго відповідає. Натисни ОК ще раз.');throw e;}finally{clearTimeout(timer);}}
 function pixel(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);}
-function draw(canvas,id,frame=0,s=null,preview=false){const c=canvas.getContext('2d');c.clearRect(0,0,128,100);const ink='#35482e',light='#e8ecc3';const spec=species.find(p=>p.id===id)||species[1];
+function draw(canvas,id,frame=0,s=null,preview=false){const c=canvas.getContext('2d');c.clearRect(0,0,128,100);const ink='#35482e',light='#e8ecc3';const spec=species.find(p=>p.id===id)||species[1];const age=s?stage(s):'Дорослий';
  let y=(preview||reduced?0:Math.sin(frame/270)*2)-Math.max(0,bounce);c.save();c.translate(0,Math.round(y));
  const r=(x,y,w,h,col=ink)=>pixel(c,x,y,w,h,col);const box=(x,y,w,h,col)=>{r(x-2,y, w+4,h);r(x,y-2,w,h+4);r(x,y,w,h,col);};
  if(s?.dead){r(46,51,36,27);r(51,43,26,12);r(61,49,5,20,light);r(55,55,17,5,light);c.restore();return;}
- if(s&&stage(s)==='Яєчко'&&!preview){box(51,39,26,34,light);r(55,34,18,5,ink);r(56,39,16,8,light);r(52,57,8,5);r(68,48,7,6);r(61,65,6,5);if(frame%2000<500)r(62,48,3,14);c.restore();return;}
+ if(s&&age==='Яєчко'&&!preview){
+ const index=species.findIndex(p=>p.id===id),wobble=reduced||s.sleeping?0:Math.floor(frame/220)%3-1;c.translate(wobble,0);
+ box(52,43,24,31,light);r(56,37,16,8,ink);r(57,39,14,7,light);r(49,53,3,15,ink);r(76,53,3,15,ink);
+ r(55,51,5,5,spec.color);r(66,59,6,5,spec.color);r(56,67,4,4,spec.color);r(65+(index%3)*2,46,3,3,ink);r(57+(index%4)*3,61,3,3,spec.color);
+ if((Date.now()-s.born)>8*60000){r(62,48,3,7);r(59,55,3,4);r(62,59,3,5);r(65,64,3,5);}c.restore();return;}
+ if(!preview&&(age==='Малюк'||age==='Підліток')){drawYoungPet(c,id,age,spec.color,frame,s?.sleeping,reduced);c.restore();if(s?.poop){for(let i=0;i<s.poop;i++){pixel(c,20+i*13,83,10,5,ink);pixel(c,22+i*13,79,6,4,ink);}}return;}
  const body=spec.color;
  if(id==='bunny'){box(46,18,9,25,body);box(69,15,9,28,body);r(49,21,3,17,'#bd8293');r(72,18,3,18,'#bd8293');}
  if(id==='cat'){r(43,29,13,19);r(70,29,13,19);r(46,33,7,10,body);r(73,33,7,10,body);}
@@ -42,7 +48,7 @@ function draw(canvas,id,frame=0,s=null,preview=false){const c=canvas.getContext(
  c.restore();if(s?.poop){for(let i=0;i<s.poop;i++){pixel(c,20+i*13,83,10,5,ink);pixel(c,22+i*13,79,6,4,ink);pixel(c,24+i*13,76,2,3,ink);}}
 }
 function render(){const s=state,has=!!s;$('#adoption').hidden=has;$('#care').hidden=!has;$('#connection').textContent=online?'TG • SYNC':'DEMO • LOCAL';$('#confirm-panel').hidden=mode!=='confirm';$('#mini-game').hidden=mode!=='game';$('#pet-touch').hidden=mode==='confirm'||mode==='game';$('#rules').hidden=mode!=='rules';$('#save-info').textContent=online?'Прогрес прив’язаний до твого Telegram.':'Деморежим: прогрес зберігається в цьому браузері.';
- $('#pet-name').textContent=s?s.name:species.find(p=>p.id===selected).name;$('#age').textContent=s?'DAY '+String(Math.floor((Date.now()-s.born)/86400000)+1).padStart(2,'0'):'♡';$('#stage').textContent=s?(s.dead?'НА ВЕСЕЛЦІ ♡':s.sleeping?'ТИХО, ВІН СПИТЬ':stage(s).toUpperCase()):'← → ОБРАТИ · ОК ЗАБРАТИ';$('#coins').textContent='✦ '+(s?.coins??20);
+ $('#pet-name').textContent=s?s.name:species.find(p=>p.id===selected).name;$('#age').textContent=s?'DAY '+String(Math.floor((Date.now()-s.born)/86400000)+1).padStart(2,'0'):'♡';$('#stage').textContent=s?(s.dead?'НА ВЕСЕЛЦІ ♡':s.sleeping?'ТИХО, ВІН СПИТЬ':(stage(s)==='Яєчко'?'ЯЙЦЕ · '+Math.max(0,Math.ceil((s.born+600000-Date.now())/60000))+' ХВ':stage(s).toUpperCase())):'← → ОБРАТИ · ОК ЗАБРАТИ';$('#coins').textContent='✦ '+(s?.coins??20);
  $('#menu-icons').replaceChildren();for(let i=0;i<menu.length;i++){const el=document.createElement('span');el.textContent=menu[i][1];el.className=has&&i===picked?'active':'';el.setAttribute('aria-label',menu[i][2]);if(has&&i===picked)el.setAttribute('aria-current','true');$('#menu-icons').append(el);}
  document.querySelectorAll('.species-card').forEach((el,i)=>{el.classList.toggle('selected',species[i].id===selected);});
  $('#confirm-choice').textContent=confirmYes?'ТАК, ЗАВЕРШИТИ ЖИТТЯ':'НІ, ЗАЛИШИТИ';
@@ -65,3 +71,6 @@ async function load(){if(loading||busy||choosingNew)return;loading=true;const re
 let previous=0;function animate(t){if(t-previous>80){draw($('#pet'),state?.species||selected,t,state);bounce*=.65;previous=t;}requestAnimationFrame(animate);}requestAnimationFrame(animate);
 setInterval(async()=>{if(!state||busy||loading||mode!=='normal'||document.hidden)return;const revision=generation;if(online){try{const r=await api('state');if(revision!==generation||busy||mode!=='normal'||choosingNew)return;state=r.state;}catch{return;}}else{state=tick(state);save();}render();if(state&&!state.dead&&Date.now()-lastSpeech>25000)speak(state.sleeping?'Хрр… обійми… хрр…':line(state.hunger<25?'hungry':state.clean<25?'dirty':'idle'));},15000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){void audio.suspend();if(game)endGame(false,true);}else if(!busy&&mode==='normal')void load();});render();void load();
+
+let displayedStage=state?stage(state):null,displayedBorn=state?.born;
+setInterval(()=>{if(!state||state.dead)return;const current=stage(state);if(displayedBorn===state.born&&displayedStage&&displayedStage!==current){speak(current==='Малюк'?'Трісь! Я вилупився. Де моя людина й обійми?':current==='Підліток'?'Я вже підліток. Характер росте швидше за лапки.':'Я дорослий! Але на ручки все одно хочу.');void audio.react('adopt',state.species);}displayedStage=current;displayedBorn=state.born;if(mode==='normal'&&!busy)render();},1000);
