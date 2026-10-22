@@ -23,6 +23,7 @@ export default {async fetch(req,env){
  if(req.method!=='POST')return json({error:'Method not allowed'},405);
  if(Number(req.headers.get('content-length'))>8192)return json({error:'Too large'},413);
  if(req.headers.get('origin')&&req.headers.get('origin')!==url.origin)return json({error:'Forbidden'},403);
+ if(!env.BOT_TOKEN)return json({error:'У Cloudflare не задано BOT_TOKEN. Додай токен цього бота в Settings → Variables and Secrets як Secret, потім застосуй зміни.'},503);
  const user=await validate(req.headers.get('X-Telegram-Init-Data'),env.BOT_TOKEN);
  if(!user)return json({error:'Відкрий гру через Telegram. Сесія могла закінчитись.'},401);
  const id=env.PETS.idFromName(String(user.id));
