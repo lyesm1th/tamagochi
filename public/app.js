@@ -10,10 +10,10 @@ async function api(path,body={}){const r=await fetch('/api/'+path,{method:'POST'
 function pixel(ctx,x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h);}
 function draw(canvas,id,frame=0,s=null,preview=false){const c=canvas.getContext('2d');c.clearRect(0,0,128,100);const ink='#35482e',light='#e8ecc3';const spec=species.find(p=>p.id===id)||species[1];
  let y=(preview||reduced?0:Math.sin(frame/270)*2)-Math.max(0,bounce);c.save();c.translate(0,Math.round(y));
- const r=(x,y,w,h,col=ink)=>pixel(c,x,y,w,h,preview?col:(col===ink?ink:col===light?light:'#7c8c5a'));const box=(x,y,w,h,col)=>{r(x-2,y, w+4,h);r(x,y-2,w,h+4);r(x,y,w,h,col);};
+ const r=(x,y,w,h,col=ink)=>pixel(c,x,y,w,h,col);const box=(x,y,w,h,col)=>{r(x-2,y, w+4,h);r(x,y-2,w,h+4);r(x,y,w,h,col);};
  if(s?.dead){r(46,51,36,27);r(51,43,26,12);r(61,49,5,20,light);r(55,55,17,5,light);c.restore();return;}
  if(s&&stage(s)==='Яєчко'&&!preview){box(51,39,26,34,light);r(55,34,18,5,ink);r(56,39,16,8,light);r(52,57,8,5);r(68,48,7,6);r(61,65,6,5);if(frame%2000<500)r(62,48,3,14);c.restore();return;}
- const body='#7c8c5a';
+ const body=spec.color;
  if(id==='bunny'){box(46,18,9,25,body);box(69,15,9,28,body);r(49,21,3,17,'#bd8293');r(72,18,3,18,'#bd8293');}
  if(id==='cat'){r(43,29,13,19);r(70,29,13,19);r(46,33,7,10,body);r(73,33,7,10,body);}
  if(id==='bear'||id==='dog'||id==='corgi'){box(40,32,id==='bear'?12:13,id==='bear'?12:25,body);box(76,32,12,id==='bear'?12:25,body);}
