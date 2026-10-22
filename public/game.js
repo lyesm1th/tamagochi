@@ -1,3 +1,4 @@
+import {personality,foodFor} from './pet-personality.js';
 export const species = [
  {id:'chicken',name:'Курочка',nick:'Квочка',color:'#e9c954'},
  {id:'cat',name:'Котик',nick:'Пан Сраколап',color:'#bf9ae0'},
@@ -56,15 +57,16 @@ export function tick(s,now=Date.now()) {
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
- treat:['Підкуп зараховано. Ти хороша людина.','За таке можеш почухати пузо.','Оце я розумію — турбота, а не оці твої розмови.','Смачно, зараза. Люблю тебе.'],
+ treat:['Підкуп зараховано. Ти хороша людина.','За таке можеш погладити {touch}.','Оце я розумію — турбота, а не оці твої розмови.','Смачно, зараза. Люблю тебе.'],
  clean:['Дякую. Я тут трохи натворив справ.','Чисто! Ти золотко. Моє особисте золотко.','Прибрав? Молодець. Тепер сиди зі мною.','От халепа. Насрав я, а соромно чомусь тобі.'],
- pet:['Мур… Ще трохи. Не зазнавайся тільки.','Ти мій улюблений дурко. Чухай далі.','Отак. Бачиш, можеш, коли хочеш.','Люблю тебе, засранця. Не розповідай нікому.'],
+ pet:['{voice}… Ще трохи. Не зазнавайся тільки.','Ти мій улюблений дурко. Чухай далі.','Отак. Бачиш, можеш, коли хочеш.','Люблю тебе, засранця. Не розповідай нікому.'],
  medicine:['Фу. Гірке. Але дякую, що доглядаєш.','Ти мене рятуєш, а я бурчу. Ми гарна команда.','Обійми після ліків входять у вартість?'],
  play:['От бачиш, умієш! Тримай 3 монетки.','Гарно пограли. Тепер їсти й обійматися.','Ми з тобою гроза жуків. +3 монети.','Жук офігів. А ми молодці. +3 монети.'],
- idle:['Іди сюди. Будемо нічого не робити разом.','Ти моє улюблене непорозуміння.','Чухай за вушком. Так, оце твоя робота.','Я грізний. Але можеш взяти на ручки.','Ти поїв? Бо за мною стежиш, а сам як?','Обійняв би тебе. Та лапи короткі.','Я тут головний. Ти головний по обіймах.','Не йди надовго, добре? Я ж бурчу від любові.','Дивлюся на тебе. Нормальна в мене людина.','Я тебе люблю. Все, досить ніжностей.','Бляха, як же добре, коли ти поруч.','Маленький засранець — це я. А ти мій.'],
+ idle:['Іди сюди. Будемо нічого не робити разом.','Ти моє улюблене непорозуміння.','Погладь {touch}. Так, оце твоя робота.','Я грізний. Але можеш взяти на ручки.','Ти поїв? Бо за мною стежиш, а сам як?','Обійняв би тебе. Та лапи короткі.','Я тут головний. Ти головний по обіймах.','Не йди надовго, добре? Я ж бурчу від любові.','Дивлюся на тебе. Нормальна в мене людина.','Я тебе люблю. Все, досить ніжностей.','Бляха, як же добре, коли ти поруч.','Маленький засранець — це я. А ти мій.'],
  hungry:['Погодуй мене, сонечко. Я вже бурчу животом.','Людино, у нас тут миска без їжі. Непорядок.','Я тебе люблю, але вечерю люблю теж.'],
  dirty:['Тут треба трохи прибрати. Я ні на що не натякаю.','У мене лапки. А в тебе — прибиральна місія.','Я тут накоїв. Не сварися, краще допоможи.']};
-export function line(key,rng=Math.random){const list=phrases[key]||phrases.idle;return list[Math.floor(rng()*list.length)%list.length];}
+export function line(key,id='cat',rng=Math.random,age=null){if(typeof id==='function'){rng=id;id='cat';}const p=personality(id),babyPet={chicken:['Пік-пік… Погладь мій м’який пушок, ніжненько.'],frog:['Ква… Погладь легенько по спинці. Хвостик не тягни.'],dog:['Му-у… Погладь по голівці. Ріжки ще виростуть.'],dino:['Р-р… Погладь мою маленьку спинку. Шипи ще попереду.']};const list=key==='pet'?(age==='Малюк'&&babyPet[id]?babyPet[id]:p.pet):(phrases[key]||phrases.idle);return list[Math.floor(rng()*list.length)%list.length].replaceAll('{touch}',p.touch).replaceAll('{voice}',p.voice);}
+export function babyMeal(id){const food=foodFor(id,'Малюк');return food==='milk'?'Хлюп-хлюп. Молочко! Дякую, моя людино.':food==='grain'?'Пік-пік. Клюю маленькі зернятка. Дякую за кашку!':food==='algae'?'Ква! Маленький пуголовок їсть водорості. Смачно!':'Ам! Маленькі шматочки для маленького динозаврика.';}
 export function act(state,action,now=Date.now()) {
  const s=tick(structuredClone(state),now);
  if(!s)return {error:'Спочатку обери друга.'};
@@ -76,14 +78,14 @@ export function act(state,action,now=Date.now()) {
  if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю. Дай ще п’ять хвилиночок, буркотун.'};
  let text='';
  switch(action){
- case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?'Хлюп-хлюп. Молочко! Дякую, моя людино.':line('feed');break;
- case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);s.treatStreak++;if(s.treatStreak>2){s.health=clamp(s.health-4);s.careScore=clamp(s.careScore-5);s.discipline=clamp(s.discipline-3);}text=stage(s,now)==='Малюк'?'Хлюп. Для малюка — ще трошки молочка.':line('treat');break;
- case 'clean':s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean');break;
- case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+9);text=line('pet');break;
+ case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?babyMeal(s.species):line('feed',s.species);break;
+ case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);s.treatStreak++;if(s.treatStreak>2){s.health=clamp(s.health-4);s.careScore=clamp(s.careScore-5);s.discipline=clamp(s.discipline-3);}text=stage(s,now)==='Малюк'?babyMeal(s.species):line('treat',s.species);break;
+ case 'clean':s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean',s.species);break;
+ case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+9);text=line('pet',s.species,Math.random,stage(s,now));break;
  case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Я в люлю. Посидь поруч, тільки не шаруди.':'Я прокинувся! Де моя людина й мій сніданок?';break;
  case 'discipline':if(s.discipline>90)return {state:s,error:'Я чемний! Можна вже просто обійняти?'};s.discipline=clamp(s.discipline+18);s.careScore=clamp(s.careScore+1);text='Добре-добре, я зрозумів. Але обійняти після виховання треба.';break;
- case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine');break;
- case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text=line('play');break;
+ case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine',s.species);break;
+ case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text=line('play',s.species);break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
  s.xp+=1;s.lastAction=now;return {state:s,text};

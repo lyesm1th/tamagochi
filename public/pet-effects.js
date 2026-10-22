@@ -1,3 +1,4 @@
+import {foodFor} from './pet-personality.js';
 const glyphs={heart:['01010','11111','11111','01110','00100'],z:['1111','0010','0100','1111'],poop:['001000','001100','011110','111111'],smile:['10001','01010','00100']};
 function stamp(ctx,pattern,x,y,scale,color){ctx.fillStyle=color;pattern.forEach((row,j)=>[...row].forEach((v,i)=>{if(v==='1')ctx.fillRect(Math.round(x+i*scale),Math.round(y+j*scale),scale,scale);}));}
 export function drawEffects(ctx,s,age,effect,now=Date.now(),reduced=false){
@@ -13,9 +14,16 @@ export function drawEffects(ctx,s,age,effect,now=Date.now(),reduced=false){
   for(let i=0;i<3;i++)stamp(ctx,glyphs.heart,35+i*24,37-((step+i)%3)*8,1+(i%2),'#b46c7c');
  }
  if(effect.kind==='feed'||effect.kind==='treat'){
-  const milk=young,x=80-step*3,y=58+step;
+  const food=foodFor(s.species,age,effect.kind),milk=food==='milk',x=80-step*3,y=58+step;
   const r=(dx,dy,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x+dx,y+dy,w,h);};
   if(milk){r(0,0,13,19,ink);r(2,2,9,15,'#f6f0d5');r(3,8+step*2,7,8-step*2,'#fffbed');r(3,-4,7,5,'#dca0a8');r(5,-7,3,4,'#c39160');r(5,4,5,2,'#8aabbd');}
+  else if(food==='grain'){r(-1,12,22,4,ink);r(1,9,18,4,'#ba9556');for(let i=0;i<6-step;i++)r(2+i*3,7-(i%2)*2,2,2,'#e4c06c');}
+  else if(food==='fly'){r(4,4,6,7,ink);r(0,0,5,5,'#d6dec0');r(10,0,5,5,'#d6dec0');if(step===2){r(-8,8,9,2,'#cd8b9d');}}
+  else if(food==='algae'){for(let i=0;i<3;i++)r(i*5,5+step,3,14-step*3,'#5b854c');}
+  else if(food==='hay'){for(let i=0;i<5-step;i++)r(i*3,2+(i%2)*3,2,17,'#b5a05a');}
+  else if(food==='carrot'){r(5,-3,3,6,'#658c4a');r(10,-3,3,6,'#658c4a');r(3,3,12,7,'#da8f44');r(5,10,8,5,'#da8f44');if(step<2)r(7,15,4,4,'#da8f44');}
+  else if(food==='berry'){r(5,-1,5,5,'#658c4a');r(1,4,15,12,'#a8627d');if(step===2)r(0,3,7,8,'#b7c294');}
+  else if(food==='meat'){r(1,3,15,12,'#c28686');r(13,6,8,4,'#eee1c7');r(19,3,3,9,'#eee1c7');if(step===2)r(0,2,7,7,'#b7c294');}
   else{r(0,0,17,17,'#795431');r(2,2,13,13,'#c89b57');r(4,4,3,3,'#62462b');r(10,8,3,3,'#62462b');r(4,12,2,2,'#62462b');if(step>=1)r(-1,1,7,6,'#b7c294');if(step>=2)r(-1,6,10,8,'#b7c294');for(let i=0;i<3;i++)r(-8-i*4,14+(step+i)%3*3,2,2,'#c89b57');}
   ctx.fillStyle=ink;ctx.fillRect(62,young?66:63,step===1?7:4,step===1?5:2);
  }

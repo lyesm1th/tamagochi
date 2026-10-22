@@ -14,12 +14,22 @@ export const reactions={
  endLife:[[0,.2,400,300,.025,'sine'],[.25,.25,300,200,.025,'sine'],[.55,.35,200,100,.02,'sine']],
  miss:[[0,.13,200,120,.025,'triangle']]
 };
+export const affectionSounds={
+ cat:reactions.pet,
+ chicken:[[0,.07,680,1000,.035,'sine'],[.11,.08,820,620,.035,'sine'],[.25,.12,720,1050,.03,'sine']],
+ corgi:[[0,.1,210,420,.045,'triangle'],[.16,.13,250,480,.04,'triangle'],[.35,.14,380,260,.03,'sine']],
+ dog:[[0,.22,120,190,.045,'sine'],[.2,.4,190,95,.04,'triangle']],
+ frog:[[0,.13,190,90,.04,'triangle'],[.17,.13,210,100,.04,'triangle'],[.35,.18,160,70,.035,'sine']],
+ bear:[[0,.3,90,65,.035,'triangle'],[.35,.32,110,75,.035,'triangle']],
+ dino:[[0,.2,120,240,.04,'sawtooth'],[.22,.26,200,75,.03,'triangle']],
+ bunny:[[0,.08,360,250,.025,'sine'],[.12,.08,420,300,.025,'sine'],[.26,.1,350,270,.02,'sine']]
+};
 export function createSound(makeContext,enabled=true){
  let context=null,on=enabled;const active=new Set();
  function stop(){for(const o of active){try{o.stop();}catch{}}active.clear();}
  function unlock(){if(!on)return Promise.resolve(false);try{context ||= makeContext();if(context.state==='closed')context=makeContext();return Promise.resolve(context.state==='running'?undefined:context.resume()).then(()=>context.state==='running').catch(()=>false);}catch{return Promise.resolve(false);}}
  function tone([delay,duration,from,to,volume,type],pitch=1){const o=context.createOscillator(),g=context.createGain(),t=context.currentTime+delay;o.type=type;o.frequency.setValueAtTime(from*pitch,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,to*pitch),t+duration);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(volume,t+Math.min(.015,duration/3));g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(context.destination);active.add(o);o.onended=()=>{active.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
  async function beep(freq=660){if(!on||!await unlock()||!on)return false;try{tone([0,.075,freq,freq,.035,'square']);return true;}catch{return false;}}
- async function react(action,species){const recipe=reactions[action];if(!recipe||!on||!await unlock()||!on)return false;try{stop();const pitch={chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
+ async function react(action,species){const recipe=action==='pet'?(affectionSounds[species]||reactions.pet):reactions[action];if(!recipe||!on||!await unlock()||!on)return false;try{stop();const pitch={chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
  return {unlock,beep,react,get enabled(){return on;},set enabled(v){on=!!v;if(!on)stop();},suspend(){stop();if(context?.state==='running')return context.suspend().catch(()=>{});}};
 }
