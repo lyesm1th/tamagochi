@@ -10,7 +10,7 @@ export function drawPetArt(c,id,frame=0,s=null,reduced=false){
  if(id==='bunny'){shape(46,13,11,30,body);shape(71,10,11,33,body);r(50,18,3,19,pink);r(75,15,3,21,pink);}
  if(id==='bear'){shape(38,30,16,16,body);shape(75,30,16,16,body);r(43,34,6,6,shade);r(80,34,6,6,shade);}
  if(id==='corgi'){shape(38,27,16,28,body);shape(75,27,16,28,body);r(43,32,6,13,shade);r(80,32,6,13,shade);}
- if(id==='dog'){shape(33,37,19,12,body);shape(77,37,19,12,body);r(36,41,10,4,pink);r(83,41,10,4,pink);r(46,25,6,14,'#c2a06c');r(76,25,6,14,'#c2a06c');r(48,25,4,4,cream);r(76,25,4,4,cream);}
+ if(id==='dog'){shape(33,37,19,12,body);shape(77,37,19,12,body);r(36,41,10,4,pink);r(83,41,10,4,pink);if(s?.portraitStage!=='Малюк'){r(46,25,6,14,'#c2a06c');r(76,25,6,14,'#c2a06c');r(48,25,4,4,cream);r(76,25,4,4,cream);}}
  if(id==='chicken'){shape(53,26,9,16,'#c97766');shape(62,23,9,18,'#c97766');shape(70,29,8,12,'#c97766');}
  if(id==='dino'){r(80,37,7,8,'#547d68');r(84,47,7,9,'#547d68');r(86,58,8,8,'#547d68');r(82,69,16,8);r(88,65,11,8,body);}
  shape(46,60,36,23,body);r(50,73,28,7,shade);shape(41,38,46,33,body);r(45,60,38,8,shade);

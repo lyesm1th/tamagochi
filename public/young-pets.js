@@ -1,5 +1,6 @@
+import {drawPetArt} from './pixel-art.js';
 // Pixel anatomy changes at each age; each species keeps its own silhouette.
-export function drawYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduced=false){
+export function drawLegacyYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduced=false){
  const baby=age==='Малюк',ink='#35482e',cream='#f5edcf',pink='#dfa0a8';
  const r=(x,y,w,h,c=ink)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
  const box=(x,y,w,h,c=color)=>{r(x-2,y+2,w+4,h-4);r(x+2,y-2,w-4,h+4);r(x,y,w,h);r(x+2,y,w-4,h,c);r(x,y+2,w,h-4,c);r(x+3,y+1,Math.max(2,w-8),1,'#fff0d1');};
@@ -51,4 +52,10 @@ export function drawYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduced=fal
   r(baby?53:51,baby?77:81,baby?8:10,3+step);r(baby?67:69,baby?77:81,baby?8:10,5-step);
  }
  if(sleeping){ctx.fillStyle=ink;ctx.font='8px monospace';ctx.fillText('z',89,39);}
+}
+
+export function drawYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduced=false){
+ const [scale,offsetY]=age==='Малюк'?[.48,42]:age==='Дитина'?[.7,24]:[.85,12];
+ const proxy={fillStyle:'',fillRect(x,y,w,h){ctx.fillStyle=this.fillStyle==='#e5a0a6'?'#dfa0a8':this.fillStyle;const left=Math.round(64+(x-64)*scale),top=Math.round(offsetY+y*scale);ctx.fillRect(left,top,Math.max(1,Math.round(w*scale)),Math.max(1,Math.round(h*scale)));}};
+ drawPetArt(proxy,id,frame,{sleeping,portraitStage:age},reduced);
 }

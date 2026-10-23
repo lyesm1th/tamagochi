@@ -7,7 +7,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "node --test",
-    "check": "node --check src/worker.js && node --check public/app.js && node --check public/game.js && node scripts/check-assets.js"
+    "check": "node --check src/worker.js && node --check public/app.js && node --check public/game.js && node scripts/check-assets.js",
+    "build": "node scripts/build-client.js && npm run check"
   },
   "devDependencies": {
     "wrangler": "^4.0.0",

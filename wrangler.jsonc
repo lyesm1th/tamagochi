@@ -28,6 +28,6 @@
   ],
   "keep_vars": true,
   "build": {
-    "command": "npm run check"
+    "command": "npm run build"
   }
 }
