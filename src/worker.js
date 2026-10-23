@@ -1,3 +1,4 @@
+import {walletAction,bankAction} from './wallet.js';
 import {sandboxFetch} from './sandbox.js';
 import {livingAction} from '../public/living.js';
 import {performCozy} from '../public/cozy-life.js';
@@ -46,9 +47,10 @@ export class PetRoom{
  return this.ctx.blockConcurrencyWhile(async()=>{
  let body;try{const raw=await req.text();if(raw.length>8192)return json({error:'Too large'},413);body=JSON.parse(raw||'{}');}catch{return json({error:'Bad JSON'},400);}
  if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Bad JSON'},400);
- const path=new URL(req.url).pathname;if(path==='/internal/sandbox')return json(await sandboxFetch(this.ctx.storage,req.headers.get('X-Pet-Owner'),body));let s=tick(await this.ctx.storage.get('pet'));if(s?.dead)await this.archive(s);let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
+ const path=new URL(req.url).pathname;if(path==='/internal/bank')return json(await bankAction(this.ctx.storage,req.headers.get('X-Pet-Owner'),body));if(path==='/internal/sandbox')return json(await sandboxFetch(this.ctx.storage,req.headers.get('X-Pet-Owner'),body));let s=tick(await this.ctx.storage.get('pet'));if(s?.dead)await this.archive(s);let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
  const owner=req.headers.get('X-Pet-Owner'),app=req.headers.get('X-Pet-App');
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
+ if(path==='/api/wallet'){if(s)await this.ctx.storage.put('pet',s);const bank=this.env.PETS.get(this.env.PETS.idFromName('shared-wallet-v1'));try{const result=await walletAction(this.ctx.storage,owner,String(this.env.OWNER_TELEGRAM_ID||'')===owner,body,async payload=>{const response=await bank.fetch(new Request('https://pet/internal/bank',{method:'POST',headers:{'X-Pet-Owner':owner},body:JSON.stringify(payload)}));return response.json();});return json(result,result.error?400:200);}catch{return json({error:'Не вдалося завершити переказ. Відкрий гаманець ще раз — незавершений подарунок відновиться.'},503);}}
  if(path==='/api/sandbox'){
  if(!s||s.dead||s.vacation||s.sleeping||s.napping||Date.now()-s.born<180000)return json({error:'На майданчик підемо після сну й вилуплення.'},400);
  if(!['join','poll','leave','hello','play','tease','avoid'].includes(body.command))return json({error:'Невідома дія.'},400);

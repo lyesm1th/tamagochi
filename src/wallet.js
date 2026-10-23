@@ -1,0 +1,27 @@
+const LIMIT=1_000_000_000_000,valid=n=>Number.isSafeInteger(n)&&n>0&&n<=LIMIT;
+const init=w=>w||{balance:0,history:[]};
+const note=(w,text,amount,now)=>{w.history=[{text,amount,at:now},...(w.history||[])].slice(0,30);};
+export async function bankAction(storage,owner,body,now=Date.now()){
+ if(!/^\d+$/.test(owner||''))return {error:'Потрібна сесія Telegram.'};
+ if(typeof body.code!=='string'||!/^gift-[a-f0-9-]{36}$/.test(body.code))return {error:'Некоректний код подарунка.'};const key=body.code;
+ if(body.command==='issue'){if(!valid(body.amount))return {error:'Некоректна сума.'};const old=await storage.get(key);if(old){if(old.issuer!==owner||old.amount!==body.amount)return {error:'Код уже зайнятий.'};return {ok:true};}await storage.put(key,{issuer:owner,amount:body.amount,at:now,recipient:null});return {ok:true};}
+ if(body.command==='redeem'){const gift=await storage.get(key);if(!gift)return {error:'Подарунок не знайдений.'};if(gift.issuer===owner)return {error:'Подаруй код іншому гравцеві.'};if(gift.recipient&&gift.recipient!==owner)return {error:'Цей подарунок уже забрали.'};gift.recipient=owner;await storage.put(key,gift);return {amount:gift.amount};}return {error:'Невідома дія.'};
+}
+export async function walletAction(storage,owner,isOwner,body,bank,now=Date.now()){
+ if(!/^\d+$/.test(owner||''))return {error:'Гаманець доступний через Telegram.'};const command=body.command||'status';
+ const atomic=fn=>storage.transaction(fn);if(command==='status'&&isOwner)await atomic(async tx=>{const w=init(await tx.get('wallet'));if(!w.ownerWelcome){w.ownerWelcome=true;w.balance+=1000000;note(w,'Перший мільйон власника',1000000,now);await tx.put('wallet',w);}});
+ const flush=async record=>{const result=await bank({command:'issue',code:record.code,amount:record.amount});if(result.error)return false;record.status='issued';await atomic(async tx=>{await tx.put('wallet-gift:'+record.op,record);const w=init(await tx.get('wallet'));w.pending=(w.pending||[]).filter(op=>op!==record.op);await tx.put('wallet',w);});return true;};
+ if(command==='refill'){if(!isOwner)return {error:'Поповнення доступне лише власнику гри.'};await atomic(async tx=>{const w=init(await tx.get('wallet'));if(w.balance+1_000_000>LIMIT)throw Error('Ліміт гаманця.');w.balance+=1_000_000;w.ownerWelcome=true;note(w,'Поповнення власника',1_000_000,now);await tx.put('wallet',w);});}
+ else if(command==='move'){
+ if(!valid(body.amount)||!['deposit','withdraw'].includes(body.direction))return {error:'Обери суму переказу.'};const result=await atomic(async tx=>{const w=init(await tx.get('wallet')),pet=await tx.get('pet');if(!pet||pet.dead)return {error:'Спочатку обери живого пета.'};const from=body.direction==='deposit'?pet:w,to=body.direction==='deposit'?w:pet,field=body.direction==='deposit'?'coins':'balance',dest=body.direction==='deposit'?'balance':'coins';if((from[field]||0)<body.amount)return {error:'Недостатньо монет.'};if((to[dest]||0)+body.amount>LIMIT)return {error:'Завелика сума.'};from[field]-=body.amount;to[dest]=(to[dest]||0)+body.amount;note(w,body.direction==='deposit'?'З кишені пета':'У кишеню пета',body.direction==='deposit'?body.amount:-body.amount,now);await tx.put('wallet',w);await tx.put('pet',pet);return {};});if(result.error)return result;
+ }
+ else if(command==='gift'){
+ if(!valid(body.amount)||typeof body.op!=='string'||!/^[-a-f0-9]{36}$/.test(body.op))return {error:'Обери коректну суму.'};const r=await atomic(async tx=>{const key='wallet-gift:'+body.op,old=await tx.get(key);if(old)return old.amount===body.amount?old:{error:'Цей запит уже має іншу суму.'};const w=init(await tx.get('wallet'));if(w.balance<body.amount)return {error:'Недостатньо монет у гаманці.'};if((w.pending||[]).length>=20)return {error:'Відкрий гаманець, щоб завершити попередні подарунки.'};w.pending=[...(w.pending||[]),body.op];w.giftOps=[body.op,...(w.giftOps||[])].slice(0,100);w.balance-=body.amount;note(w,'Подарунок іншому гравцеві',-body.amount,now);const record={op:body.op,amount:body.amount,code:'gift-'+crypto.randomUUID(),at:now,status:'reserved'};await tx.put('wallet',w);await tx.put(key,record);return record;});if(r.error)return r;await flush(r);
+ }
+ else if(command==='redeem'){
+ const code=String(body.code||'').trim().toLowerCase();if(!/^gift-[a-f0-9-]{36}$/.test(code))return {error:'Встав повний код подарунка.'};const already=await storage.get('wallet-receipt:'+code);if(!already){const r=await bank({command:'redeem',code});if(r.error)return r;if(!valid(r.amount))return {error:'Некоректний подарунок.'};await atomic(async tx=>{if(await tx.get('wallet-receipt:'+code))return;const w=init(await tx.get('wallet'));if(w.balance+r.amount>LIMIT)throw Error('Ліміт гаманця.');w.balance+=r.amount;note(w,'Отриманий подарунок',r.amount,now);await tx.put('wallet',w);await tx.put('wallet-receipt:'+code,{at:now});});}
+ }
+ else if(command!=='status')return {error:'Невідома дія.'};
+ const profile=init(await storage.get('wallet'));for(const op of profile.pending||[]){const r=await storage.get('wallet-gift:'+op);if(r?.status==='reserved')await flush(r);}const rows=(await Promise.all((profile.giftOps||[]).slice(0,10).map(op=>storage.get('wallet-gift:'+op)))).filter(Boolean);
+ return {wallet:{...init(await storage.get('wallet')),owner:!!isOwner,telegramId:owner,gifts:rows.slice(0,10)},state:await storage.get('pet'),text:command==='refill'?'Мільйон монет у твоєму гаманці.':command==='gift'?'Подарунок збережено. Готовий код можна надіслати другу.':command==='redeem'?'Подарунок у гаманці!':command==='move'?'Монети переказано.':null};
+}

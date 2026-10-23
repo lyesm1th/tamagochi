@@ -1,3 +1,4 @@
+import {chatter} from './pet-chatter.js';
 import {journalAmbient} from './life-journal.js';
 import {drawJournalGesture} from './journal-effects.js';
 import {stableHash} from './traits.js';
@@ -15,13 +16,16 @@ export const habits={
 };
 export function awake(s,now=Date.now()){return !!s&&!s.dead&&!s.vacation&&!s.sleeping&&!s.napping&&now-s.born>=180000;}
 export function ambient(s,now=Date.now()){
- if(!awake(s,now)||!s.lively||s.world?.walk?.expires>now||s.cozy?.hide?.expires>now||s.playroom?.session?.expires>now||s.living?.motion?.until>now||Math.min(s.health,s.energy,s.hunger)<30)return null;
+ if(!awake(s,now)||!s.lively||s.world?.walk?.expires>now||s.cozy?.hide?.expires>now||s.playroom?.session?.expires>now||s.living?.motion?.until>now)return null;
+ const activeGesture=s.journal?.gesture;if(activeGesture?.until>now)return journalAmbient(s,now);
+ if(Math.min(s.health,s.energy,s.hunger)<30)return null;
  const hello=s.lively?.welcome;if(hello?.until>now)return {kind:hello.kind==='shy'&&now<hello.at+5000?'turned':'welcome',item:'front',text:hello.text,progress:(now-hello.at)/(hello.until-hello.at)};
  if(s.cozy?.peace?.tension>0)return {kind:'turned',item:'corner',text:'Я поки спиною. Але ти далеко не йди.'};
- const secret=s.lively?.secret;if(secret?.until>now)return {...secret,progress:(now-secret.at)/10000};
+ const secret=s.lively?.secret;if(secret?.until>now&&now>=secret.at&&now-secret.at<12000)return {...secret,progress:(now-secret.at)/10000};
+ const littleMoment=chatter(s,now);if(littleMoment)return littleMoment;
  const journal=journalAmbient(s,now);if(journal)return journal;
  const block=Math.floor(now/40000),phase=now%40000;if(phase>17000)return null;const h=habits[s.species]||habits.cat,seed=stableHash(s.id+':'+block),owned=id=>id==='box'||s.room?.[id]||s.cozy?.owned?.[id]||id==='toy'&&s.playroom?.toys?.ball;
- const choices=[{...h,item:owned(h.item)?h.item:'box'},{kind:'window',item:'window',text:'Дивлюся у вікно. Там теж хтось дивний.'},{kind:'carry',item:s.room?.bed?'bed':'box',text:'Тягну іграшку у своє гніздечко. Не забирай.'},{kind:'doze',item:s.room?.bed?'bed':'rug',text:'Грався-грався… очі самі закрилися.'}];
+ const choices=[{...h,item:owned(h.item)?h.item:'rug'},{kind:'window',item:'window',text:'Дивлюся у вікно. Там теж хтось дивний.'},{kind:'carry',item:s.room?.bed?'bed':'box',text:'Тягну іграшку у своє гніздечко. Не забирай.'},{kind:'doze',item:s.room?.bed?'bed':'rug',text:'Грався-грався… очі самі закрилися.'}];
  const result=choices[(seed+(s.trait==='playful'?1:s.trait==='sleepy'?3:0))%choices.length];return {...result,progress:phase/17000};
 }
 export function returnHome(s,gap,now=Date.now()){
@@ -30,7 +34,7 @@ export function returnHome(s,gap,now=Date.now()){
  s.lively.welcome={kind:shy?'shy':'run',at:now,until:now+16000,text};return text;
 }
 export function updateLively(s,now=Date.now()){
- if(!awake(s,now))return;s.lively??={};const l=s.lively;l.nextAt??=now+20*MIN;if(now<l.nextAt)return;l.nextAt=now+(20+stableHash(s.id+now)%21)*MIN;
+ if(!awake(s,now))return;s.lively??={};const l=s.lively;if(l.secret&&now-l.secret.at>=12000)l.secret=null;l.nextAt??=now+20*MIN;if(now<l.nextAt)return;l.nextAt=now+(20+stableHash(s.id+now)%21)*MIN;
  const h=habits[s.species]||habits.cat;l.lastHabit={...h,at:now};photo(s,'habit-'+s.species,'Моя маленька звичка',h.text,'habit',now);
 }
 export function livelyAction(state,command,body={},now=Date.now()){
@@ -43,7 +47,7 @@ export function livelyAction(state,command,body={},now=Date.now()){
  l.secret={kind:{window:'bird',box:'box',plant:'bug'}[spot],item:spot,at:now,until:now+12000,text};l.found??={};if(!l.found[spot]){l.found[spot]=now;s.bond=clamp((s.bond||0)+1);photo(s,'secret-'+spot,'Таємниця кімнати',text,'secret',now);}return {state:s,text,effect:'pet'};
 }
 export function photoCaption(s,now=Date.now()){const h=habits[s.species]||habits.cat;if(s.sleeping||s.napping)return 'Це я сплю. Красу набираю. Не будити, бляха.';const lines=['Це я красивий. Решта — меблі.',h.text,'Моя кімната. Мій безлад. Моя улюблена людина за кадром.','Знімай швидше. У мене лапки й важливі справи.'];return lines[stableHash(s.id+Math.floor(now/60000))%lines.length];}
-export function ambientPose(a,pos){if(!a)return null;const targets={bed:[pos.bed+25,99],bowl:[pos.bowl+10,118],plant:[pos.plant-5,108],shelf:[pos.shelf+21,91],rug:[96,123],toy:[112,123],lamp:[135,105],box:[30,130],window:[48,90],front:[96,134],corner:[157,91]};let [x,feet]=targets[a.item]||targets.box;if(a.kind==='carry'){const k=Math.min(1,(a.progress||0)*2);x=30+(x-30)*k;feet=130+(feet-130)*k;}if(a.kind==='hop')feet-=Math.abs(Math.sin((a.progress||0)*12))*6;if(a.kind==='welcome'){const k=Math.min(1,(a.progress||0)*2);x=150-54*k;feet=90+44*k;}return {x,feet,scale:feet<100?.72:.93,ambient:a};}
+export function ambientPose(a,pos,reduced=false){if(!a)return null;const targets={bed:[pos.bed+25,99],bowl:[pos.bowl+10,118],plant:[pos.plant-5,108],shelf:[pos.shelf+21,91],rug:[96,123],toy:[112,123],lamp:[135,105],box:[30,130],window:[48,90],front:[96,134],corner:[157,91]};let [x,feet]=targets[a.item]||targets.box;if(a.kind==='dance'&&!reduced){x+=Math.sin((a.progress||0)*Math.PI*12)*4;feet-=Math.abs(Math.sin((a.progress||0)*Math.PI*16))*5;}if(a.kind==='ball'){x=Math.max(25,Math.min(166,(a.ball?.x||96)-12));feet=128;}if(a.kind==='carry'){const k=Math.min(1,(a.progress||0)*2);x=30+(x-30)*k;feet=130+(feet-130)*k;}if(a.kind==='hop')feet-=Math.abs(Math.sin((a.progress||0)*12))*6;if(a.kind==='welcome'){const k=Math.min(1,(a.progress||0)*2);x=150-54*k;feet=90+44*k;}return {x,feet,scale:feet<100?.72:.93,ambient:a};}
 // Small scene props use the same coarse pixels in both graphic modes.
 export function drawLively(c,s,pose,now=Date.now(),reduced=false){drawJournalGesture(c,s,pose,now,reduced);const a=pose?.ambient;if(!a)return;const x=pose.x,y=pose.feet,beat=reduced?0:Math.floor(now/250)%3,r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);};
  if(a.kind==='carry'||a.kind==='chase'){r(x+9,y-12-beat,8,8,'#af84b6');r(x+11,y-11-beat,3,3,'#eee3c9');}

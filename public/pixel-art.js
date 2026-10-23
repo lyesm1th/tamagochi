@@ -1,3 +1,4 @@
+import {drawMood} from './room-mood.js';
 // Integer-coordinate 16-bit-style sprites: small palette, strong silhouettes.
 const ink='#304d43',cream='#fff0d1',white='#f7f3df',pink='#e5a0a6';
 export function drawPetArt(c,id,frame=0,s=null,reduced=false){
@@ -36,7 +37,7 @@ export function drawRoomArt(c,s,frame=0,reduced=false,night=false,pos={bed:8,bow
  const wall=night?'#71877e':'#b9c7a1',floor=night?'#8d8d76':'#c4a982',wood='#9e7956',darkWood='#765c43',lightWood='#bf9a6f';
  r(0,0,192,144,wall);r(0,66,192,78,floor);r(0,63,192,4,darkWood);r(0,62,192,1,lightWood);
  for(const y of [82,103,125]){r(0,y,192,1,night?'#798273':'#ac8f6d');for(let i=0;i<4;i++)r(15+i*52+(y===103?20:0),y-18,1,18,night?'#798273':'#ac8f6d');}
- outline(14,8,43,43,wood);r(18,12,35,35,night?'#456775':'#a3c5c3');r(18,37,35,10,night?'#698775':'#87a47a');r(34,12,3,35,darkWood);r(18,28,35,3,darkWood);r(18,12,15,2,'#d1e3cc');r(42,16,7,5,night?'#e4dfad':'#f1d791');
+ drawMood(c,s);outline(14,8,43,43,wood);r(18,12,35,35,night?'#456775':'#a3c5c3');r(18,37,35,10,night?'#698775':'#87a47a');r(34,12,3,35,darkWood);r(18,28,35,3,darkWood);r(18,12,15,2,'#d1e3cc');r(42,16,7,5,night?'#e4dfad':'#f1d791');
  if(goods.curtains){r(9,7,6,44,'#eedcba');r(55,7,6,44,'#eedcba');r(9,7,52,3,darkWood);r(11,28,4,3,wood);r(55,28,4,3,wood);}
  // Storage box stays a recognizable landmark for hiding.
  outline(4,123,25,15,lightWood);r(5,121,23,4,wood);r(14,126,5,3,'#decb95');
@@ -58,7 +59,7 @@ export function drawRoomArt(c,s,frame=0,reduced=false,night=false,pos={bed:8,bow
  if(goods.mirror){outline(145,9,20,32,wood);r(148,12,14,26,'#aac8c3');r(150,14,3,14,'#d2e2d0');}
  if(goods.post){r(5,127,24,5,darkWood);outline(14,97,7,30,lightWood);for(let i=0;i<5;i++)r(16,101+i*5,3,1,wood);}
  if(goods.toybox){outline(149,128,35,14,wood);r(148,126,37,4,lightWood);r(164,131,5,4,'#dbc68e');}
- if(s?.room?.toy||s?.playroom?.toys?.ball){outline(133,126,10,9,'#b3a6c5');r(136,125,5,2,'#d7c8d9');r(137,129,3,3,cream);}
+ if((s?.room?.toy||s?.playroom?.toys?.ball)&&!(s?.journal?.gesture?.kind==='ball'&&s.journal.gesture.until>Date.now())){outline(133,126,10,9,'#b3a6c5');r(136,125,5,2,'#d7c8d9');r(137,129,3,3,cream);}
  // Cracks and debris are persistent, functional indicators of furniture wear.
  const anchors={bed:[pos.bed+30,97],plant:[pos.plant,78],bowl:[pos.bowl+5,121],rug:[78,128],shelf:[pos.shelf+12,34],lamp:[178,88],tent:[pos.tent+10,73],cushion:[47,115],fountain:[pos.bowl+15,119],mirror:[151,24],post:[16,112],curtains:[11,34],toybox:[158,135]};
  for(const [id,[x,y]]of Object.entries(anchors)){if(!owned(id))continue;if(v(id)&&id!=='bed')r(x,y,7,2,v(id)===1?'#b3a6c5':'#aacbc1');if(wear(id)<65){r(x,y,2,3,darkWood);r(x+2,y+3,2,3,darkWood);}if(wear(id)<30)for(let i=0;i<4;i++)r(Math.min(187,x-7+i*6),Math.min(140,y+10+i%2*4),4,2,wood);}
