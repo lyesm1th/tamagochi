@@ -1,1 +1,16 @@
-{"name":"pixel-pets","version":"1.0.0","private":true,"type":"module","scripts":{"dev":"wrangler dev","deploy":"wrangler deploy","test":"node --test","check":"node --check src/worker.js && node --check public/app.js && node --check public/game.js"},"devDependencies":{"wrangler":"^4.0.0"}}
+{
+  "name": "pixel-pets",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test",
+    "check": "node --check src/worker.js && node --check public/app.js && node --check public/game.js && node scripts/check-assets.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "esbuild": "0.28.2"
+  }
+}
