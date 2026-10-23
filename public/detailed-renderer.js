@@ -1,3 +1,4 @@
+import {wardrobeLayout,wardrobeAnatomy} from './detailed-wardrobe.js';
 import {socialScene,drawSocialScene} from './social-scenes.js';
 import {drawLively} from './lively.js';
 import {isolateSprite} from './sprite-cleanup.js';
@@ -24,13 +25,8 @@ function ageOf(s){return s?.portraitStage||s&&stage(s)||'Дорослий';}
 function sheetOf(s,effect,now){const age=ageOf(s);if(s?.sleeping||s?.napping)return 'sleep';if(age==='Малюк')return 'babies';if(age==='Дитина')return 'children';if(age==='Підліток')return 'teens';if(s?.sleeping||s?.napping)return 'sleep';const kind=active(effect,now);return ['pet','ritual','gift','adventure'].includes(kind)?'happy':['feed','treat','cook'].includes(kind)?'eating':'adults';}
 const ageScale=age=>age==='Малюк'?.55:age==='Дитина'?.73:age==='Підліток'?.88:1;
 // Clothing positions are normalized to each atlas sprite, not the old rectangular body.
-export function detailedAnchors(species,age){const eye={dog:.32,cat:.35,chicken:.33,frog:.24,corgi:.38,bear:.38,dino:.36,bunny:.42}[species]||.35;return {eyes:eye,neck:species==='dog'?.64:species==='frog'?.62:.65,torso:.72,head:species==='bunny'?.26:species==='cat'||species==='corgi'?.18:.06,age};}
-function clothes(c,s,box,age){const sleeping=s?.sleeping||s?.napping,worn=s?.cozy?.wearing||{},a=detailedAnchors(s.species,age),{x,y,w,h}=box;const piece=(id,xx,yy,ww,hh)=>{stamp(c,'clothing',id,xx,yy,ww,hh);if(itemStatus(s,id).wear<30){shade(c,xx+ww*.72,yy+hh*.5,5,4,'#a29886');shade(c,xx+ww*.72+1,yy+hh*.5,1,4,'#ddd4b4');}};
- if(worn.body&&!sleeping)piece(worn.body,x+w*.23,y+h*.66,w*.54,h*.29);
- if(worn.neck)piece(worn.neck,x+w*.29,y+h*(sleeping?.82:a.neck),w*.42,h*(sleeping?.12:worn.neck==='scarf'?.29:.18));
- if(worn.head&&!sleeping)piece(worn.head,x+w*.22,y+h*a.head-h*.18,w*.56,h*.27);
- if(worn.eyes&&!sleeping)piece(worn.eyes,x+w*.19,y+h*(a.eyes-.105),w*.62,h*.21);
-}
+export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age);return {eyes:a.eyes,neck:a.neck,torso:a.top+a.height/2,head:a.hat,age};}
+function clothes(c,s,box,age,sheet){const layout=wardrobeLayout(s.species,age,sheet,box,s.cozy?.wearing,s.sleeping||s.napping);for(const p of layout.pieces){stamp(c,'clothing',p.id,p.x,p.y,p.w,p.h);if(itemStatus(s,p.id).wear<30){shade(c,p.x+p.w*.72,p.y+p.h*.5,Math.max(1,p.w*.07),Math.max(1,p.h*.12),'#a29886');}}const sprite=sprites.get(sheet+':'+s.species);if(sprite&&layout.hands.length){c.save();c.imageSmoothingEnabled=false;for(const hand of layout.hands){const sx=(hand.x-box.x)/box.w*sprite.width,sy=(hand.y-box.y)/box.h*sprite.height;c.drawImage(sprite,sx,sy,hand.w/box.w*sprite.width,hand.h/box.h*sprite.height,hand.x,hand.y,hand.w,hand.h);}c.restore();}}
 function youngEyelids(c,s,box,age){if(!['Малюк','Дитина','Підліток'].includes(age)||!s.sleeping&&!s.napping)return;const {x,y,w,h}=box,eye=detailedAnchors(s.species,age).eyes,col={dog:'#f8eddb',cat:'#cbb1d9',chicken:'#efd077',frog:'#b4ce82',corgi:'#f5e4cb',bear:'#b98b6c',dino:'#9fbea0',bunny:'#efc0ce'}[s.species];for(const xx of [.33,.67]){shade(c,x+w*(xx-.07),y+h*(eye-.04),w*.14,h*.085,col);shade(c,x+w*(xx-.055),y+h*(eye+.005),w*.11,Math.max(1,h*.014),'#344c43');}}
 function sparkles(c,x,y,frame,reduced){for(let i=0;i<3;i++){const yy=y-i*12-(reduced?0:Math.floor(frame/300+i)%3*3);shade(c,x+i*13,yy,2,7,'#dfbb66');shade(c,x+i*13-2,yy+2,6,2,'#dfbb66');}}
 function dreamCloud(c,x,y,frame,reduced){c.save();c.fillStyle='#f5f0db';c.strokeStyle='#b7bea4';c.lineWidth=1;const bob=reduced?0:Math.sin(frame/700);for(const [dx,dy,r]of [[10,39,2],[16,33,3]]){c.beginPath();c.arc(x+dx,y+dy+bob,r,0,Math.PI*2);c.fill();}c.beginPath();c.moveTo(x+11,y+30);c.bezierCurveTo(x-4,y+29,x-1,y+13,x+10,y+12);c.bezierCurveTo(x+8,y-1,x+29,y-3,x+33,y+7);c.bezierCurveTo(x+47,y-1,x+60,y+9,x+56,y+18);c.bezierCurveTo(x+69,y+30,x+51,y+40,x+42,y+33);c.bezierCurveTo(x+31,y+41,x+18,y+35,x+11,y+30);c.fill();c.stroke();c.restore();}
@@ -51,7 +47,7 @@ export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=fals
  if(age==='Яєчко'){const wobble=reduced?0:Math.sin(frame/230)*.05;prop(c,'egg',x-height*.23,feet-height*.60,height*.46,height*.60,{rotate:wobble});return;}
  const sheet=sheetOf(pet,effect,Date.now()),rect=detailedArt[sheet]?.cells?.[id];if(!rect)return;const sprite=sprites.get(sheet+':'+id),ratio=sprite?sprite.width/sprite.height:rect[2]/rect[3],w=Math.min(height*1.3,height*ratio),h=height,box={x:x-w/2,y:feet-h,w,h};
  // A single atlas style is used everywhere, including albums and the sandbox.
- stamp(c,sheet,id,box.x,box.y,w,h,{filter:age==='Старенький'?'grayscale(.45)':undefined});clothes(c,pet,box,age);
+ stamp(c,sheet,id,box.x,box.y,w,h,{filter:age==='Старенький'?'grayscale(.45)':undefined});clothes(c,pet,box,age,sheet);
  if(pet.appearance){const col=pet.appearance.color||'#bba16b';shade(c,box.x+w*.25,box.y+h*.79,3,3,col);if(pet.appearance.mark==='stripe')shade(c,box.x+w*.25,box.y+h*.83,4,1,col);}
  if(!pet.sleeping&&!pet.napping&&careForm(pet)==='radiant')sparkles(c,box.x-8,box.y+h*.2,frame,reduced);if(careForm(pet)==='scruffy'){shade(c,box.x+w*.72,box.y+h*.82,4,3,'#9a8a70');shade(c,box.x+w*.76,box.y+h*.86,3,2,'#9a8a70');}
  effects(c,pet,box,effect,frame,reduced);
