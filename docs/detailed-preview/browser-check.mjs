@@ -1,11 +1,12 @@
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 import fs from 'node:fs';
 import {graphicsMode} from '../../public/graphics-mode.js';
-const canvasWidth=graphicsMode==='detailed'?384:192;
+const testMode=process.env.GRAPHICS_MODE||graphicsMode;
+const canvasWidth=testMode==='detailed'?384:192;
 import {fresh,life,act} from '../../public/game.js';
 import {performCozy} from '../../public/cozy-life.js';
 import {performWorld} from '../../public/little-world.js';
-const out=new URL(graphicsMode==='detailed'?'./screenshots/':'./classic-check/',import.meta.url);fs.mkdirSync(out,{recursive:true});
+const out=new URL(testMode==='detailed'?'./cleaned-check/':'./classic-check/',import.meta.url);fs.mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTABLE_PATH||undefined,headless:true,args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-zygote']});
 const page=await browser.newPage({viewport:{width:430,height:1000},deviceScaleFactor:2,reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.route('https://**/*',route=>route.abort());
@@ -17,9 +18,15 @@ await page.route('**/api/**',async route=>{const path=new URL(route.request().ur
  if(path.endsWith('/cozy')){result=performCozy(state,body.command,body);state=result.state||state;}
  if(path.endsWith('/world')){result=performWorld(state,body.command,body);state=result.state||state;}
  await route.fulfill({json:result});});
+await page.addInitScript(mode=>localStorage.setItem('hamagochi-graphics',mode),testMode);
+if(process.env.TEST_SLEEP){state.sleeping=true;state.world.dream={icon:'grass'};}
 await page.goto('http://preview.local/',{waitUntil:'domcontentloaded'});await page.waitForFunction(w=>document.querySelector('#pet').width===w,canvasWidth,{timeout:30000});await page.waitForTimeout(400);
 await page.locator('#pet').screenshot({path:new URL('room-cow.png',out).pathname});await page.locator('.device').screenshot({path:new URL('device-room.png',out).pathname});await page.locator('.device').screenshot({path:new URL('device-room.jpg',out).pathname,type:'jpeg',quality:96});
+if(process.env.TEST_SLEEP){await page.locator('#pet').screenshot({path:new URL('sleep.png',out).pathname});state.sleeping=false;}
 const navigate=async text=>{for(let i=0;i<25;i++){const label=await page.locator('#selected-action').innerText();if(label.includes(text))return;await page.locator('#button-right').click();}throw Error('missing menu '+text);};
 await navigate('ТУРБОТА');await page.locator('#button-ok').click();await navigate('ПОГЛАДИТИ');await page.locator('#button-ok').click();await page.waitForTimeout(150);await page.locator('#pet').screenshot({path:new URL('petting.png',out).pathname});await page.locator('#button-back').click();await navigate('ПРИГОДИ');await page.locator('#button-ok').click();await navigate('СПІЛЬНА');
 peers=['cat','chicken','frog','corgi','bear','dino'].map((species,i)=>({id:'fixture-'+i,name:species,species,look:{portraitStage:'Дорослий',adultCare:75,cozy:{wearing:i===0?{head:'panama'}:{}}}}));await page.locator('#button-ok').click();await page.waitForTimeout(250);await page.locator('#choice-panel').screenshot({path:new URL('playground.png',out).pathname});await page.locator('.device').screenshot({path:new URL('device-playground.png',out).pathname});await page.locator('.device').screenshot({path:new URL('device-playground.jpg',out).pathname,type:'jpeg',quality:96});
-fs.writeFileSync(new URL('browser-report.json',out),JSON.stringify({errors,graphicsMode,canvasRoom:[canvasWidth,canvasWidth*3/4],peers:peers.length}));await browser.close();console.log(JSON.stringify({errors,screenshots:out.pathname}));
+await page.locator('#button-back').click();await page.locator('#button-back').click();await navigate('СПОГАДИ');await page.locator('#button-ok').click();await navigate('ГРАФІКА');await page.locator('#button-ok').click();await page.waitForFunction(w=>document.querySelector('#pet').width===w,canvasWidth===384?192:384);await page.locator('#button-ok').click();await page.waitForFunction(w=>document.querySelector('#pet').width===w,canvasWidth);
+if(await page.evaluate(()=>localStorage.getItem('hamagochi-graphics'))!==testMode)throw Error('graphics not persisted');
+await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(w=>document.querySelector('#pet').width===w,canvasWidth);if(await page.evaluate(()=>localStorage.getItem('hamagochi-graphics'))!==testMode)throw Error('graphics lost on reload');
+fs.writeFileSync(new URL('browser-report.json',out),JSON.stringify({errors,graphicsMode:testMode,canvasRoom:[canvasWidth,canvasWidth*3/4],peers:peers.length}));await browser.close();console.log(JSON.stringify({errors,screenshots:out.pathname}));
