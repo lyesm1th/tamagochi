@@ -1,3 +1,4 @@
+import {performCozy} from '../public/cozy-life.js';
 import {performPlayroom} from '../public/playroom.js';
 import {performDaily} from '../public/daily-life.js';
 import {performWorld,wakeStory} from '../public/little-world.js';
@@ -48,8 +49,8 @@ export class PetRoom{
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
  if(path==='/api/moments'){if(s)await this.ctx.storage.put('pet',s);const rows=[...await this.ctx.storage.list({prefix:'album:',reverse:true,limit:1000})].map(([,v])=>v);const records=[...(s?.daily?.photos||[]),...rows.flatMap(r=>r.photos||[])];const seen=new Set();return json({records:records.sort((a,b)=>b.at-a.at).filter(r=>{const id=r.pet.born+':'+r.id;if(seen.has(id))return false;seen.add(id);return true;}).slice(0,200)});}
  if(path==='/api/tree'){const rows=[...await this.ctx.storage.list({prefix:'album:',reverse:true,limit:1000})].map(([,v])=>v);return json({records:lineageRows(s,rows)});}
- if(path==='/api/companion'||path==='/api/world'||path==='/api/daily'||path==='/api/playroom'){
- if(!s)return json({error:'Спочатку обери друга.'},400);const next=(path==='/api/playroom'?performPlayroom:path==='/api/daily'?performDaily:path==='/api/world'?performWorld:performCompanion)(s,body.command,body);if(next.error)return json({error:next.error},400);s=next.state;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({...next,reminders:{enabled:!!prefs.enabled}});
+ if(path==='/api/companion'||path==='/api/world'||path==='/api/daily'||path==='/api/playroom'||path==='/api/cozy'){
+ if(!s)return json({error:'Спочатку обери друга.'},400);const next=(path==='/api/cozy'?performCozy:path==='/api/playroom'?performPlayroom:path==='/api/daily'?performDaily:path==='/api/world'?performWorld:performCompanion)(s,body.command,body);if(next.error)return json({error:next.error},400);s=next.state;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({...next,reminders:{enabled:!!prefs.enabled}});
  }
  if(path==='/api/album'){
  const options={prefix:'album:',reverse:true,limit:21};if(typeof body.cursor==='string'&&body.cursor.startsWith('album:')&&body.cursor.length<150)options.end=body.cursor;

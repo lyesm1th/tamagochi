@@ -1,6 +1,7 @@
 // Short, synthesized pocket-pet sounds: no downloads or network latency.
 // [start seconds, duration, start Hz, end Hz, volume, waveform]
 export const reactions={
+ cook:[[0,.08,180,90,.025,'triangle'],[.16,.09,240,110,.025,'triangle'],[.36,.12,480,800,.02,'sine']],
  craft:[[0,.08,260,140,.03,'triangle'],[.18,.08,300,160,.03,'triangle'],[.4,.15,650,900,.025,'sine']],
  music0:[[0,.14,262,262,.025,'sine'],[.18,.14,330,330,.025,'sine'],[.36,.14,392,392,.025,'sine'],[.54,.22,523,523,.02,'sine']],
  music1:[[0,.14,330,330,.025,'sine'],[.18,.14,392,392,.025,'sine'],[.36,.14,440,440,.025,'sine'],[.54,.22,330,330,.02,'sine']],

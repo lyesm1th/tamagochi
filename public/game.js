@@ -1,3 +1,4 @@
+import {updateCozy,noteCozy} from './cozy-life.js';
 import {noteDaily,updateDaily} from './daily-life.js';
 import {ensureWorld,syncDream,wakeStory} from './little-world.js';
 import {ensureCompanion,foodsFor,noteCare,maybeAdventure,routineSleeping} from './companionship.js';
@@ -59,7 +60,7 @@ export function tick(s,now=Date.now()) {
  if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
  s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
- if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);updateDaily(s,now);return s;
+ if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);updateDaily(s,now);updateCozy(s,now);return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
@@ -97,5 +98,5 @@ export function act(state,action,now=Date.now(),context={}) {
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
  syncDream(s,now);if(action==='sleep'&&!s.sleeping){const story=wakeStory(s);if(story)text+=' '+story;}
- noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);s.xp+=1;s.lastAction=now;return {state:s,text};
+ noteCozy(s,action,now);noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);s.xp+=1;s.lastAction=now;return {state:s,text};
 }
