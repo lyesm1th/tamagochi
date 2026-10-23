@@ -1,7 +1,8 @@
+import {dailyPages,noteDaily} from './daily-life.js';
 import {stableHash} from './traits.js';
 import {personality} from './pet-personality.js';
 const MIN=60000,HOUR=60*MIN,clamp=n=>Math.max(0,Math.min(100,n));
-export const worldPages=[['ritual','Наші ритуали'],['weather','Погода за вікном'],['walk','Прогулянки'],['activity','Спільні заняття'],['dreams','Сни друга'],['forms','Як я виріс']];
+export const worldPages=[['ritual','Наші ритуали'],['weather','Погода за вікном'],['walk','Прогулянки'],['activity','Спільні заняття'],['dreams','Сни друга'],['forms','Як я виріс'],...dailyPages];
 export const activities=[{id:'bath',name:'Купання',hint:'ОК — намочити, намилити, змити',steps:['Набираємо теплу водичку','Пінимо й пускаємо бульбашки','Змиваємо піну й витираємо']},{id:'groom',name:'Догляд за собою',hint:'ОК — три ніжні рухи',steps:['Приготували м’яку щіточку','Обережно пригладжуємо','Останній ніжний рух']},{id:'blanket',name:'Загорнути в ковдру',hint:'ОК — вмостити, загорнути, обійняти',steps:['Стелимо м’яку ковдру','Загортаємо друга','Обіймаємо теплий згорток']},{id:'trick',name:'Вивчити трюк',hint:'ОК — показати, повторити, похвалити',steps:['Показуємо новий рух','Друг пробує повторити','Хвалимо за старання']}];
 const rituals={chicken:['Дзьобик до пальця','Почухати пір’ячко','Подарувати пір’їнку'],cat:['Привітатися носиком','Почухати за вушком','Принести ґудзик'],corgi:['Привітатися носиком','Почухати за вушком','Принести м’ячик'],frog:['Торкнутися лапкою','Погладити спинку','Принести листочок'],bear:['Обійняти лапами','Почухати за вушком','Поділитися ягідкою'],dog:['Привітатися носиком','Почухати за ріжками','Принести квіточку'],dino:['Торкнутися мордочкою','Погладити між шипами','Принести камінчик'],bunny:['Привітатися носиком','Погладити довгі вушка','Принести стеблинку']};
 const dreams={chicken:['Зернята розміром з кавун','Я знайшла зернятко завбільшки з тебе. Прокинулась — знову порожня миска.','grain'],cat:['Політ за величезною рибою','Літав за рибиною. Вона сказала «мур». Підозріла, бляха, риба.','fish'],corgi:['М’ячик на Місяці','Наздогнав м’ячик на Місяці. Короткі лапки — не виправдання!','ball'],frog:['Концерт у великій калюжі','Квакав на сцені. Калюжа аплодувала. Ти був у першому ряду.','pond'],bear:['Малинові хмари','Їв малинові хмари. Тебе теж пригостив, не бурчи.','berry'],dog:['Політ над зеленим лугом','Літала над лугом. Трава знизу кричала: «З’їж мене!» От дурна.','grass'],dino:['Вулкан із печивом','З вулкана летіло печиво. Я всіх урятував. З’їв печиво.','cookie'],bunny:['Морквяна ракета','Полетів на моркві до зірок. Назад довелося стрибати: ракету з’їв.','carrot']};
@@ -22,7 +23,7 @@ export function syncDream(s,now=Date.now()){
 export function wakeStory(s){const w=s.world;if(!w?.wakeStoryPending)return null;w.wakeStoryPending=false;return w.lastDream.text;}
 export const walks=[{id:'park',name:'Парк',scene:'Стежка веде повз гойдалку. Щось блищить у траві.',choices:['Пошукати скарб','Пострибати на галявині']},{id:'forest',name:'Ліс',scene:'Листя шурхотить. На стежці гарний камінчик.',choices:['Зібрати сувенір','Пограти в хованки']},{id:'pond',name:'Ставок',scene:'На воді кола, біля берега м’яка травичка.',choices:['Посидіти біля води','Дослідити берег']}];
 function ready(s,now){if(s.dead)return 'Друг уже на веселці.';if(s.vacation)return 'Спочатку забери друга з готелю.';if(now-s.born<3*MIN)return 'Нехай спочатку вилупиться з яйця.';if(s.sleeping||s.napping)return 'Друг спить. Повернемося до цього після сну.';return null;}
-export function performWorld(state,command,body={},now=Date.now()){
+function worldCore(state,command,body={},now=Date.now()){
  if(!state)return {error:'Спочатку обери друга.'};const s=structuredClone(state),w=ensureWorld(s);if(command==='weatherSound'&&!s.dead){w.weatherSound=!w.weatherSound;return {state:s,text:'Звуки погоди '+(w.weatherSound?'увімкнено.':'вимкнено.')};}const error=ready(s,now);if(error)return {error};
  if(command==='ritual'){
  if(!Number.isInteger(body.choice)||body.choice<0||body.choice>2)return {error:'Обери ритуал.'};if(now-(w.cooldowns.ritual||0)<5*MIN)return {error:'Обійми ще теплі. Повторимо ритуал за кілька хвилин.'};
@@ -45,3 +46,7 @@ export function performWorld(state,command,body={},now=Date.now()){
 }
 
 export function activityStepText(s,a,step){if(a.id==='groom'&&s.species==='frog')return ['Беремо вологу м’яку губку','Ніжно зволожуємо гладеньку спинку','Ще крапелька води — готово'][step];if(a.id==='groom'&&s.species==='chicken')return ['Беремо м’яку щіточку','Пригладжуємо пір’ячко вздовж крилець','Чубчик теж охайний'][step];if(a.id==='groom'&&s.species==='dino'&&Date.now()-s.born<63*MIN)return ['Беремо м’яку губку','Чистимо маленьку лускату спинку','Хвостик теж чистенький'][step];if(a.id==='groom'&&s.species==='dino')return ['Беремо м’яку щіточку','Чистимо луску, обережно між шипами','Хвостик теж чистенький'][step];return a.steps[step];}
+
+export function performWorld(state,command,body={},now=Date.now()){
+ const r=worldCore(state,command,body,now);if(r.state&&!r.error){let action=command;if(command==='activityStep'&&!r.state.world.activity)action=state.world.activity.kind;noteDaily(r.state,action,now,{place:state.world?.walk?.place});}return r;
+}

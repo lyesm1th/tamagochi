@@ -1,3 +1,4 @@
+import {performDaily} from '../public/daily-life.js';
 import {performWorld,wakeStory} from '../public/little-world.js';
 import {performCompanion,visit} from '../public/companionship.js';
 import {snapshot,nextGeneration,candidates,petId,lineageRows} from '../public/family.js';
@@ -44,9 +45,10 @@ export class PetRoom{
  const path=new URL(req.url).pathname;let s=tick(await this.ctx.storage.get('pet'));if(s?.dead)await this.archive(s);let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
  const owner=req.headers.get('X-Pet-Owner'),app=req.headers.get('X-Pet-App');
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
+ if(path==='/api/moments'){if(s)await this.ctx.storage.put('pet',s);const rows=[...await this.ctx.storage.list({prefix:'album:',reverse:true,limit:1000})].map(([,v])=>v);const records=[...(s?.daily?.photos||[]),...rows.flatMap(r=>r.photos||[])];const seen=new Set();return json({records:records.sort((a,b)=>b.at-a.at).filter(r=>{const id=r.pet.born+':'+r.id;if(seen.has(id))return false;seen.add(id);return true;}).slice(0,200)});}
  if(path==='/api/tree'){const rows=[...await this.ctx.storage.list({prefix:'album:',reverse:true,limit:1000})].map(([,v])=>v);return json({records:lineageRows(s,rows)});}
- if(path==='/api/companion'||path==='/api/world'){
- if(!s)return json({error:'Спочатку обери друга.'},400);const next=(path==='/api/world'?performWorld:performCompanion)(s,body.command,body);if(next.error)return json({error:next.error},400);s=next.state;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({...next,reminders:{enabled:!!prefs.enabled}});
+ if(path==='/api/companion'||path==='/api/world'||path==='/api/daily'){
+ if(!s)return json({error:'Спочатку обери друга.'},400);const next=(path==='/api/daily'?performDaily:path==='/api/world'?performWorld:performCompanion)(s,body.command,body);if(next.error)return json({error:next.error},400);s=next.state;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({...next,reminders:{enabled:!!prefs.enabled}});
  }
  if(path==='/api/album'){
  const options={prefix:'album:',reverse:true,limit:21};if(typeof body.cursor==='string'&&body.cursor.startsWith('album:')&&body.cursor.length<150)options.end=body.cursor;
