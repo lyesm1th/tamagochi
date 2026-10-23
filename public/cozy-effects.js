@@ -1,3 +1,4 @@
+import {drawRoomJournal} from './journal-effects.js';
 import {ambient,ambientPose} from './lively.js';
 import {drawRoomArt} from './pixel-art.js';
 import {needs,variants,furnitureStatus} from './living.js';
@@ -20,7 +21,7 @@ export function scenePose(s,frame=0,reduced=false,now=Date.now()){
 export function drawExpandedRoom(c,s,frame=0,reduced=false,now=Date.now()){
  const night=s?.cozy?.nightMode&&isNight(s,now),pos=sceneFurniture(s),goods=s?.cozy?.owned||{},r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);},step=reduced?0:Math.floor(frame/400)%3;
  if(s?.world?.walk?.expires>now){const place=s.world.walk.place;r(0,0,192,144,night?'#587775':'#b6cbb6');r(0,61,192,83,night?'#738766':'#97b77c');for(let i=0;i<6;i++){r(64-i*5,68+i*13,64+i*10,13,'#b7ad86');r(5+i*32,86+i%2*25,2,6,'#628453');}for(const x of [7,157]){r(x+12,37,8,61,'#9a805b');r(x,19,33,35,place==='forest'?'#64815c':'#809b66');}if(place==='pond'){r(28,108,135,24,'#8eafb0');r(38,104,115,5,'#8eafb0');for(let i=0;i<6;i++)r(35+i*22,113+(i+step)%3*5,12,1,'#c1d3c3');}return;}
- drawRoomArt(c,s,frame,reduced,night,pos);
+ drawRoomArt(c,s,frame,reduced,night,pos);drawRoomJournal(c,s);
 }
 export function drawHideClue(c,s){const run=s.cozy?.hide;if(!run)return;const pos=sceneFurniture(s),point={box:[18,122],bed:[pos.bed+45,87],plant:[pos.plant-3,61],tent:[pos.tent+19,64],shelf:[pos.shelf+31,29]}[run.spot]||[25,85],r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h);};const [x,y]=point,col={cat:'#bf9ae0',chicken:'#e9c954',corgi:'#e5a05a',frog:'#9bbf63',bear:'#b38a69',dog:'#f2eee1',dino:'#7cb3a0',bunny:'#e4bacb'}[s.species];if(s.species==='frog'){r(x,y,8,3,col);r(x+2,y-2,2,2,col);}else if(s.species==='chicken'){r(x,y,3,8,col);r(x+3,y+2,3,5,col);}else{r(x,y-6,3,s.species==='bunny'?11:7,col);r(x+5,y-4,3,s.species==='bunny'?9:5,col);}}
 // Neck anchors follow the visible muzzle, rather than sharing the body's top edge.

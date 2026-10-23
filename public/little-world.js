@@ -1,3 +1,5 @@
+import {weatherAt} from './weather.js';
+export {weatherAt} from './weather.js';
 import {cozyPages,noteCozy} from './cozy-life.js';
 import {playroomPages} from './playroom.js';
 import {dailyPages,noteDaily} from './daily-life.js';
@@ -14,7 +16,6 @@ export const formNames={radiant:'Доглянутий красунчик',cozy:'
 export function ritualOptions(s,now=Date.now()){const list=[...(rituals[s.species]||rituals.cat)];if((s.vacation?.started??now)-s.born<63*MIN){if(s.species==='dog')list[1]='Погладити голівку';if(s.species==='dino')list[1]='Погладити маленьку спинку';}return list;}
 export function favoriteRitual(s){const counts=s.world?.rituals||{};return [0,1,2].sort((a,b)=>(counts[b]||0)-(counts[a]||0)||a-b)[0];}
 export function ritualHint(s){const i=favoriteRitual(s);return (s.world?.rituals[i]||0)>=3?'Наш ритуал? '+ritualOptions(s)[i]+'. Само себе не погладить!':null;}
-export function weatherAt(now=Date.now()){const slot=Math.floor(now/(3*HOUR)),id=['sun','rain','cloud','storm'][stableHash('weather-'+slot)%4];return {id,name:{sun:'Сонечко',rain:'Дощик',cloud:'Хмарно',storm:'Гроза'}[id],until:(slot+1)*3*HOUR};}
 export function dreamFor(s,at=s.world?.sleepAt||Date.now()){const d=dreams[s.species]||dreams.cat;return stableHash((s.id||s.species)+at)%4===0?{title:'Моя людина поруч',text:'Снилось, що ти вчасно мене годуєш. Фантастика, блін.',icon:'heart'}:{title:d[0],text:d[1],icon:d[2]};}
 export function syncDream(s,now=Date.now()){
  const w=ensureWorld(s);if(s.vacation||s.dead)return;const asleep=!!(s.sleeping||s.napping);

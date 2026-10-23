@@ -1,3 +1,6 @@
+import {MINUTE,HOUR,DAY,life,care,seniorAt,stage} from './pet-life.js';
+export {MINUTE,HOUR,DAY,life,care,seniorAt,stage} from './pet-life.js';
+import {updateJournal} from './life-journal.js';
 import {updateLively} from './lively.js';
 import {bedBonus,furnitureStatus} from './living.js';
 import {updateCozy,noteCozy} from './cozy-life.js';
@@ -18,12 +21,7 @@ export const species = [
 ];
 export const fresh = (id,now=Date.now()) => ensureCompanion({id:globalThis.crypto?.randomUUID?.()||`${now}-${id}`,generation:1,species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0,careScore:80,discipline:70,treatStreak:0,poopClock:0,adultCare:null,lifeRules:2},now);
 const clamp=n=>Math.max(0,Math.min(100,n));
-export const MINUTE=60000,HOUR=3600000,DAY=86400000;
-export const life={egg:3*MINUTE,baby:3*MINUTE+HOUR,child:3*MINUTE+HOUR+2*DAY,teen:3*MINUTE+HOUR+5*DAY};
-export function care(s){return clamp((s.careScore??80)*.7+(s.discipline??70)*.3);}
 export function temperament(s){const c=s.adultCare??care(s);return c>=80?'Лагідний розумник':c>=50?'Ласкавий буркотун':'Неслухняний бешкетник';}
-export function seniorAt(s){return life.teen+(7+7*(s.adultCare??care(s))/100)*DAY;}
-export function stage(s,now=Date.now()){const age=(s.vacation?.started??now)-s.born;return age<life.egg?'Яєчко':age<life.baby?'Малюк':age<life.child?'Дитина':age<life.teen?'Підліток':age<seniorAt(s)?'Дорослий':'Старенький';}
 function baseRates(s,now=Date.now()){
  const st=stage(s,now),poor=(s.adultCare??care(s))<50;
  if(st==='Яєчко')return {hunger:0,happy:0,clean:0,energy:0,poop:Infinity};
@@ -62,7 +60,7 @@ export function tick(s,now=Date.now()) {
  if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
  s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
- if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);updateDaily(s,now);updateCozy(s,now);updateLively(s,now);return s;
+ if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);updateDaily(s,now);updateCozy(s,now);updateLively(s,now);updateJournal(s,now);return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],

@@ -61,3 +61,7 @@ header .brand{font-size:clamp(11px,3.3vw,17px);overflow-wrap:anywhere;line-heigh
 #game-canvas{height:auto;aspect-ratio:64/33;}
 
 #photo-controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}#photo-controls[hidden]{display:none}#photo-controls button{font:inherit;font-size:11px;padding:8px 10px;border:1px solid #7b8b68;background:#dce1c5;color:#35482e;border-radius:5px}
+
+#journal-controls{margin:8px 0}#journal-controls[hidden]{display:none}#save-drawing{font:inherit;font-size:11px;padding:8px;border:1px solid #7b8b68;border-radius:5px;background:#dce1c5;color:#35482e}#pet{touch-action:none}
+
+#choice-panel[data-scene="dreamgame"] #choice-portrait,#choice-panel[data-scene="together"] #choice-portrait,#choice-panel[data-scene="keepsakes"] #choice-portrait{width:100%;max-width:384px;height:auto;aspect-ratio:4/3}#choice-panel[data-scene="drawings"] #choice-portrait{width:min(100%,256px);height:auto;aspect-ratio:4/3}
