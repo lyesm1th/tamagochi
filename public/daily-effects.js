@@ -1,6 +1,6 @@
 import {treasures} from './daily-life.js';
 export function drawDaily(c,s,effect,now=Date.now(),reduced=false){if(!s||s.dead||s.vacation||now-s.born<180000)return;const d=s.daily||{},r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);},step=reduced?1:Math.floor(now/300)%3;
- if(Object.keys(d.stash||{}).length){r(3,90,24,7,'#9a7f5d');for(let i=0;i<Math.min(4,Object.keys(d.stash).length);i++)r(5+i*5,87+i%2,3,4,treasures[i].color);}
+ if(Object.keys(d.stash||{}).filter(id=>d.stash[id]>0).length){r(3,90,24,7,'#9a7f5d');for(let i=0;i<Math.min(4,Object.keys(d.stash).filter(id=>d.stash[id]>0).length);i++)r(5+i*5,87+i%2,3,4,treasures[i].color);}
  if(d.mess){const k=d.mess.kind;if(k==='food'){for(let i=0;i<8;i++)r(19+i*12,89+i%3*2,3,2,'#b3975d');}if(k==='pot'){r(109,82,12,7,'#b28260');for(let i=0;i<5;i++)r(83+i*8,91+i%2,4,2,'#79644b');}if(k==='puddle'){r(17,88,35,4,'#8eb1b6');r(23,92,25,2,'#8eb1b6');}if(k==='brush'){r(4,83,14,4,'#b09868');r(8,87,3,7,'#b09868');}}
  if(d.kind?.kind==='warm'){r(0,94,128,6,'#aaa0bc');r(0,92,31,3,'#c5b9cf');r(96,92,32,3,'#c5b9cf');}
  if((!effect||effect.until<now)&&d.lastFind&&now-d.lastFind.at<20000)effect={kind:'treasure',until:d.lastFind.at+20000};if(!effect||effect.until<now)return;

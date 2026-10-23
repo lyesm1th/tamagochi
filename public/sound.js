@@ -1,6 +1,10 @@
 // Short, synthesized pocket-pet sounds: no downloads or network latency.
 // [start seconds, duration, start Hz, end Hz, volume, waveform]
 export const reactions={
+ craft:[[0,.08,260,140,.03,'triangle'],[.18,.08,300,160,.03,'triangle'],[.4,.15,650,900,.025,'sine']],
+ music0:[[0,.14,262,262,.025,'sine'],[.18,.14,330,330,.025,'sine'],[.36,.14,392,392,.025,'sine'],[.54,.22,523,523,.02,'sine']],
+ music1:[[0,.14,330,330,.025,'sine'],[.18,.14,392,392,.025,'sine'],[.36,.14,440,440,.025,'sine'],[.54,.22,330,330,.02,'sine']],
+ music2:[[0,.14,392,392,.025,'sine'],[.18,.14,349,349,.025,'sine'],[.36,.14,330,330,.025,'sine'],[.54,.22,262,262,.02,'sine']],
  bath:[[0,.08,450,1000,.02,'sine'],[.12,.09,600,1400,.025,'sine'],[.28,.13,350,900,.02,'sine'],[.48,.1,750,1600,.02,'sine']],
  groom:[[0,.12,210,140,.025,'triangle'],[.2,.12,230,150,.025,'triangle'],[.4,.15,260,180,.02,'sine']],
  blanket:[[0,.3,180,260,.025,'sine'],[.35,.4,260,120,.02,'sine']],
@@ -40,6 +44,6 @@ export function createSound(makeContext,enabled=true){
  function unlock(){if(!on)return Promise.resolve(false);try{context ||= makeContext();if(context.state==='closed')context=makeContext();return Promise.resolve(context.state==='running'?undefined:context.resume()).then(()=>context.state==='running').catch(()=>false);}catch{return Promise.resolve(false);}}
  function tone([delay,duration,from,to,volume,type],pitch=1){const o=context.createOscillator(),g=context.createGain(),t=context.currentTime+delay;o.type=type;o.frequency.setValueAtTime(from*pitch,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,to*pitch),t+duration);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(volume,t+Math.min(.015,duration/3));g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(context.destination);active.add(o);o.onended=()=>{active.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
  async function beep(freq=660){if(!on||!await unlock()||!on)return false;try{tone([0,.075,freq,freq,.035,'square']);return true;}catch{return false;}}
- async function react(action,species){const recipe=['pet','ritual'].includes(action)?(affectionSounds[species]||reactions.pet):reactions[action];if(!recipe||!on||!await unlock()||!on)return false;try{stop();const pitch={chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
+ async function react(action,species,learned=false){let recipe=['pet','ritual'].includes(action)?(affectionSounds[species]||reactions.pet):reactions[action];if(!recipe||!on||!await unlock()||!on)return false;if(learned&&/^music[0-2]$/.test(action))recipe=[...recipe,...(affectionSounds[species]||reactions.pet).map(note=>[note[0]+.2,...note.slice(1)])];try{stop();const pitch={chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
  return {unlock,beep,react,get enabled(){return on;},set enabled(v){on=!!v;if(!on)stop();},suspend(){stop();if(context?.state==='running')return context.suspend().catch(()=>{});}};
 }
