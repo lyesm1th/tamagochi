@@ -19,3 +19,24 @@ body{background:#e9e3d7;background-image:radial-gradient(#b4ac9c55 1px,transpare
 
 /* Expanded room, with the original pocket-device shell. */
 .device{max-width:430px;padding-left:28px;padding-right:28px}.lcd{min-height:350px}#pet-touch{height:auto;min-height:180px}#pet-touch canvas{display:block;width:100%;max-width:330px;height:auto;aspect-ratio:4/3;margin:auto;filter:none}#choice-portrait{width:150px;height:auto;aspect-ratio:4/3}#choice-panel{min-height:235px}#choice-detail{max-height:140px}@media(max-width:370px){.device{padding-left:18px;padding-right:18px}.lcd{min-height:320px}#pet-touch{height:auto}}
+
+/* The tall LCD sits inside a rounded shell with straight protective sidewalls. */
+main{max-width:500px;padding:20px 14px 28px}
+.device{width:100%;max-width:456px;margin:16px auto 30px;padding:52px 24px 42px;border-radius:76px 76px 100px 100px / 64px 64px 88px 88px;box-shadow:inset 5px 5px 7px #fff1bca8,inset -6px -7px 10px #9d53164d,3px 8px 0 #995f2f,5px 15px 20px #5a46312b}
+.device:before{width:22px;height:26px;top:-24px;left:calc(50% - 16px)}
+.device:after{top:17px;left:calc(50% - 43px);font-size:14px;text-shadow:33px 1px #c47239,66px 0 #fff3c0}
+.device-top{min-height:24px;padding:0 5px;margin:0 0 12px;gap:7px;align-items:center}
+.device-top>span:first-child{font-size:clamp(13px,4vw,17px);transform:none;white-space:nowrap}
+#connection{white-space:nowrap;font-size:6px;flex-shrink:0}
+.lcd{width:100%;min-width:0;min-height:350px;border-width:8px;border-radius:15px;outline:2px solid #8a613d}
+#pet-touch{width:100%;height:auto;min-height:0}
+#pet-touch canvas{width:100%;max-width:none;height:auto;aspect-ratio:4/3;display:block;margin:0;flex:0 1 100%;min-width:0}
+#bubble{overflow-wrap:anywhere}
+.screen-bottom{gap:8px;align-items:center;min-height:24px}
+#stage{min-width:0;flex:1}#coins{flex-shrink:0;white-space:nowrap}
+#selected-action{min-height:26px;margin:16px 0 4px;padding:0 4px;font-size:9px;line-height:1.45;overflow-wrap:anywhere}
+.device-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:start;justify-content:normal;margin-top:6px;padding:4px 5px 0}
+.device-controls>div,.device-controls>div:nth-child(n){min-width:0;margin-top:0;padding-top:0;text-align:center}
+.device-controls button{width:44px;height:44px;max-width:100%;font-size:16px}
+.device-controls span{font-size:7px;letter-spacing:.6px;margin-top:9px}
+@media(max-width:370px){main{padding:18px 12px 26px}.device{padding:48px 16px 36px;border-radius:62px 62px 82px 82px / 56px 56px 74px 74px}.device-controls{gap:6px;padding-left:1px;padding-right:1px}.lcd{min-height:320px}.device-top{padding:0 2px}#selected-action{font-size:8px}}
