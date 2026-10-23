@@ -2,7 +2,7 @@ import {stableHash,behaviorPose} from './traits.js';
 import {isNight,nightPhase,itemStatus} from './cozy-life.js';
 import {bedding,favoriteCorner} from './playroom.js';
 import {weatherAt} from './little-world.js';
-export function sceneFurniture(s){const layout=s.playroom?.decor?.layout||0;return layout===1?{bed:126,bowl:18,plant:12,tent:20,shelf:87}:layout===2?{bed:70,bowl:16,plant:170,tent:132,shelf:7}:{bed:8,bowl:156,plant:170,tent:124,shelf:82};}
+export function sceneFurniture(s){const layout=s?.playroom?.decor?.layout||0;return layout===1?{bed:126,bowl:18,plant:12,tent:20,shelf:87}:layout===2?{bed:70,bowl:16,plant:170,tent:132,shelf:7}:{bed:8,bowl:156,plant:170,tent:124,shelf:82};}
 export function scenePose(s,frame=0,reduced=false,now=Date.now()){
  const pos=sceneFurniture(s),phase=nightPhase(s,now);if(s?.dead||s?.vacation)return {x:96,feet:118,scale:1,phase};if(s?.sleeping||s?.napping){if(phase==='return'){const k=((now+stableHash(s.id||s.species))%(12*60000)-8000)/6000;return {x:(pos.bowl+10)*(1-k)+(pos.bed+25)*k,feet:119-20*k,scale:1.02-.24*k,phase};}return phase==='water'?{x:pos.bowl+10,feet:119,scale:1.02,phase}:{x:pos.bed+25,feet:99,scale:.78,phase};}
  if(s?.playroom?.session?.expires>now)return {x:34+s.playroom.session.pet*15,feet:124,scale:1.05,phase};
