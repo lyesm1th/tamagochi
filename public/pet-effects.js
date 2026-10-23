@@ -1,3 +1,4 @@
+import {drawBanana} from './new-pet-art.js';
 import {foodFor} from './pet-personality.js';
 const glyphs={heart:['01010','11111','11111','01110','00100'],z:['1111','0010','0100','1111'],poop:['001000','001100','011110','111111'],smile:['10001','01010','00100']};
 function stamp(ctx,pattern,x,y,scale,color){ctx.fillStyle=color;pattern.forEach((row,j)=>[...row].forEach((v,i)=>{if(v==='1')ctx.fillRect(Math.round(x+i*scale),Math.round(y+j*scale),scale,scale);}));}
@@ -17,6 +18,7 @@ export function drawEffects(ctx,s,age,effect,now=Date.now(),reduced=false){
   const food=effect.food||foodFor(s.species,age,effect.kind),milk=food==='milk',x=80-step*3,y=58+step;
   const r=(dx,dy,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x+dx,y+dy,w,h);};
   if(milk){r(0,0,13,19,ink);r(2,2,9,15,'#f6f0d5');r(3,8+step*2,7,8-step*2,'#fffbed');r(3,-4,7,5,'#dca0a8');r(5,-7,3,4,'#c39160');r(5,4,5,2,'#8aabbd');}
+  else if(food==='banana'){drawBanana(c,0,0,21,20);}
   else if(food==='grain'){r(-1,12,22,4,ink);r(1,9,18,4,'#ba9556');for(let i=0;i<6-step;i++)r(2+i*3,7-(i%2)*2,2,2,'#e4c06c');}
   else if(food==='fly'){r(4,4,6,7,ink);r(0,0,5,5,'#d6dec0');r(10,0,5,5,'#d6dec0');if(step===2){r(-8,8,9,2,'#cd8b9d');}}
   else if(food==='worm'){for(let i=0;i<5-step;i++)r(i*3,8+(i%2)*3,4,4,'#bd8f91');}

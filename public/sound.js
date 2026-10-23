@@ -30,6 +30,12 @@ export const reactions={
  miss:[[0,.13,200,120,.025,'triangle']]
 };
 export const affectionSounds={
+ pig:[[0,.12,105,75,.04,'triangle'],[.17,.1,120,90,.04,'triangle'],[.32,.14,140,85,.03,'sine']],
+ sheep:[[0,.16,260,230,.04,'triangle'],[.16,.16,235,280,.035,'sine'],[.32,.2,265,220,.03,'triangle']],
+ fox:[[0,.08,540,800,.025,'triangle'],[.13,.09,690,460,.03,'sine'],[.28,.1,520,700,.025,'triangle']],
+ monkey:[[0,.08,450,650,.03,'sine'],[.12,.1,600,820,.03,'triangle'],[.27,.14,720,480,.035,'sine']],
+ duck:[[0,.12,280,160,.04,'sawtooth'],[.18,.14,310,170,.035,'triangle']],
+ penguin:[[0,.08,820,1050,.025,'sine'],[.13,.12,950,720,.025,'sine'],[.3,.08,780,1080,.02,'triangle']],
  cat:reactions.pet,
  chicken:[[0,.07,680,1000,.035,'sine'],[.11,.08,820,620,.035,'sine'],[.25,.12,720,1050,.03,'sine']],
  corgi:[[0,.1,210,420,.045,'triangle'],[.16,.13,250,480,.04,'triangle'],[.35,.14,380,260,.03,'sine']],
@@ -45,6 +51,6 @@ export function createSound(makeContext,enabled=true){
  function unlock(){if(!on)return Promise.resolve(false);try{context ||= makeContext();if(context.state==='closed')context=makeContext();return Promise.resolve(context.state==='running'?undefined:context.resume()).then(()=>context.state==='running').catch(()=>false);}catch{return Promise.resolve(false);}}
  function tone([delay,duration,from,to,volume,type],pitch=1){const o=context.createOscillator(),g=context.createGain(),t=context.currentTime+delay;o.type=type;o.frequency.setValueAtTime(from*pitch,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,to*pitch),t+duration);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(volume,t+Math.min(.015,duration/3));g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(context.destination);active.add(o);o.onended=()=>{active.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
  async function beep(freq=660){if(!on||!await unlock()||!on)return false;try{tone([0,.075,freq,freq,.035,'square']);return true;}catch{return false;}}
- async function react(action,species,learned=false){let recipe=['pet','ritual'].includes(action)?(affectionSounds[species]||reactions.pet):reactions[action];if(!recipe||!on||!await unlock()||!on)return false;if(learned&&/^music[0-2]$/.test(action))recipe=[...recipe,...(affectionSounds[species]||reactions.pet).map(note=>[note[0]+.2,...note.slice(1)])];try{stop();const pitch={chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
+ async function react(action,species,learned=false){let recipe=['pet','ritual'].includes(action)?(affectionSounds[species]||reactions.pet):reactions[action];if(!recipe||!on||!await unlock()||!on)return false;if(learned&&/^music[0-2]$/.test(action))recipe=[...recipe,...(affectionSounds[species]||reactions.pet).map(note=>[note[0]+.2,...note.slice(1)])];try{stop();const pitch={pig:.8,sheep:.9,fox:1.15,monkey:1.1,duck:.9,penguin:1.3,chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
  return {unlock,beep,react,get enabled(){return on;},set enabled(v){on=!!v;if(!on)stop();},suspend(){stop();if(context?.state==='running')return context.suspend().catch(()=>{});}};
 }

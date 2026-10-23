@@ -10,4 +10,4 @@ test('all pet reactions schedule distinct sounds and mute stops playback',async(
  const baseMusic=starts;await sound.react('music0','frog',true);assert.equal(starts-baseMusic,reactions.music0.length+affectionSounds.frog.length);assert.equal(contexts,1);const before=stops;sound.enabled=false;assert.ok(stops>before);const count=starts;assert.equal(await sound.react('feed','cat'),false);assert.equal(starts,count);assert.equal(await sound.react('unknown','cat'),false);assert.notDeepEqual(reactions.feed,reactions.sleep);
 });
 
-test('species affection sounds are distinct: cow never uses cat purr',async()=>{const {affectionSounds}=await import('../public/sound.js');assert.equal(new Set(Object.values(affectionSounds).map(v=>JSON.stringify(v))).size,8);assert.notDeepEqual(affectionSounds.dog,affectionSounds.cat);});
+test('species affection sounds are distinct: cow never uses cat purr',async()=>{const {affectionSounds}=await import('../public/sound.js');assert.equal(new Set(Object.values(affectionSounds).map(v=>JSON.stringify(v))).size,14);assert.notDeepEqual(affectionSounds.dog,affectionSounds.cat);});

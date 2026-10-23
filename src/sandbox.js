@@ -1,3 +1,4 @@
+import {newPets} from '../public/new-pets.js';
 // Stored in a separate instance of the existing Durable Object namespace.
 const TTL=45000;
 export async function sandboxFetch(storage,owner,body,now=Date.now()){
@@ -9,7 +10,7 @@ export async function sandboxFetch(storage,owner,body,now=Date.now()){
  let text='',delta=0,mental=0;
  if(body.command==='leave'){delete room.pets[owner];}
  else{
- const p=body.pet;if(!p||!['chicken','cat','corgi','frog','bear','dog','dino','bunny'].includes(p.species))return {error:'Спочатку приведи друга.'};
+ const p=body.pet;if(!p||![...Object.keys(newPets),'chicken','cat','corgi','frog','bear','dog','dino','bunny'].includes(p.species))return {error:'Спочатку приведи друга.'};
  if(!room.pets[owner]&&Object.keys(room.pets).length>=30)return {error:'На майданчику людно. Спробуй трохи пізніше.'};
  const mine=room.pets[owner]||{id:crypto.randomUUID(),x:20+Object.keys(room.pets).length%7*23,last:0};Object.assign(mine,{owner,species:p.species,name:String(p.name).slice(0,24),look:p.look,at:now});room.pets[owner]=mine;
  if(['hello','play','tease','avoid'].includes(body.command)){

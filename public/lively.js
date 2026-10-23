@@ -1,3 +1,4 @@
+import {newPets} from './new-pets.js';
 import {drawToyVariant} from './item-designs.js';
 import {chatter} from './pet-chatter.js';
 import {journalAmbient} from './life-journal.js';
@@ -6,6 +7,7 @@ import {stableHash} from './traits.js';
 import {photo} from './daily-life.js';
 const MIN=60000,clamp=n=>Math.max(0,Math.min(100,n));
 export const habits={
+ ...Object.fromEntries(Object.entries(newPets).map(([id,p])=>[id,p.habit])),
  dog:{kind:'graze',item:'plant',text:'Муу. Перевіряю травичку. Це дегустація, людино.'},
  cat:{kind:'knock',item:'shelf',text:'Книжка сама впала. Я лише перевіряв гравітацію.'},
  chicken:{kind:'scratch',item:'rug',text:'Ко-ко! Тут точно було зернятко. Зараз усе перекопаю.'},
@@ -52,14 +54,14 @@ export function ambientPose(a,pos,reduced=false){if(!a)return null;const targets
 // Small scene props use the same coarse pixels in both graphic modes.
 export function drawLively(c,s,pose,now=Date.now(),reduced=false,paint=null){drawJournalGesture(c,s,pose,now,reduced,paint);const a=pose?.ambient;if(!a)return;const x=pose.x,y=pose.feet,beat=reduced?0:Math.floor(now/250)%3,r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);};
  if(a.kind==='carry'||a.kind==='chase'){if(paint)paint('ball',x+8,y-13-beat,10,10);else if(!drawToyVariant(c,s,x+8,y-13-beat,10,10)){r(x+9,y-12-beat,8,8,'#af84b6');r(x+11,y-11-beat,3,3,'#eee3c9');}}
- if(['graze','sniff'].includes(a.kind))for(let i=0;i<3;i++)r(x+9+i*3,y-17-i%2*3,2,6,'#789756');
- if(['scratch','dig','stomp'].includes(a.kind))for(let i=0;i<3;i++)r(x-13+i*12,y+beat-i%2*2,3,2,'#b3936c');
+ if(['graze','sniff','root','fluff'].includes(a.kind))for(let i=0;i<3;i++)r(x+9+i*3,y-17-i%2*3,2,6,'#789756');
+ if(['scratch','dig','stomp','slide','waddle','swing','prowl'].includes(a.kind))for(let i=0;i<3;i++)r(x-13+i*12,y+beat-i%2*2,3,2,'#b3936c');
  if(a.kind==='hunt'||a.kind==='bug'){const xx=x+14+beat*3,yy=y-25-beat*4;r(xx,yy,4,3,'#4f6251');r(xx-2,yy-2,3,2,'#e4ddba');r(xx+3,yy-2,3,2,'#e4ddba');if(a.kind==='hunt')r(x+4,y-20,8+beat*3,1,'#cb939d');}
  if(a.kind==='knock'){r(x+14,y-16+beat*6,8,5,'#a386b7');r(x+15,y-15+beat*6,6,1,'#e4ddba');}
  if(a.kind==='bird'){r(44+beat,58,8,5,'#8faab1');r(50+beat,55,4,4,'#8faab1');r(54+beat,57,3,1,'#d0a364');}
  if(a.kind==='box'){r(x-17,y-18,34,21,'#c5aa80');r(x-19,y-20,38,4,'#ddc397');r(x-3,y-20,6,21,'#b29570');}
  if(a.kind==='doze'){c.fillStyle='#7e759b';c.font='bold 7px monospace';c.fillText('zzz',x+10,y-35-beat);}
  if(a.kind==='welcome'){c.fillStyle='#ba8297';c.font='bold 12px monospace';c.fillText('♥',x+12,y-35-beat);}
- if(a.kind==='turned'){const col=({cat:'#b799cd',dog:'#f0e6cf',frog:'#92b16f',bear:'#aa8060',chicken:'#e1c05f',dino:'#82aaa0',bunny:'#d9aec1',corgi:'#cc9a68'}[s.species]||'#a6b585');r(x-12,y-29,24,28,'#40533d');r(x-16,y-23,32,19,'#40533d');r(x-11,y-30,22,26,col);r(x-14,y-22,28,17,col);r(x-10,y-3,7,3,'#40533d');r(x+4,y-3,7,3,'#40533d');if(s.species==='bunny'){r(x-9,y-43,5,14,col);r(x+5,y-43,5,14,col);}else if(s.species!=='frog'){r(x-13,y-34,7,7,col);r(x+7,y-34,7,7,col);}r(x-2,y-10,5,6,'#e4d3ac');if(s.species==='dog'){r(x-9,y-24,6,8,'#4c5145');r(x+4,y-17,7,6,'#4c5145');}}
+ if(a.kind==='turned'){const col=(newPets[s.species]?.color||{cat:'#b799cd',dog:'#f0e6cf',frog:'#92b16f',bear:'#aa8060',chicken:'#e1c05f',dino:'#82aaa0',bunny:'#d9aec1',corgi:'#cc9a68'}[s.species]||'#a6b585');r(x-12,y-29,24,28,'#40533d');r(x-16,y-23,32,19,'#40533d');r(x-11,y-30,22,26,col);r(x-14,y-22,28,17,col);r(x-10,y-3,7,3,'#40533d');r(x+4,y-3,7,3,'#40533d');if(s.species==='bunny'){r(x-9,y-43,5,14,col);r(x+5,y-43,5,14,col);}else if(s.species!=='frog'){r(x-13,y-34,7,7,col);r(x+7,y-34,7,7,col);}r(x-2,y-10,5,6,'#e4d3ac');if(s.species==='dog'){r(x-9,y-24,6,8,'#4c5145');r(x+4,y-17,7,6,'#4c5145');}}
 }
 export function roomSpot(x,y){if(x>=22&&x<=73&&y<65)return 'window';if(x>=14&&x<=65&&y>=119)return 'box';return null;}

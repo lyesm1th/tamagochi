@@ -1,3 +1,4 @@
+import {newSpecies,newPets} from './new-pets.js';
 import {MINUTE,HOUR,DAY,life,care,seniorAt,stage} from './pet-life.js';
 export {MINUTE,HOUR,DAY,life,care,seniorAt,stage} from './pet-life.js';
 import {updateJournal} from './life-journal.js';
@@ -17,7 +18,8 @@ export const species = [
  {id:'bear',name:'Ведмедик',nick:'Буркотун',color:'#b38a69'},
  {id:'dog',name:'Корівка',nick:'Мукалка',color:'#f2eee1'},
  {id:'dino',name:'Динозаврик',nick:'Кусьозавр',color:'#7cb3a0'},
- {id:'bunny',name:'Кролик',nick:'Вухань',color:'#e4bacb'}
+ {id:'bunny',name:'Кролик',nick:'Вухань',color:'#e4bacb'},
+ ...newSpecies
 ];
 export const fresh = (id,now=Date.now()) => ensureCompanion({id:globalThis.crypto?.randomUUID?.()||`${now}-${id}`,generation:1,species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0,careScore:80,discipline:70,treatStreak:0,poopClock:0,adultCare:null,lifeRules:2},now);
 const clamp=n=>Math.max(0,Math.min(100,n));
@@ -72,8 +74,8 @@ export const phrases={
  idle:['Іди сюди. Будемо нічого не робити разом.','Ти моє улюблене непорозуміння.','Погладь {touch}. Так, оце твоя робота.','Я грізний. Але можеш взяти на ручки.','Ти поїв? Бо за мною стежиш, а сам як?','Обійняв би тебе. Та лапи короткі.','Я тут головний. Ти головний по обіймах.','Не йди надовго, добре? Я ж бурчу від любові.','Дивлюся на тебе. Нормальна в мене людина.','Я тебе люблю. Все, досить ніжностей.','Бляха, як же добре, коли ти поруч.','Маленький засранець — це я. А ти мій.'],
  hungry:['Погодуй мене, сонечко. Я вже бурчу животом.','Людино, у нас тут миска без їжі. Непорядок.','Я тебе люблю, але вечерю люблю теж.'],
  dirty:['Тут треба трохи прибрати. Я ні на що не натякаю.','У мене лапки. А в тебе — прибиральна місія.','Я тут накоїв. Не сварися, краще допоможи.']};
-export function line(key,id='cat',rng=Math.random,age=null){if(typeof id==='function'){rng=id;id='cat';}const p=personality(id),babyPet={chicken:['Пік-пік… Погладь мій м’який пушок, ніжненько.'],frog:['Ква… Погладь легенько по спинці. Хвостик не тягни.'],dog:['Му-у… Погладь по голівці. Ріжки ще виростуть.'],dino:['Р-р… Погладь мою маленьку спинку. Шипи ще попереду.']};const list=key==='pet'?(age==='Малюк'&&babyPet[id]?babyPet[id]:p.pet):(phrases[key]||phrases.idle);return list[Math.floor(rng()*list.length)%list.length].replaceAll('{touch}',p.touch).replaceAll('{voice}',p.voice);}
-export function babyMeal(id){const food=foodFor(id,'Малюк');return food==='milk'?'Хлюп-хлюп. Молочко! Дякую, моя людино.':food==='grain'?'Пік-пік. Клюю маленькі зернятка. Дякую за кашку!':food==='algae'?'Ква! Маленький пуголовок їсть водорості. Смачно!':'Ам! Маленькі шматочки для маленького динозаврика.';}
+export function line(key,id='cat',rng=Math.random,age=null){if(typeof id==='function'){rng=id;id='cat';}const p=personality(id),babyPet={chicken:['Пік-пік… Погладь мій м’який пушок, ніжненько.'],frog:['Ква… Погладь легенько по спинці. Хвостик не тягни.'],dog:['Му-у… Погладь по голівці. Ріжки ще виростуть.'],dino:['Р-р… Погладь мою маленьку спинку. Шипи ще попереду.']};const list=key==='pet'?(age==='Малюк'&&babyPet[id]?babyPet[id]:p.pet):(Array.isArray(p[key])?p[key]:phrases[key]||phrases.idle);return list[Math.floor(rng()*list.length)%list.length].replaceAll('{touch}',p.touch).replaceAll('{voice}',p.voice);}
+export function babyMeal(id){const food=foodFor(id,'Малюк');return food==='milk'?'Хлюп-хлюп. Молочко! Дякую, моя людино.':food==='fish'?'Пі-пі! Маленькі шматочки рибки для маленького пінгвіна.':food==='grain'?'Пік-пік. Клюю маленькі зернятка. Дякую за кашку!':food==='algae'?'Ква! Маленький пуголовок їсть водорості. Смачно!':'Ам! Маленькі шматочки для маленького динозаврика.';}
 export function act(state,action,now=Date.now(),context={}) {
  const s=tick(structuredClone(state),now);
  if(!s)return {error:'Спочатку обери друга.'};

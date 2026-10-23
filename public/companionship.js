@@ -1,3 +1,4 @@
+import {newPets} from './new-pets.js';
 import {returnHome} from './lively.js';
 import {ensureCozy} from './cozy-life.js';
 import {ensurePlayroom} from './playroom.js';
@@ -7,14 +8,14 @@ import {personality} from './pet-personality.js';
 import {stableHash} from './traits.js';
 const HOUR=3600000,DAY=24*HOUR;
 export const furnishings=[{id:'bed',name:'Ліжечко',price:12,benefit:'+4 енергії/год уві сні'},{id:'bowl',name:'Миска',price:8,benefit:'Ситість падає на 10% повільніше'},{id:'plant',name:'Рослина',price:10,benefit:'Настрій падає на 10% повільніше'},{id:'toy',name:'Іграшка',price:15,benefit:'+3 настрою за гру'}];
-export const foodNames={milk:'Молочко',grain:'Зернятка',algae:'Водорості',meat:'Шматочки м’яса',cookie:'Печиво',hay:'Сіно',fly:'Комашка',berry:'Ягідки',carrot:'Морквинка',fish:'Рибка',kibble:'Корм',grass:'Травичка',apple:'Яблучко',worm:'Черв’ячок',leaf:'Листочок'};
-const foods={cat:['kibble','fish','cookie'],corgi:['kibble','meat','carrot'],dog:['hay','grass','apple'],frog:['fly','worm','algae'],chicken:['grain','berry','leaf'],bear:['berry','fish','apple'],dino:['meat','fish','leaf'],bunny:['hay','carrot','leaf']};
+export const foodNames={banana:'Банан',milk:'Молочко',grain:'Зернятка',algae:'Водорості',meat:'Шматочки м’яса',cookie:'Печиво',hay:'Сіно',fly:'Комашка',berry:'Ягідки',carrot:'Морквинка',fish:'Рибка',kibble:'Корм',grass:'Травичка',apple:'Яблучко',worm:'Черв’ячок',leaf:'Листочок'};
+const foods={...Object.fromEntries(Object.entries(newPets).map(([id,p])=>[id,p.foods])),cat:['kibble','fish','cookie'],corgi:['kibble','meat','carrot'],dog:['hay','grass','apple'],frog:['fly','worm','algae'],chicken:['grain','berry','leaf'],bear:['berry','fish','apple'],dino:['meat','fish','leaf'],bunny:['hay','carrot','leaf']};
 export function foodsFor(s,age){return age==='Малюк'?[personality(s.species).babyFood]:(foods[s.species]||foods.cat);}
 export function clock(now,tz='Europe/Kyiv'){try{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date(now)).map(v=>[v.type,v.value]));return {hour:Number(parts.hour),day:`${parts.year}-${parts.month}-${parts.day}`};}catch{return clock(now,'Europe/Kyiv');}}
 export function zone(tz){try{new Intl.DateTimeFormat('en',{timeZone:tz}).format();return tz;}catch{return 'Europe/Kyiv';}}
 export function ensureCompanion(s,now=Date.now()){
  s.id??=`${s.born}-${s.species}`;s.bond??=0;s.memory??={visits:0,lastSeen:0,foods:{},discoveries:[],moments:[]};s.memory.foods??={};s.memory.discoveries??=[];s.memory.moments??=[];s.room??={};s.vacationTotal??=0;
- s.favoriteFood??=(foods[s.species]||foods.cat)[stableHash(s.id)%3];
+ s.favoriteFood??=newPets[s.species]?.favorite||(foods[s.species]||foods.cat)[stableHash(s.id)%3];
  s.routine??={enabled:false,timezone:'Europe/Kyiv',bed:23,wake:9,meal1:10,meal2:18,play:20,samples:{}};s.routine.samples??={};s.routine.locked??={};s.adventureAt??=now+(10+stableHash(s.id)%21)*60000;
  ensureCozy(s,now);ensurePlayroom(s);ensureDaily(s,now);ensureWorld(s);s.appearance??={mark:['spot','stripe','star'][stableHash(s.id)%3],color:['#b57a7d','#89aeb4','#baa15a'][stableHash(s.id+'color')%3]};return s;
 }

@@ -55,7 +55,8 @@ export function drawLegacyYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduc
 }
 
 export function drawYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduced=false){
- const [scale,offsetY]=age==='Малюк'?[.48,42]:age==='Дитина'?[.7,24]:[.85,12];
- const proxy={fillStyle:'',fillRect(x,y,w,h){ctx.fillStyle=this.fillStyle==='#e5a0a6'?'#dfa0a8':this.fillStyle;const left=Math.round(64+(x-64)*scale),top=Math.round(offsetY+y*scale);ctx.fillRect(left,top,Math.max(1,Math.round(w*scale)),Math.max(1,Math.round(h*scale)));}};
+ const [scale,offsetY]=age==='Малюк'?[.36,52]:age==='Дитина'?[.60,32]:[.84,12];
+ const wide=age==='Малюк'?.42:age==='Дитина'?.65:.75;
+ const proxy={fillStyle:'',fillRect(x,y,w,h){ctx.fillStyle=this.fillStyle==='#e5a0a6'?'#dfa0a8':this.fillStyle;const left=Math.round(64+(x-64)*wide),top=Math.round(offsetY+y*scale);ctx.fillRect(left,top,Math.max(1,Math.round(w*wide)),Math.max(1,Math.round(h*scale)));}};
  drawPetArt(proxy,id,frame,{sleeping,portraitStage:age},reduced);
 }

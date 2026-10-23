@@ -1,13 +1,19 @@
+import {newPets} from './new-pets.js';
 import {drawItemVariant,drawToyVariant,drawDesignAccent} from './item-designs.js';
 import {drawMood} from './room-mood.js';
 // Integer-coordinate 16-bit-style sprites: small palette, strong silhouettes.
 const ink='#304d43',cream='#fff0d1',white='#f7f3df',pink='#e5a0a6';
 export function drawPetArt(c,id,frame=0,s=null,reduced=false){
- const palettes={cat:['#b8a0d2','#927aaf'],chicken:['#efd06e','#c5a34f'],corgi:['#dea36c','#ba7d4f'],frog:['#a6c17b','#789759'],bear:['#bb9477','#916e55'],dog:[white,'#d6d5bc'],dino:['#8db7a0','#65947e'],bunny:['#e7bdca','#be94a8']};
+ const palettes={...Object.fromEntries(Object.entries(newPets).map(([id,p])=>[id,[p.color,p.shade]])),cat:['#b8a0d2','#927aaf'],chicken:['#efd06e','#c5a34f'],corgi:['#dea36c','#ba7d4f'],frog:['#a6c17b','#789759'],bear:['#bb9477','#916e55'],dog:[white,'#d6d5bc'],dino:['#8db7a0','#65947e'],bunny:['#e7bdca','#be94a8']};
  const [body,shade]=palettes[id]||palettes.cat,r=(x,y,w,h,color=ink)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
  const shape=(x,y,w,h,col)=>{const b=Math.min(7,Math.floor(w/5),Math.floor(h/4));r(x+b,y,w-2*b,h);r(x+2,y+2,w-4,h-4);r(x,y+b,w,h-2*b);r(x+b,y+2,w-2*b,h-4,col);r(x+Math.min(4,Math.floor(w/3)),y+Math.min(4,Math.floor(h/3)),Math.max(1,w-8),Math.max(1,h-8),col);r(x+2,y+b,w-4,h-2*b,col);};
  const asleep=s?.sleeping||s?.napping,blink=asleep||(!reduced&&frame%4100<140);
  // Ears, crests and tails stay outside the face; neckwear anchors remain unchanged.
+ if(id==='pig'){shape(38,30,16,17,body);shape(74,30,16,17,body);r(42,34,8,9,pink);r(78,34,8,9,pink);r(86,68,8,3,shade);r(91,62,3,9,shade);r(86,61,8,3,shade);}
+ if(id==='sheep'){shape(32,42,18,12,'#94755a');shape(78,42,18,12,'#94755a');}
+ if(id==='fox'){shape(39,21,16,29,body);shape(73,21,16,29,body);r(44,27,6,13,cream);r(78,27,6,13,cream);shape(81,62,24,20,body);r(97,62,8,12,cream);}
+ if(id==='monkey'){shape(29,38,24,23,body);shape(76,38,24,23,body);r(34,43,13,12,'#dfb38c');r(81,43,13,12,'#dfb38c');r(85,68,15,4,shade);r(97,56,4,16,shade);r(88,54,12,4,shade);r(88,55,4,10,shade);}
+ if(id==='penguin'){shape(35,58,15,22,shade);shape(79,58,15,22,shade);}
  if(id==='cat'){r(42,28,13,19);r(72,28,13,19);r(45,32,8,12,body);r(74,32,8,12,body);r(47,34,4,7,pink);r(76,34,4,7,pink);r(84,64,7,15);r(88,57,5,12);r(85,65,3,10,body);}
  if(id==='bunny'){shape(46,13,11,30,body);shape(71,10,11,33,body);r(50,18,3,19,pink);r(75,15,3,21,pink);}
  if(id==='bear'){shape(38,30,16,16,body);shape(75,30,16,16,body);r(43,34,6,6,shade);r(80,34,6,6,shade);}
@@ -16,6 +22,12 @@ export function drawPetArt(c,id,frame=0,s=null,reduced=false){
  if(id==='chicken'){shape(53,26,9,16,'#c97766');shape(62,23,9,18,'#c97766');shape(70,29,8,12,'#c97766');}
  if(id==='dino'){r(80,37,7,8,'#547d68');r(84,47,7,9,'#547d68');r(86,58,8,8,'#547d68');r(82,69,16,8);r(88,65,11,8,body);}
  shape(46,60,36,23,body);r(50,73,28,7,shade);shape(41,38,46,33,body);r(45,60,38,8,shade);
+ if(id==='sheep'){shape(45,40,38,28,'#9f7856');for(let i=0;i<5;i++)shape(38+i*9,29+i%2*3,14,15,cream);r(48,71,32,5,cream);}
+ if(id==='monkey'){shape(45,40,38,29,'#e0b78e');r(56,70,17,10,'#dfb38c');}
+ if(id==='fox'){shape(43,52,23,16,cream);shape(64,52,23,16,cream);r(56,69,17,10,cream);}
+ if(id==='pig'){shape(51,54,27,14,'#d68c95');r(56,59,4,4,ink);r(69,59,4,4,ink);r(60,66,8,1,ink);}
+ if(id==='duck'){shape(37,54,12,20,shade);shape(79,54,12,20,shade);r(55,54,20,8,'#cf934a');r(52,57,26,4,'#cf934a');r(57,58,16,1,'#8f693f');}
+ if(id==='penguin'){shape(45,42,18,23,cream);shape(65,42,18,23,cream);shape(49,66,30,15,cream);r(60,55,9,5,'#cf934a');r(62,60,5,3,'#cf934a');}
  if(id==='corgi'){r(61,40,7,20,cream);shape(51,53,27,16,cream);r(55,69,20,10,cream);}
  if(id==='bear'||id==='bunny'){shape(53,53,23,15,cream);r(56,69,17,10,cream);}
  if(id==='dog'){r(44,40,12,11,ink);r(75,41,10,12,ink);r(48,68,9,11,ink);r(72,71,7,8,ink);shape(51,54,28,15,pink);r(54,56,22,3,'#efb9ba');r(57,60,3,3);r(70,60,3,3);r(61,66,7,1);}
@@ -23,13 +35,14 @@ export function drawPetArt(c,id,frame=0,s=null,reduced=false){
  if(id==='chicken'){shape(38,51,10,19,shade);shape(80,51,10,19,shade);r(57,54,15,5,'#c48d4e');r(60,59,9,3,'#c48d4e');r(62,62,5,5,'#c97766');}
  if(id==='dino'){r(55,69,20,9,cream);r(80,54,6,8,shade);}
  if(id!=='frog'){for(const x of [52,72]){if(blink)r(x-1,48,7,2);else{r(x,46,5,7);r(x,46,2,2,white);}}}
- if(!['dog','frog','chicken'].includes(id)){r(62,55,5,3,id==='bunny'?pink:ink);r(64,58,1,4);r(60,62,4,2);r(65,62,4,2);}
+ if(!['dog','frog','chicken','pig','duck','penguin'].includes(id)){r(62,55,5,3,id==='bunny'?pink:ink);r(64,58,1,4);r(60,62,4,2);r(65,62,4,2);}
  if(id==='cat'){for(const y of [56,61]){r(35,y,13,1);r(80,y,13,1);}}
  if(!['dog','chicken'].includes(id)){r(47,55,4,2,pink);r(78,55,4,2,pink);}
  // Separate paws, sole highlights and asymmetric idle footsteps.
  const step=asleep||reduced?0:Math.floor(frame/380)%2*2;
  shape(45,77,15,7+step,id==='dog'?ink:shade);shape(69,77,15,9-step,id==='dog'?ink:shade);
  if(id!=='dog'){r(49,80,7,2,body);r(73,80,7,2,body);}if(id==='chicken'){r(45,83,15,2,'#c48d4e');r(69,83,15,2,'#c48d4e');}
+ if(id==='duck'||id==='penguin'){r(46,82,16,5,'#c78d43');r(67,82,16,5,'#c78d43');}
 }
 
 export function drawRoomArt(c,s,frame=0,reduced=false,night=false,pos={bed:8,bowl:156,plant:170,tent:124,shelf:82}){

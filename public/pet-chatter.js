@@ -1,7 +1,9 @@
+import {newPets} from './new-pets.js';
 import {stableHash} from './traits.js';
 import {weatherAt} from './weather.js';
 const mix=n=>{n^=n>>>16;n=Math.imul(n,0x7feb352d);n^=n>>>15;n=Math.imul(n,0x846ca68b);return (n^(n>>>16))>>>0;};
 const voices={
+ ...Object.fromEntries(Object.entries(newPets).map(([id,p])=>[id,p.songs])),
  dog:['Муу-му-муу… сіно пахне, я росту.','Му-у, му-у… людину вкраду й обійму.','Муу-му… танець маленької корівки!'],
  cat:['Ня-ня-на… ця кімната вже моя.','Мрр-на-на… не чіпай мого хвоста.','Няв-няв… лапки самі танцюють.'],
  chicken:['Ко-ко-ко… зернятко недалеко.','Куд-кудах, ко-ко… обійми мені легко.','Ко-ко! Пір’ячко в ритм, людино!'],

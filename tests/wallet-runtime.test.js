@@ -1,3 +1,4 @@
+import {newPets} from '../public/new-pets.js';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
@@ -30,6 +31,7 @@ test('SQLite Workers: authenticated owner mint, pocket, gift, retries, legacy co
  r=await call('100','wallet',{command:'gift',amount:40,op:crypto.randomUUID()});const raceCode=r.wallet.gifts[0].code;
  const race=await Promise.all(['200','300'].map(id=>mf.dispatchFetch('https://game.test/api/wallet',{method:'POST',headers:{'X-Telegram-Init-Data':auth(id)},body:JSON.stringify({command:'redeem',code:raceCode})})));assert.deepEqual(race.map(x=>x.status).sort(),[200,400]);
  r=await call('100','wallet',{command:'status'});assert.equal(r.wallet.gifts[0].status,'redeemed');
+ for(const [i,[species,config]]of Object.entries(newPets).entries()){const user=String(500+i);const adopted=await call(user,'adopt',{species});assert.equal(adopted.state.species,species);const adult=fresh(species,Date.now()-life.teen-3600000);adult.updated=Date.now();adult.hunger=40;await seed(user,{pet:adult});const fed=await call(user,'action',{action:'feed',food:config.favorite});assert.equal(fed.state.favoriteFood,config.favorite);assert.ok(fed.state.hunger>40);const joined=await call(user,'sandbox',{command:'join'});assert.ok(!joined.error);}
  const p=makePet();p.cozy.hide={spot:'box',expires:Date.now()+300000};p.lively={secret:{kind:'box',at:Date.now(),until:Date.now()+300000}};await seed('100',{pet:p});r=await call('100','state',{roomReturn:true});assert.equal(r.state.cozy.hide,null);assert.equal(r.state.lively.secret,null);
  }finally{await mf.dispose();}
 });

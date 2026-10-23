@@ -1,5 +1,11 @@
 // Coordinates refer to the visible, cropped sprite. Tails and ears are not torso centers.
 const anatomy={
+ pig:{cx:.50,eyes:.42,neck:.69,top:.66,width:.58,height:.24,hat:.06,hands:[[.23,.80,.14,.13],[.63,.80,.14,.13]]},
+ sheep:{cx:.50,eyes:.43,neck:.66,top:.64,width:.59,height:.26,hat:.02,hands:[[.22,.80,.16,.14],[.62,.80,.16,.14]]},
+ fox:{cx:.43,eyes:.44,neck:.66,top:.64,width:.55,height:.25,hat:.08,hands:[[.18,.80,.13,.14],[.53,.80,.13,.14]]},
+ monkey:{cx:.48,eyes:.43,neck:.64,top:.62,width:.50,height:.27,hat:.03,hands:[[.25,.76,.14,.15],[.58,.76,.14,.15]]},
+ duck:{cx:.50,eyes:.41,neck:.65,top:.63,width:.60,height:.27,hat:.02,hands:[[.14,.67,.18,.15],[.68,.67,.18,.15]]},
+ penguin:{cx:.50,eyes:.43,neck:.64,top:.62,width:.59,height:.27,hat:.03,hands:[[.11,.65,.17,.17],[.73,.65,.17,.17]]},
  dog:{cx:.50,eyes:.42,neck:.69,top:.65,width:.62,height:.25,hat:.02,hands:[[.26,.80,.12,.12],[.63,.80,.12,.12]]},
  cat:{cx:.46,eyes:.43,neck:.66,top:.64,width:.60,height:.26,hat:.06,hands:[[.25,.80,.12,.13],[.56,.80,.12,.13]]},
  chicken:{cx:.50,eyes:.41,neck:.64,top:.61,width:.68,height:.25,hat:.04,hands:[]},
@@ -13,7 +19,7 @@ export function wardrobeAnatomy(species,age,sheet='adults'){
  const base=anatomy[species]||anatomy.cat,a={...base,hands:base.hands.map(r=>[...r])};
  if(age==='Малюк'||age==='Дитина'){
   // Juvenile heads are larger, leaving less room below their muzzle.
-  const baby=age==='Малюк',young={dog:[.45,.72,.70,.20],cat:[.45,.71,.70,.21],chicken:[.42,.68,.67,.22],frog:[.20,.64,.63,.25],corgi:[.45,.71,.70,.21],bear:[.43,.67,.66,.24],dino:[.43,.65,.63,.27],bunny:[.52,.75,.74,.18]}[species]||[.45,.70,.69,.21];
+  const baby=age==='Малюк',young={pig:[.43,.70,.68,.23],sheep:[.44,.69,.67,.24],fox:[.44,.68,.66,.24],monkey:[.43,.66,.64,.26],duck:[.43,.67,.65,.26],penguin:[.44,.66,.64,.26],dog:[.45,.72,.70,.20],cat:[.45,.71,.70,.21],chicken:[.42,.68,.67,.22],frog:[.20,.64,.63,.25],corgi:[.45,.71,.70,.21],bear:[.43,.67,.66,.24],dino:[.43,.65,.63,.27],bunny:[.52,.75,.74,.18]}[species]||[.45,.70,.69,.21];
   [a.eyes,a.neck,a.top,a.height]=young;a.width*=baby?.90:.96;
  }
  if(sheet==='happy'){a.width*=.94;a.hands=[];}
