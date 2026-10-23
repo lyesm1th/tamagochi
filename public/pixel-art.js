@@ -40,7 +40,7 @@ export function drawRoomArt(c,s,frame=0,reduced=false,night=false,pos={bed:8,bow
  drawMood(c,s);outline(14,8,43,43,wood);r(18,12,35,35,night?'#456775':'#a3c5c3');r(18,37,35,10,night?'#698775':'#87a47a');r(34,12,3,35,darkWood);r(18,28,35,3,darkWood);r(18,12,15,2,'#d1e3cc');r(42,16,7,5,night?'#e4dfad':'#f1d791');
  if(goods.curtains){r(9,7,6,44,'#eedcba');r(55,7,6,44,'#eedcba');r(9,7,52,3,darkWood);r(11,28,4,3,wood);r(55,28,4,3,wood);}
  // Storage box stays a recognizable landmark for hiding.
- outline(4,123,25,15,lightWood);r(5,121,23,4,wood);r(14,126,5,3,'#decb95');
+ if(s?.room?.box!==false){outline(4,123,25,15,lightWood);r(5,121,23,4,wood);r(14,126,5,3,'#decb95');}
  if(owned('rug')){r(59,121,76,17,'#718f72');r(63,123,68,12,'#eee0b7');for(let x=69;x<130;x+=15){r(x,127,5,2,'#9bb28b');r(x+2,125,1,6,'#9bb28b');}}
  if(owned('bed')){
  const x=pos.bed,variant=v('bed'),broken=wear('bed')<=0,quilt=['#b3a6c5','#d4a38d','#aacbc1'][variant];

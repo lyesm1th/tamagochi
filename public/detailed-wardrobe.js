@@ -1,13 +1,13 @@
 // Coordinates refer to the visible, cropped sprite. Tails and ears are not torso centers.
 const anatomy={
- dog:{cx:.50,eyes:.42,neck:.69,top:.65,width:.47,height:.24,hat:.02,hands:[[.26,.80,.12,.12],[.63,.80,.12,.12]]},
- cat:{cx:.46,eyes:.43,neck:.66,top:.64,width:.50,height:.25,hat:.06,hands:[[.25,.80,.12,.13],[.56,.80,.12,.13]]},
- chicken:{cx:.50,eyes:.41,neck:.64,top:.61,width:.54,height:.25,hat:.04,hands:[]},
- frog:{cx:.49,eyes:.19,neck:.58,top:.58,width:.48,height:.29,hat:.00,hands:[[.16,.70,.14,.15],[.68,.70,.14,.15]]},
- corgi:{cx:.48,eyes:.44,neck:.67,top:.65,width:.50,height:.24,hat:.11,hands:[[.24,.80,.12,.12],[.60,.80,.12,.12]]},
- bear:{cx:.49,eyes:.41,neck:.61,top:.60,width:.52,height:.27,hat:.04,hands:[[.12,.65,.15,.15],[.72,.65,.15,.15]]},
- dino:{cx:.39,eyes:.40,neck:.60,top:.57,width:.52,height:.31,hat:.07,hands:[[.12,.64,.17,.12],[.46,.64,.17,.12]]},
- bunny:{cx:.49,eyes:.53,neck:.73,top:.71,width:.53,height:.20,hat:.29,hands:[[.22,.76,.18,.14],[.59,.76,.18,.14]]}
+ dog:{cx:.50,eyes:.42,neck:.69,top:.65,width:.62,height:.25,hat:.02,hands:[[.26,.80,.12,.12],[.63,.80,.12,.12]]},
+ cat:{cx:.46,eyes:.43,neck:.66,top:.64,width:.60,height:.26,hat:.06,hands:[[.25,.80,.12,.13],[.56,.80,.12,.13]]},
+ chicken:{cx:.50,eyes:.41,neck:.64,top:.61,width:.68,height:.25,hat:.04,hands:[]},
+ frog:{cx:.49,eyes:.19,neck:.58,top:.58,width:.59,height:.29,hat:.00,hands:[[.16,.70,.14,.15],[.68,.70,.14,.15]]},
+ corgi:{cx:.48,eyes:.44,neck:.67,top:.65,width:.63,height:.25,hat:.11,hands:[[.24,.80,.12,.12],[.60,.80,.12,.12]]},
+ bear:{cx:.49,eyes:.41,neck:.61,top:.60,width:.67,height:.28,hat:.04,hands:[[.12,.65,.15,.15],[.72,.65,.15,.15]]},
+ dino:{cx:.39,eyes:.40,neck:.60,top:.57,width:.60,height:.31,hat:.07,hands:[[.12,.64,.17,.12],[.46,.64,.17,.12]]},
+ bunny:{cx:.49,eyes:.53,neck:.73,top:.71,width:.62,height:.20,hat:.29,hands:[[.22,.76,.18,.14],[.59,.76,.18,.14]]}
 };
 export function wardrobeAnatomy(species,age,sheet='adults'){
  const base=anatomy[species]||anatomy.cat,a={...base,hands:base.hands.map(r=>[...r])};

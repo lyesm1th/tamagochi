@@ -10,7 +10,7 @@ import {foodFor} from './pet-personality.js';
 import {isNight,itemStatus} from './cozy-life.js';
 import {sceneFurniture} from './cozy-effects.js';
 import {careForm,weatherAt} from './little-world.js';
-const sprites=new Map();
+const sprites=new Map(),dressedSprites=new Map();
 const images=new Map();let loaded=false,loading=null;
 export const detailedReady=()=>loaded;
 export function loadDetailedAssets(){if(typeof Image==='undefined')return Promise.resolve(false);if(loading)return loading;loading=Promise.all(Object.entries(detailedArt).map(([name,asset])=>new Promise((resolve,reject)=>{const image=new Image(),timer=setTimeout(()=>reject(Error('art timeout '+name)),20000);image.onload=()=>{clearTimeout(timer);try{images.set(name,image);const grid=name==='props'?[128,128]:name==='furniture'?[192,asset.height/4]:[192,192];if(!['walks'].includes(name))for(const [key,rect]of Object.entries(asset.cells))sprites.set(name+':'+key,isolateSprite(image,rect,grid));resolve();}catch(error){reject(error);}};image.onerror=()=>{clearTimeout(timer);reject(Error('art missing '+name));};image.src=asset.src;}))).then(()=>loaded=true).catch(()=>{loading=null;return false;});return loading;}
@@ -28,7 +28,20 @@ function sheetOf(s,effect,now){const age=ageOf(s);if(s?.sleeping||s?.napping)ret
 const ageScale=age=>age==='Малюк'?.55:age==='Дитина'?.73:age==='Підліток'?.88:1;
 // Clothing positions are normalized to each atlas sprite, not the old rectangular body.
 export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age);return {eyes:a.eyes,neck:a.neck,torso:a.top+a.height/2,head:a.hat,age};}
-function clothes(c,s,box,age,sheet){const layout=wardrobeLayout(s.species,age,sheet,box,s.cozy?.wearing,s.sleeping||s.napping);for(const p of layout.pieces){stamp(c,'clothing',p.id,p.x,p.y,p.w,p.h);if(itemStatus(s,p.id).wear<30){shade(c,p.x+p.w*.72,p.y+p.h*.5,Math.max(1,p.w*.07),Math.max(1,p.h*.12),'#a29886');}}const sprite=sprites.get(sheet+':'+s.species);if(sprite&&layout.hands.length){c.save();c.imageSmoothingEnabled=false;for(const hand of layout.hands){const sx=(hand.x-box.x)/box.w*sprite.width,sy=(hand.y-box.y)/box.h*sprite.height;c.drawImage(sprite,sx,sy,hand.w/box.w*sprite.width,hand.h/box.h*sprite.height,hand.x,hand.y,hand.w,hand.h);}c.restore();}}
+function clothes(c,s,box,age,sheet){const layout=wardrobeLayout(s.species,age,sheet,box,s.cozy?.wearing,s.sleeping||s.napping);for(const p of layout.pieces){if(p.slot==='body'){const layer=document.createElement('canvas');layer.width=c.canvas.width;layer.height=c.canvas.height;const g=layer.getContext('2d');g.imageSmoothingEnabled=false;stamp(g,'clothing',p.id,p.x,p.y,p.w,p.h);g.globalCompositeOperation='destination-in';stamp(g,sheet,s.species,box.x,box.y,box.w,box.h);c.drawImage(layer,0,0);}else stamp(c,'clothing',p.id,p.x,p.y,p.w,p.h);if(itemStatus(s,p.id).wear<30){shade(c,p.x+p.w*.72,p.y+p.h*.5,Math.max(1,p.w*.07),Math.max(1,p.h*.12),'#a29886');}}const sprite=sprites.get(sheet+':'+s.species);if(sprite&&layout.hands.length){c.save();c.imageSmoothingEnabled=false;for(const hand of layout.hands){const sx=(hand.x-box.x)/box.w*sprite.width,sy=(hand.y-box.y)/box.h*sprite.height;c.drawImage(sprite,sx,sy,hand.w/box.w*sprite.width,hand.h/box.h*sprite.height,hand.x,hand.y,hand.w,hand.h);}c.restore();}}
+// Bake the pet, fitted clothes and foreground paws into one sprite before scene movement.
+// Room, portraits, sandbox and games all draw this same dressed bitmap.
+export function dressedSprite(pet,id,age,sheet){
+ const base=sprites.get(sheet+':'+id);if(!base)return null;
+ const wearing=pet.cozy?.wearing||{},key=JSON.stringify([id,age,sheet,!!(pet.sleeping||pet.napping),...['body','neck','head','eyes'].map(slot=>[wearing[slot],itemStatus(pet,wearing[slot]).wear<30])]);
+ if(dressedSprites.has(key))return dressedSprites.get(key);
+ const pad=Math.ceil(base.height*.25),cv=document.createElement('canvas');cv.width=base.width+pad*2;cv.height=base.height+pad*2;
+ const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(base,pad,pad);
+ clothes(ctx,{...pet,species:id},{x:pad,y:pad,w:base.width,h:base.height},age,sheet);
+ const result={image:cv,pad,width:base.width,height:base.height};dressedSprites.set(key,result);
+ if(dressedSprites.size>256)dressedSprites.delete(dressedSprites.keys().next().value);
+ return result;
+}
 function youngEyelids(c,s,box,age){if(!['Малюк','Дитина','Підліток'].includes(age)||!s.sleeping&&!s.napping)return;const {x,y,w,h}=box,eye=detailedAnchors(s.species,age).eyes,col={dog:'#f8eddb',cat:'#cbb1d9',chicken:'#efd077',frog:'#b4ce82',corgi:'#f5e4cb',bear:'#b98b6c',dino:'#9fbea0',bunny:'#efc0ce'}[s.species];for(const xx of [.33,.67]){shade(c,x+w*(xx-.07),y+h*(eye-.04),w*.14,h*.085,col);shade(c,x+w*(xx-.055),y+h*(eye+.005),w*.11,Math.max(1,h*.014),'#344c43');}}
 function sparkles(c,x,y,frame,reduced){for(let i=0;i<3;i++){const yy=y-i*12-(reduced?0:Math.floor(frame/300+i)%3*3);shade(c,x+i*13,yy,2,7,'#dfbb66');shade(c,x+i*13-2,yy+2,6,2,'#dfbb66');}}
 function dreamCloud(c,x,y,frame,reduced){c.save();c.fillStyle='#f5f0db';c.strokeStyle='#b7bea4';c.lineWidth=1;const bob=reduced?0:Math.sin(frame/700);for(const [dx,dy,r]of [[10,39,2],[16,33,3]]){c.beginPath();c.arc(x+dx,y+dy+bob,r,0,Math.PI*2);c.fill();}c.beginPath();c.moveTo(x+11,y+30);c.bezierCurveTo(x-4,y+29,x-1,y+13,x+10,y+12);c.bezierCurveTo(x+8,y-1,x+29,y-3,x+33,y+7);c.bezierCurveTo(x+47,y-1,x+60,y+9,x+56,y+18);c.bezierCurveTo(x+69,y+30,x+51,y+40,x+42,y+33);c.bezierCurveTo(x+31,y+41,x+18,y+35,x+11,y+30);c.fill();c.stroke();c.restore();}
@@ -49,7 +62,7 @@ export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=fals
  if(age==='Яєчко'){const wobble=reduced?0:Math.sin(frame/230)*.05;prop(c,'egg',x-height*.23,feet-height*.60,height*.46,height*.60,{rotate:wobble});return;}
  const sheet=sheetOf(pet,effect,Date.now()),rect=detailedArt[sheet]?.cells?.[id];if(!rect)return;const sprite=sprites.get(sheet+':'+id),ratio=sprite?sprite.width/sprite.height:rect[2]/rect[3],w=Math.min(height*1.3,height*ratio),h=height,box={x:x-w/2,y:feet-h,w,h};
  // A single atlas style is used everywhere, including albums and the sandbox.
- stamp(c,sheet,id,box.x,box.y,w,h,{filter:age==='Старенький'?'grayscale(.45)':undefined});clothes(c,pet,box,age,sheet);
+ const dressed=dressedSprite(pet,id,age,sheet);if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький')c.filter='grayscale(.45)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
  if(pet.appearance){const col=pet.appearance.color||'#bba16b';shade(c,box.x+w*.25,box.y+h*.79,3,3,col);if(pet.appearance.mark==='stripe')shade(c,box.x+w*.25,box.y+h*.83,4,1,col);}
  if(!pet.sleeping&&!pet.napping&&careForm(pet)==='radiant')sparkles(c,box.x-8,box.y+h*.2,frame,reduced);if(careForm(pet)==='scruffy'){shade(c,box.x+w*.72,box.y+h*.82,4,3,'#9a8a70');shade(c,box.x+w*.76,box.y+h*.86,3,2,'#9a8a70');}
  effects(c,pet,box,effect,frame,reduced);
@@ -60,7 +73,7 @@ function furniture(c,s,id,rect,frame,reduced){const [x,y,w,h]=rect,wear=s.cozy?.
  if(wear<65){shade(c,x+w*.54,y+h*.5,2,8,'#6f5847');shade(c,x+w*.56,y+h*.56,4,2,'#6f5847');}if(wear<30){prop(c,'debris',x+w*.4,y+h-4,w*.4,16);if(['bed','cushion','tent','rug','curtains'].includes(id))prop(c,'cotton',x+w*.12,y+h+4,18,12);}
  if(s.living?.motion?.item===id&&s.living.motion.until>Date.now()&&!reduced){const b=Math.floor(frame/180)%2;if(s.living.motion.kind==='gentle')sparkles(c,x+w*.5,y,frame,reduced);if(id==='fountain'||id==='bowl'){shade(c,x+w*.3,y-3-b*5,2,4,'#bad8d9');shade(c,x+w*.7,y-7+b*4,2,4,'#bad8d9');}if(id==='mirror')prop(c,'heart',x+w*.35,y+h*.35,14);}
 }
-export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){background(c,'empty-room');drawMood(c,s,384,288,true);const pos=layout(s),owned=id=>s?.room?.[id]||s?.cozy?.owned?.[id];stamp(c,'furniture','window',27,17,103,98);shade(c,65,255,48,26,'#9e805e');shade(c,67,257,44,22,'#c6ab83');shade(c,67,257,12,22,'#b0946f');shade(c,84,257,8,22,'#e0caa1');shade(c,64,251,50,7,'#d3bc95');shade(c,103,265,6,3,'#876f54');
+export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){background(c,'empty-room');drawMood(c,s,384,288,true);const pos=layout(s),owned=id=>s?.room?.[id]||s?.cozy?.owned?.[id];stamp(c,'furniture','window',27,17,103,98);if(s?.room?.box!==false){shade(c,65,255,48,26,'#9e805e');shade(c,67,257,44,22,'#c6ab83');shade(c,67,257,12,22,'#b0946f');shade(c,84,257,8,22,'#e0caa1');shade(c,64,251,50,7,'#d3bc95');shade(c,103,265,6,3,'#876f54');}
  for(const id of ['rug','curtains','shelf','mirror','bed','tent','plant','lamp','cushion','post','fountain','bowl','toybox'])if(owned(id))furniture(c,s,id,pos[id],frame,reduced);
  // Current mechanics remain visible: poop, messes, handmade items, souvenirs, stories.
  if(s?.playroom?.crafted?.stoneArt){shade(c,215,14,43,36,'#947354');for(let i=0;i<9;i++)shade(c,220+i%3*11,19+Math.floor(i/3)*9,7,6,['#b7c8b0','#d6b59d','#b5a0c3'][i%3]);}

@@ -25,3 +25,4 @@ test('two isolated pet rooms share the playground, preserve canonical appearance
 });
 
 test('all three linked stories advance only on later days and survive vacation',async()=>{const {performCompanion}=await import('../public/companionship.js');let s=pet(),clock=now;for(let chapter=0;chapter<3;chapter++){for(let step=1;step<=3;step++){s=livingAction(s,'story',{},clock).state;assert.equal(s.living.story.chapter,chapter);assert.equal(s.living.story.step,step);clock+=24*HOUR;}if(chapter<2){s=livingAction(s,'story',{},clock).state;assert.equal(s.living.story.step,0);}}assert.ok(s.living.finished[0]);s=performCompanion(s,'vacationStart',{},clock).state;const before=s.living.story.at;s=performCompanion(s,'vacationResume',{},clock+24*HOUR).state;assert.equal(s.living.story.at,before+24*HOUR);});
+test('need for cleaning never pins the pet to the box',()=>{const s=pet();s.hunger=s.happy=s.health=s.energy=100;s.clean=20;assert.equal(needs(s).pose,'rug');});

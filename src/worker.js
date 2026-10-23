@@ -50,7 +50,7 @@ export class PetRoom{
  const path=new URL(req.url).pathname;if(path==='/internal/bank')return json(await bankAction(this.ctx.storage,req.headers.get('X-Pet-Owner'),body));if(path==='/internal/sandbox')return json(await sandboxFetch(this.ctx.storage,req.headers.get('X-Pet-Owner'),body));let s=tick(await this.ctx.storage.get('pet'));if(s?.dead)await this.archive(s);let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
  const owner=req.headers.get('X-Pet-Owner'),app=req.headers.get('X-Pet-App');
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
- if(path==='/api/wallet'){if(s)await this.ctx.storage.put('pet',s);const bank=this.env.PETS.get(this.env.PETS.idFromName('shared-wallet-v1'));try{const result=await walletAction(this.ctx.storage,owner,String(this.env.OWNER_TELEGRAM_ID||'')===owner,body,async payload=>{const response=await bank.fetch(new Request('https://pet/internal/bank',{method:'POST',headers:{'X-Pet-Owner':owner},body:JSON.stringify(payload)}));return response.json();});return json(result,result.error?400:200);}catch{return json({error:'Не вдалося завершити переказ. Відкрий гаманець ще раз — незавершений подарунок відновиться.'},503);}}
+ if(path==='/api/wallet'){if(s)await this.ctx.storage.put('pet',s);const bank=this.env.PETS.get(this.env.PETS.idFromName('shared-wallet-v1'));try{const result=await walletAction(this.ctx.storage,owner,String(this.env.OWNER_TELEGRAM_ID||'').trim()===owner,body,async payload=>{const response=await bank.fetch(new Request('https://pet/internal/bank',{method:'POST',headers:{'X-Pet-Owner':owner},body:JSON.stringify(payload)}));return response.json();});if(result.wallet)result.wallet.ownerConfigured=!!String(this.env.OWNER_TELEGRAM_ID||'').trim();return json(result,result.error?400:200);}catch(error){console.error('Wallet operation failed',body.command,error.name,error.message);return json({error:'Не вдалося завершити переказ. Відкрий гаманець ще раз — незавершений подарунок відновиться.'},503);}}
  if(path==='/api/sandbox'){
  if(!s||s.dead||s.vacation||s.sleeping||s.napping||Date.now()-s.born<180000)return json({error:'На майданчик підемо після сну й вилуплення.'},400);
  if(!['join','poll','leave','hello','play','tease','avoid'].includes(body.command))return json({error:'Невідома дія.'},400);
@@ -82,7 +82,7 @@ export class PetRoom{
  if(s&&!s.dead)return json({error:'У тебе вже є друг.'},409);
  if(!species.some(p=>p.id===body.species))return json({error:'Невідомий вид'},400);
  if(s?.dead)await this.archive(s);s=fresh(body.species);prefs.pendingAt=0;if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'У яйці хтось ворушиться. Годинник налаштовано, чекаємо 3 хвилини.'};
- }else if(path==='/api/state'){s=tick(s);const greeting=s&&!s.dead?visit(s,Date.now(),body.timezone):null;const story=s&&!s.dead?wakeStory(s):null;result={state:s||null,greeting:story||greeting};}
+ }else if(path==='/api/state'){s=tick(s);if(s&&body.roomReturn){if(s.cozy)s.cozy.hide=null;if(s.lively)s.lively.secret=null;}const greeting=s&&!s.dead?visit(s,Date.now(),body.timezone):null;const story=s&&!s.dead?wakeStory(s):null;result={state:s||null,greeting:story||greeting};}
  else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action,Date.now(),{game:body.game,food:body.food});s=result.state||s;}
  else return json({error:'Not found'},404);
  if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
