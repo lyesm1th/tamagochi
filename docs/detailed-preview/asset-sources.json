@@ -1,0 +1,15 @@
+{
+  "adults": "exec-606656dd-0fc1-4508-b509-3c0fc3357e82.png",
+  "babies": "exec-c63b6b99-c0c4-49a8-b140-cfc71f7a866d.png",
+  "children": "exec-a2dc6d2d-aa9e-49dd-84c8-54559274000c.png",
+  "teens": "exec-54c9a406-84cd-42bc-bbd3-8b54a8751540.png",
+  "sleep": "exec-f96d32af-d122-44c8-8a23-17a00f82e50e.png",
+  "happy": "exec-0a9a0e34-545a-41e1-aa4e-5b38408e8c0b.png",
+  "eating": "exec-f6dfb00a-8905-48e8-829f-c9842ad50d94.png",
+  "empty-room": "exec-af062915-7caa-4c25-80cd-e8b6b5756b70.png",
+  "furniture": "exec-04118ea6-681f-45db-9d6c-2d9d3cdf2a35.png",
+  "clothing": "exec-d60cd305-1a3c-4d1f-81c7-297a8faf395f.png",
+  "props": "exec-60c4f581-57d2-40dd-8c5c-05540d63d655.png",
+  "walks": "exec-a34aaae1-c22b-402d-a96e-e4f5339e6206.png",
+  "playground": "exec-28ca8da1-c5c7-4a78-b364-6b907bb9c76a.png"
+}

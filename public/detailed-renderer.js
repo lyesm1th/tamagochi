@@ -1,0 +1,92 @@
+import {detailedArt} from './detailed-art-manifest.js';
+import {stage} from './game.js';
+import {foodFor} from './pet-personality.js';
+import {isNight,itemStatus} from './cozy-life.js';
+import {sceneFurniture} from './cozy-effects.js';
+import {careForm,weatherAt} from './little-world.js';
+const images=new Map();let loaded=false,loading=null;
+export const detailedReady=()=>loaded;
+export function loadDetailedAssets(){if(typeof Image==='undefined')return Promise.resolve(false);if(loading)return loading;loading=Promise.all(Object.entries(detailedArt).map(([name,asset])=>new Promise((resolve,reject)=>{const image=new Image(),timer=setTimeout(()=>reject(Error('art timeout '+name)),20000);image.onload=()=>{clearTimeout(timer);images.set(name,image);resolve();};image.onerror=()=>{clearTimeout(timer);reject(Error('art missing '+name));};image.src=asset.src;}))).then(()=>loaded=true).catch(()=>false);return loading;}
+const active=(effect,now)=>effect&&effect.until>now?effect.kind:null;
+function stamp(c,sheet,key,x,y,w,h,options={}){const image=images.get(sheet),rect=detailedArt[sheet]?.cells?.[key];if(!image||!rect)return false;c.save();c.imageSmoothingEnabled=false;if(options.alpha!=null)c.globalAlpha=options.alpha;if(options.filter)c.filter=options.filter;if(options.rotate){c.translate(Math.round(x+w/2),Math.round(y+h/2));c.rotate(options.rotate);x=-w/2;y=-h/2;}c.drawImage(image,...rect,Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));c.restore();return true;}
+function background(c,key,w=384,h=288){const image=images.get(key);if(!image)return;c.imageSmoothingEnabled=false;c.drawImage(image,0,0,image.width,image.height,0,0,w,h);}
+function prop(c,key,x,y,size=36,h=size,options){return stamp(c,'props',key,x,y,size,h,options);}
+function shade(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
+
+const treasureMasks={cap:['0011111100','0112222110','1123333211','1232222321','1232222321','1123333211','0112222110','0011111100'],stone:['0001110000','0012221100','0122333210','1223333321','1222333321','0122222210','0011111100','0000000000'],feather:['0000011100','0000122210','0001233210','0012332100','0123321000','0123210000','0012100000','0001000000'],button:['0011111100','0122222210','1223323321','1221121121','1223323321','1221121121','0122222210','0011111100'],shell:['0011111100','0122222210','1232323231','1232323231','0123232310','0012323100','0001111000','0000000000']};
+function treasure(c,id,x,y,size=22){if(id==='leaf'){prop(c,'leaf',x,y,size);return;}const mask=treasureMasks[id]||treasureMasks.stone,pal={cap:['#67596d','#aa94b6','#d3bfdc'],stone:['#65716b','#9eafa4','#cdd5c7'],feather:['#8c795a','#c5b17e','#eee2b5'],button:['#856373','#bf94a7','#edd0d5'],shell:['#987966','#d7b29b','#f2ddbf']}[id]||['#65716b','#9eafa4','#cdd5c7'],unit=size/10;for(let yy=0;yy<mask.length;yy++)for(let xx=0;xx<10;xx++){const bit=Number(mask[yy][xx]);if(bit)shade(c,x+xx*unit,y+yy*unit,Math.ceil(unit),Math.ceil(unit),pal[bit-1]);}}
+
+function ageOf(s){return s?.portraitStage||s&&stage(s)||'Дорослий';}
+function sheetOf(s,effect,now){const age=ageOf(s);if(age==='Малюк')return 'babies';if(age==='Дитина')return 'children';if(age==='Підліток')return 'teens';if(s?.sleeping||s?.napping)return 'sleep';const kind=active(effect,now);return ['pet','ritual','gift','adventure'].includes(kind)?'happy':['feed','treat','cook'].includes(kind)?'eating':'adults';}
+const ageScale=age=>age==='Малюк'?.55:age==='Дитина'?.73:age==='Підліток'?.88:1;
+// Clothing positions are normalized to each atlas sprite, not the old rectangular body.
+export function detailedAnchors(species,age){const eye={dog:.32,cat:.35,chicken:.33,frog:.24,corgi:.38,bear:.38,dino:.36,bunny:.42}[species]||.35;return {eyes:eye,neck:species==='dog'?.64:species==='frog'?.62:.65,torso:.72,head:species==='bunny'?.26:species==='cat'||species==='corgi'?.18:.06,age};}
+function clothes(c,s,box,age){const worn=s?.cozy?.wearing||{},a=detailedAnchors(s.species,age),{x,y,w,h}=box;const piece=(id,xx,yy,ww,hh)=>{stamp(c,'clothing',id,xx,yy,ww,hh);if(itemStatus(s,id).wear<30){shade(c,xx+ww*.72,yy+hh*.5,5,4,'#a29886');shade(c,xx+ww*.72+1,yy+hh*.5,1,4,'#ddd4b4');}};
+ if(worn.body)piece(worn.body,x+w*.23,y+h*.66,w*.54,h*.29);
+ if(worn.neck)piece(worn.neck,x+w*.29,y+h*a.neck,w*.42,h*(worn.neck==='scarf'?.29:.18));
+ if(worn.head)piece(worn.head,x+w*.22,y+h*a.head-h*.18,w*.56,h*.27);
+ if(worn.eyes)piece(worn.eyes,x+w*.19,y+h*(a.eyes-.105),w*.62,h*.21);
+}
+function youngEyelids(c,s,box,age){if(!['Малюк','Дитина','Підліток'].includes(age)||!s.sleeping&&!s.napping)return;const {x,y,w,h}=box,eye=detailedAnchors(s.species,age).eyes,col={dog:'#f8eddb',cat:'#cbb1d9',chicken:'#efd077',frog:'#b4ce82',corgi:'#f5e4cb',bear:'#b98b6c',dino:'#9fbea0',bunny:'#efc0ce'}[s.species];for(const xx of [.33,.67]){shade(c,x+w*(xx-.07),y+h*(eye-.04),w*.14,h*.085,col);shade(c,x+w*(xx-.055),y+h*(eye+.005),w*.11,Math.max(1,h*.014),'#344c43');}}
+function sparkles(c,x,y,frame,reduced){for(let i=0;i<3;i++){const yy=y-i*12-(reduced?0:Math.floor(frame/300+i)%3*3);shade(c,x+i*13,yy,2,7,'#dfbb66');shade(c,x+i*13-2,yy+2,6,2,'#dfbb66');}}
+function effects(c,s,box,effect,frame,reduced){const now=Date.now(),kind=active(effect,now),{x,y,w,h}=box,beat=reduced?1:Math.floor(frame/220)%3;
+ if(s.sleeping||s.napping){for(let i=0;i<3;i++){c.fillStyle='#8d7baf';c.font=`bold ${10+i*3}px monospace`;c.fillText('z',x+w*.8+i*12,y+h*.2-i*15-(reduced?0:beat*2));}if(s.world?.dream){shade(c,x+w*.5,y-22,55,30,'#f3efd9');prop(c,s.world.dream.icon==='pond'?'water':['heart','fish','ball','berry','cookie','carrot','grain','grass'].includes(s.world.dream.icon)?s.world.dream.icon:'leaf',x+w*.6,y-20,26);}return;}
+ if(kind==='pet'||kind==='ritual'||kind==='gift'){for(let i=0;i<2;i++)prop(c,'heart',x-4+i*(w+3),y+h*.2-beat*8-i*8,23);}
+ if(kind==='feed'||kind==='treat'){const food=effect.food||foodFor(s.species,ageOf(s),kind),fw=food==='milk'?w*.30:w*.27,fh=food==='milk'?h*.38:h*.25;prop(c,food,x+w*.52-beat*2,y+h*.42+beat,fw,fh);if(food!=='milk')for(let i=0;i<3;i++)shade(c,x+w*.6-i*6,y+h*.63+beat*2+i*3,2,2,'#c39c66');}
+ if(kind==='medicine')prop(c,'medicine',x+w*.75,y+h*.55,27,34);
+ if(kind==='clean'||kind==='bath'){prop(c,'tub',x-w*.15,y+h*.7,w*1.3,h*.35);for(let i=0;i<7;i++){c.strokeStyle='#dce8df';c.lineWidth=1;c.strokeRect(Math.round(x+i*w/7),Math.round(y+h*.45-(i+beat)%3*8),4,4);}}
+ if(kind==='groom')prop(c,s.species==='frog'?'sponge':'brush',x+w*.67-beat*4,y+h*.22+beat*5,w*.35,h*.24);
+ if(kind==='blanket')prop(c,'blanket',x-w*.05,y+h*.63,w*1.1,h*.36);
+ if(kind==='cook'){prop(c,'pot',x+w*.65,y+h*.66,50,40);shade(c,x+w*.9,y+h*.54-beat*3,2,12,'#e8e6ca');}
+ if(kind==='party'){stamp(c,'clothing','crown',x+w*.28,y-18,w*.45,24);for(let i=0;i<10;i++)shade(c,x-w*.3+i*w*.17,y-15+(i+beat)%3*9,3,4,['#dfb7cb','#a9c48d','#e2c47e'][i%3]);prop(c,'cookie',x-w*.5,y+h*.75,34);}if(kind==='human'){prop(c,'blanket',x-w*.2,y+h*.8,w*1.4,h*.25);prop(c,'heart',x+w*.9,y+12,22);}if(kind==='treasure'||kind==='mischief'){treasure(c,s.daily?.lastFind?.id||'stone',x+w*.75,y+h*.4,25);}if(kind==='music'){prop(c,'music',x+w*.8,y+h*.7,38);for(let i=0;i<3;i++){shade(c,x+w*.85+i*9,y+h*.45-(i+beat)%3*7,2,9,'#9782b5');shade(c,x+w*.85+i*9-3,y+h*.45+7-(i+beat)%3*7,5,3,'#9782b5');}}
+ if(kind==='craft'||kind==='trick')sparkles(c,x-10,y+10,frame,reduced);
+ if(kind==='hide')prop(c,'heart',x+w*.8,y-5,18);
+}
+export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=false){const pet=s||{species:id,portraitStage:'Дорослий'},age=ageOf(pet);if(pet.dead){prop(c,'tombstone',x-height*.32,feet-height*.65,height*.64,height*.65);prop(c,'angel',x-height*.20,feet-height*.95,height*.40,height*.33);return;}
+ if(age==='Яєчко'){const wobble=reduced?0:Math.sin(frame/230)*.05;prop(c,'egg',x-height*.23,feet-height*.60,height*.46,height*.60,{rotate:wobble});return;}
+ const sheet=sheetOf(pet,effect,Date.now()),rect=detailedArt[sheet]?.cells?.[id];if(!rect)return;const ratio=rect[2]/rect[3],w=Math.min(height*1.3,height*ratio),h=height,box={x:x-w/2,y:feet-h,w,h};
+ // A single atlas style is used everywhere, including albums and the sandbox.
+ stamp(c,sheet,id,box.x,box.y,w,h,{filter:age==='Старенький'?'grayscale(.45)':undefined});youngEyelids(c,pet,box,age);clothes(c,pet,box,age);
+ if(pet.appearance){const col=pet.appearance.color||'#bba16b';shade(c,box.x+w*.25,box.y+h*.79,3,3,col);if(pet.appearance.mark==='stripe')shade(c,box.x+w*.25,box.y+h*.83,4,1,col);}
+ if(careForm(pet)==='radiant')sparkles(c,box.x-8,box.y+h*.2,frame,reduced);if(careForm(pet)==='scruffy'){shade(c,box.x+w*.72,box.y+h*.82,4,3,'#9a8a70');shade(c,box.x+w*.76,box.y+h*.86,3,2,'#9a8a70');}
+ effects(c,pet,box,effect,frame,reduced);
+}
+function layout(s){const p=sceneFurniture(s);return {box:[65,252,48,29],bed:[p.bed*2,132,112,88],bowl:[p.bowl*2,217,52,28],plant:[p.bed===126?126:p.plant*2-12,100,50,88],rug:[112,233,158,36],shelf:[p.shelf*2,24,84,58],lamp:[p.bed===70?62:132,91,38,91],tent:[p.tent*2,91,80,96],cushion:[145,223,52,28],fountain:[p.bowl===18?85:266,209,51,45],mirror:[291,15,42,70],post:[9,193,47,73],curtains:[18,9,117,110],toybox:[298,253,71,31]};}
+function furniture(c,s,id,rect,frame,reduced){const [x,y,w,h]=rect,wear=s.cozy?.items?.[id]?.wear??100,variant=s.living?.furniture?.[id]||0,key=id==='bed'?['bed','bedSoft','bedCloud'][variant]:id;
+ c.save();if(wear<=0){c.translate(x+w*.5,y+h);c.rotate((id==='shelf'||id==='mirror'?.16:-.12));stamp(c,'furniture',key,-w*.5,-h*.72,w,h*.72,{filter:'saturate(.65) brightness(.85)'});}else stamp(c,'furniture',key,x,y,w,h,{filter:wear<35?'saturate(.75) brightness(.9)':variant&&id!=='bed'?`hue-rotate(${variant===1?-18:18}deg)`:undefined});c.restore();
+ if(wear<65){shade(c,x+w*.54,y+h*.5,2,8,'#6f5847');shade(c,x+w*.56,y+h*.56,4,2,'#6f5847');}if(wear<30){prop(c,'debris',x+w*.4,y+h-4,w*.4,16);if(['bed','cushion','tent','rug','curtains'].includes(id))prop(c,'cotton',x+w*.12,y+h+4,18,12);}
+ if(s.living?.motion?.item===id&&s.living.motion.until>Date.now()&&!reduced){const b=Math.floor(frame/180)%2;if(s.living.motion.kind==='gentle')sparkles(c,x+w*.5,y,frame,reduced);if(id==='fountain'||id==='bowl'){shade(c,x+w*.3,y-3-b*5,2,4,'#bad8d9');shade(c,x+w*.7,y-7+b*4,2,4,'#bad8d9');}if(id==='mirror')prop(c,'heart',x+w*.35,y+h*.35,14);}
+}
+export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){background(c,'empty-room');const pos=layout(s),owned=id=>s?.room?.[id]||s?.cozy?.owned?.[id];stamp(c,'furniture','window',27,17,103,98);shade(c,65,255,48,26,'#9e805e');shade(c,67,257,44,22,'#c6ab83');shade(c,67,257,12,22,'#b0946f');shade(c,84,257,8,22,'#e0caa1');shade(c,64,251,50,7,'#d3bc95');shade(c,103,265,6,3,'#876f54');
+ for(const id of ['rug','curtains','shelf','mirror','bed','tent','plant','lamp','cushion','post','fountain','bowl','toybox'])if(owned(id))furniture(c,s,id,pos[id],frame,reduced);
+ // Current mechanics remain visible: poop, messes, handmade items, souvenirs, stories.
+ if(s?.playroom?.crafted?.stoneArt){shade(c,215,14,43,36,'#947354');for(let i=0;i<9;i++)shade(c,220+i%3*11,19+Math.floor(i/3)*9,7,6,['#b7c8b0','#d6b59d','#b5a0c3'][i%3]);}
+ if(s?.playroom?.crafted?.mobile){shade(c,pos.bed[0]+53,10,1,36,'#997d5b');shade(c,pos.bed[0]+32,44,42,1,'#997d5b');prop(c,'leaf',pos.bed[0]+30,45,12,18);treasure(c,'shell',pos.bed[0]+62,45,16);}
+ if(s?.playroom?.decor?.display)treasure(c,s.playroom.decor.display,143,34,21);
+ if(s?.heirloom)prop(c,'gift',259,68,19);
+ if(s?.living?.finished?.[0]||s?.living?.story?.step&&!(s.living.story.chapter>0)){prop(c,'leaf',137,101,20,28);if(s.living.finished?.[0]||s.living.story.step>=3)prop(c,'heart',141,91,14);}
+ const stash=Object.keys(s?.daily?.stash||{}).filter(id=>s.daily.stash[id]>0);for(let i=0;i<Math.min(4,stash.length);i++)treasure(c,stash[i],11+i*15,270-i%2*3,14);if(s?.daily?.kind?.kind==='warm')prop(c,'blanket',258,269,101,22);
+ if(s?.daily?.mess)for(let i=0;i<5;i++){if(s.daily.mess.kind==='puddle')shade(c,66+i*44,269+i%2*5,14,3,'#9dbbbb');else prop(c,'debris',66+i*44,267+i%2*5,17,8);}
+ if(s?.poop)for(let i=0;i<Math.min(4,s.poop);i++)prop(c,'poop',28+i*32,263,25,22);
+ const run=s?.playroom?.session;if(run?.expires>now){const x=68+run.target*30;if(run.kind==='laser'){shade(c,x,245,4,4,'#d28687');shade(c,x-1,246,6,1,'#efb2a4');}else{prop(c,run.kind==='music'?'music':'ball',x,240,run.kind==='music'?43:19);if(run.kind==='ball'&&s.playroom.crafted?.featherToy)treasure(c,'feather',x+10,229,15);}}
+ else if(s?.room?.toy||s?.playroom?.toys?.ball)prop(c,'ball',264,253,23);
+ if(s?.daily?.celebration)for(let i=0;i<7;i++)prop(c,'heart',38+i*48,12+i%2*8,10);
+ const weather=weatherAt(now);if(weather.id!=='sun'){shade(c,42,33,70,27,'#c4d0c166');if(weather.id==='rain'||weather.id==='storm')for(let i=0;i<8;i++)shade(c,39+i*9,61+(reduced?i%3:Math.floor(frame/220+i)%3)*7,1,6,'#799eab');}
+ if(s?.cozy?.nightMode&&isNight(s,now)){shade(c,0,0,384,288,'#253b5455');const moon=['0011100','0110000','1100000','1100001','1110011','0111110','0011100'];for(let yy=0;yy<7;yy++)for(let xx=0;xx<7;xx++)if(moon[yy][xx]==='1')shade(c,103+xx*2,32+yy*2,2,2,'#eee3af');if(owned('lamp')){c.fillStyle='#f4dca822';c.beginPath();c.arc(pos.lamp[0]+pos.lamp[2]/2,pos.lamp[1]+22,43,0,Math.PI*2);c.fill();}if(!reduced)for(let i=0;i<5;i++)shade(c,38+i*68,220+Math.sin(frame/1100+i)*16,2,2,'#dfdc96');}
+}
+function outdoor(c,s){if(s.world?.walk?.expires>Date.now()){const key=s.world.walk.place==='forest'?'forest':s.world.walk.place==='pond'?'pond':null;if(key)stamp(c,'walks',key,0,0,384,288);else background(c,'playground');return true;}return false;}
+export function drawDetailedMain(canvas,s,id,frame=0,reduced=false,pos=null,effect=null){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const pet=s||{species:id,portraitStage:'Дорослий'};if(!outdoor(c,pet))drawDetailedRoom(c,pet,frame,reduced);
+ if(pet.vacation){prop(c,'blanket',105,188,170,62);drawDetailedPet(c,pet,id,192,244,126,null,frame,reduced);c.fillStyle='#f4ebd3';c.fillRect(112,17,160,27);c.fillStyle='#4e6555';c.font='bold 13px monospace';c.fillText('HOTEL · PAUSE',131,36);return;}
+ const point=pos||{x:96,feet:128,scale:1},age=ageOf(pet),height=142*point.scale*ageScale(age),x=point.x*2,feet=point.feet*2;
+ if(pet.cozy?.hide?.expires>Date.now()){const p=layout(pet),target=p[pet.cozy.hide.spot]||[8,234,52,40];c.save();c.beginPath();c.rect(target[0]-8,target[1]-22,target[2]+16,24);c.clip();drawDetailedPet(c,pet,id,target[0]+target[2]*.6,target[1]+65,78,null,frame,reduced);c.restore();return;}
+ c.fillStyle='#635a4226';c.beginPath();c.ellipse(x,feet-2,height*.27,Math.max(3,height*.045),0,0,Math.PI*2);c.fill();drawDetailedPet(c,pet,id,x,feet-(!reduced&&!pet.sleeping&&!pet.napping?Math.round(Math.sin(frame/390)*1.5):0),height,effect,frame,reduced);if(pet.cozy?.nightMode&&isNight(pet))shade(c,0,0,384,288,'#253b541a');
+}
+export function drawDetailedPortrait(canvas,id,s,frame=0,preview=false,effect=null,reduced=false){const c=canvas.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);c.imageSmoothingEnabled=false;drawDetailedPet(c,s,id,canvas.width/2,canvas.height*.95,canvas.height*.9*ageScale(ageOf(s)),preview?null:effect,frame,reduced);}
+export function drawDetailedSandbox(canvas,s,pets,selected=0,frame=0,reduced=false){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');background(c,'playground');const page=Math.floor(selected/6),shown=pets.slice(page*6,page*6+6);for(const [i,p]of shown.entries()){const x=56+i%3*135,y=170+Math.floor(i/3)*73;drawDetailedPet(c,{...p.look,species:p.species,portraitStage:p.look?.portraitStage||'Дорослий'},p.species,x,y,72*ageScale(p.look?.portraitStage),null,frame,reduced);if(page*6+i===selected)prop(c,'heart',x-7,y-86,15);}
+ drawDetailedPet(c,s,s.species,195,282,85*ageScale(ageOf(s)),null,frame,reduced);
+}
+export function drawDetailedMiniGame(canvas,g,s,now=Date.now()){canvas.width=384;canvas.height=198;const c=canvas.getContext('2d');background(c,'playground',384,198);const phase=Math.max(0,Math.min(1,(now-g.roundAt)/2600));if(g.kind==='direction'){c.fillStyle='#344e42';c.font='bold 65px monospace';c.fillText(g.target%2===0?'←':'→',158,104);drawDetailedPet(c,s,s.species,g.chosen===-1?105:g.chosen===1?280:192,191,67,null,now,true);}else if(g.kind==='jump'){drawDetailedPet(c,s,s.species,87,183-(now<(g.jumpUntil||0)?43:0),71,null,now,true);prop(c,'debris',345-phase*295,147,34,35);}else{prop(c,g.kind==='bug'?'fly':'apple',46+g.target*123,g.kind==='food'?15+phase*130:72,38,34);drawDetailedPet(c,s,s.species,63+g.cursor*123,192,65,null,now,true);}}
+
+export function drawDetailedFamily(canvas,s,scene,frame=0,reduced=false){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');drawDetailedRoom(c,s,frame,reduced);c.imageSmoothingEnabled=false;c.drawImage(scene.parent,41,127,145,114);c.drawImage(scene.partner,199,127,145,114);prop(c,'heart',170,93,42);}
+
+export function detailedPose(s,pose){const motion=s?.living?.motion;if(motion?.until>Date.now()){const rect=layout(s)[motion.item];if(rect)return {...pose,x:(rect[0]+rect[2]/2)/2,feet:(rect[1]+rect[3]+9)/2};}return pose;}

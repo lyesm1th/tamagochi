@@ -26,3 +26,13 @@ public/cozy-effects.js, public/young-pets.js і public/pet-effects.js,
 із відбитком в імені. HTML має Cache-Control: no-store. Це не доводить
 причину старої картинки в конкретній сесії Telegram, але усуває залежність
 оновлення від кешу окремих модулів.
+
+23.10.2026 користувач повернувся до ДЕТАЛЬНОГО ПЕРШОГО концепту і попросив
+єдиний стиль для всіх сцен, предметів кімнати та гардеробу. Реалізація:
+public/detailed-renderer.js, public/detailed-art-manifest.js та public/art/detailed/.
+Усі меблі й одяг — окремі шари; сцена кімнати не містить намальованих покупок.
+Кадри браузерної перевірки — docs/detailed-preview/screenshots/.
+Старий стиль у backup/classic-graphics-2026-10-23 лишається запасним.
+
+Додатковий бекап перед детальним рендером: backup/pixel-before-detailed-2026-10-23
+(останній робочий піксельний рендер, коміт 15b0b11f86550e7aa0b830b4300abc06b4ca95f6).
