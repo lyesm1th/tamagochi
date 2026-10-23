@@ -8,7 +8,7 @@ await page.evaluate(async()=>{const g=await import('/game.js');const s=g.fresh('
 await page.reload();await page.waitForFunction(()=>!document.querySelector('#button-ok').disabled);await page.waitForTimeout(1500);
 async function press(id){await page.locator('#button-'+id).evaluate(e=>e.click());}
 async function select(label){for(let i=0;i<40;i++){const text=await page.locator('#menu-icons .active').getAttribute('aria-label');if(text===label){await press('ok');return;}await press('right');}throw Error('menu not found '+label);}
-async function home(){await press('back');await press('back');}
+async function home(){for(let i=0;i<5;i++){if(await page.locator('#choice-panel').isHidden()&&await page.locator('#menu-icons').getAttribute('data-level')==='root')return;await press('back');}}
 const out=new URL('./menu-scenes-check/',import.meta.url);fs.mkdirSync(out,{recursive:true});
 const checks=[];
 for(const graphicsMode of ['detailed','classic']){
@@ -20,10 +20,10 @@ for(const graphicsMode of ['detailed','classic']){
  if(before!==await page.evaluate(()=>localStorage.getItem('hamagochi-v1')))throw Error('browsing modified saved state');checks.push(graphicsMode+': 8 distinct outfits without purchase');
  await home();await select('Дім');await select('Крамничка для дому');
  for(let i=0;i<10;i++){if(!await page.locator('#choice-item-preview').isVisible())throw Error('missing furniture preview');await press('right');}await page.locator('.device').screenshot({path:new URL(graphicsMode+'-shop.png',out).pathname});checks.push(graphicsMode+': 10 home goods');
- await home();await select('Дім');await select('Мої улюблені речі');for(let i=0;i<100;i++){if((await page.locator('#choice-title').textContent()).includes('Ліжечко')&&(await page.locator('#choice-preview-label').textContent()).includes('НАСТУПНИЙ ДИЗАЙН'))break;await press('right');}if(!(await page.locator('#choice-title').textContent()).includes('Ліжечко'))throw Error('bed not selected');
+ await home();await select('Дім');await select('Мої улюблені речі');await page.locator('#object-controls button').filter({hasText:'Ліжечко'}).click();await press('right');await press('right');
  if(!(await page.locator('#choice-preview-label').textContent()).includes('НАСТУПНИЙ ДИЗАЙН'))throw Error('bed next design not previewed');await page.locator('.device').screenshot({path:new URL(graphicsMode+'-design.png',out).pathname});
  await home();await select('Пригоди');await select('Прогулянки');const walks=new Set();for(let i=0;i<3;i++){walks.add(await page.locator('#choice-portrait').evaluate(c=>c.toDataURL()));await press('right');}if(walks.size!==3)throw Error('destinations identical');await page.locator('.device').screenshot({path:new URL(graphicsMode+'-walk.png',out).pathname});checks.push(graphicsMode+': 3 destinations before starting');
- await home();await select('Дім');await select('Маленька кухня');await page.locator('.device').screenshot({path:new URL(graphicsMode+'-kitchen.png',out).pathname});
+ await home();await select('Турбота');await select('Годувати');await page.locator('#object-controls button').filter({hasText:'Приготувати разом'}).click();await page.locator('.device').screenshot({path:new URL(graphicsMode+'-kitchen.png',out).pathname});
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);if(overflow)throw Error('mobile overflow');
 }
 await browser.close();if(errors.length)throw Error(errors.join('\n'));fs.writeFileSync(new URL('report.json',out),JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors}));

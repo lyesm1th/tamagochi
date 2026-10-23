@@ -8,7 +8,7 @@ import {stage} from './game.js';
 
 export const sceneModes=new Set(['room','shop','wardrobe','belongings','food','memory','routine','adventure','tree','games','world','walk','activity','ritual','weather','dreams','forms','stories','secrets','kitchen','peace','night','toys','craft','decorate','wishes','stash','mischief','celebrations','human']);
 // Preview only: never run a purchase/action, tick the pet, or write to the save.
-export function scenePreview(state,mode,choice=0,now=Date.now()){
+export function scenePreview(state,mode,choice=0,now=Date.now(),selection=null){
  if(!state||!sceneModes.has(mode))return null;
  if(mode==='world'){const target=worldPages[choice]?.[0];return scenePreview(state,sceneModes.has(target)?target:'stories',0,now);}
  const s=structuredClone(state),view={state:s,mode,focus:null,effect:null,label:'',game:null};
@@ -20,7 +20,7 @@ export function scenePreview(state,mode,choice=0,now=Date.now()){
  const wear=item=>{s.sleeping=false;s.napping=false;s.vacation=null;s.dead=false;s.cozy.wearing[item.slot]=item.id;view.focus='pet';view.label='ПРИМІРКА · ОК — ОБРАТИ';if(stage(s,now)==='Яєчко'){s.portraitStage='Дорослий';view.label='ПРИМІРКА ДОРОСЛОЇ ФОРМИ';}};
  if(mode==='room'||mode==='shop'){const item=(mode==='room'?furnishings:homeGoods)[choice];if(item){place(item.id);view.label='ПЕРЕГЛЯД У КІМНАТІ';}}
  if(mode==='wardrobe'){const item=clothes[choice%clothes.length];if(item)wear(item);}
- if(mode==='belongings'){const row=belongingChoices(state)[choice];if(row){const {item,action}=row;if(item.slot)wear(item);else{place(item.id);if(action[0]==='replace'){const index=((state.living?.furniture?.bed||0)+1)%variants.length,next=item.id==='bed'?{...variants[index],index}:nextDesign(state,item.id);if(next){s.living.furniture[designKey(item.id)]=next.index;if(item.id==='bed'){s.cozy.items??={};s.cozy.items.bed={...s.cozy.items.bed,wear:100};}view.label='НАСТУПНИЙ ДИЗАЙН · '+next.name;}}else view.label='ВИБРАНА РІЧ';}}}
+ if(mode==='belongings'){const row=selection||belongingChoices(state)[choice];if(row){const {item,action}=row;if(item.slot)wear(item);else{place(item.id);if(action[0]==='replace'){const index=((state.living?.furniture?.bed||0)+1)%variants.length,next=item.id==='bed'?{...variants[index],index}:nextDesign(state,item.id);if(next){s.living.furniture[designKey(item.id)]=next.index;if(item.id==='bed'){s.cozy.items??={};s.cozy.items.bed={...s.cozy.items.bed,wear:100};}view.label='НАСТУПНИЙ ДИЗАЙН · '+next.name;}}else view.label='ВИБРАНА РІЧ';}}}
  if(mode==='toys'){const active=state.playroom?.session?.expires>now?state.playroom.session:null,toy=toys.find(t=>t.id===active?.kind)||toys[choice%toys.length];if(toy){s.playroom.session=active?structuredClone(active):{kind:toy.id,target:4,pet:2,expires:now+60000};view.focus=toy.id==='ball'?'toy':toy.id;view.label=active?'':'ПЕРЕГЛЯД ІГРАШКИ';}}
  if(mode==='food'){s.sleeping=false;s.napping=false;fx('feed',foodsFor(state,stage(state,now))[choice]);}
  if(mode==='kitchen'){const options=(dishes[state.species]||dishes.cat).flatMap(d=>additionsFor(state).map(()=>d)),dish=options[choice];fx('cook',dish?.base);view.label=dish?'ГОТУЄМО РАЗОМ':'КОМОРА';}

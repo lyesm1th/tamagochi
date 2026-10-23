@@ -1,3 +1,4 @@
+import {roomFurniture,roomMoment,roomMomentPose} from './room-life.js';
 import {newPets} from './new-pets.js';
 import {drawRoomJournal} from './journal-effects.js';
 import {ambient,ambientPose} from './lively.js';
@@ -7,10 +8,10 @@ import {stableHash,behaviorPose} from './traits.js';
 import {isNight,nightPhase,itemStatus} from './cozy-life.js';
 import {bedding,favoriteCorner} from './playroom.js';
 import {weatherAt} from './little-world.js';
-export function sceneFurniture(s){const layout=s?.playroom?.decor?.layout||0;return layout===1?{bed:126,bowl:18,plant:12,tent:20,shelf:87}:layout===2?{bed:70,bowl:16,plant:170,tent:132,shelf:7}:{bed:8,bowl:156,plant:170,tent:124,shelf:82};}
+export const sceneFurniture=roomFurniture;
 export function scenePose(s,frame=0,reduced=false,now=Date.now()){
  const pos=sceneFurniture(s),phase=nightPhase(s,now);if(s?.dead||s?.vacation)return {x:96,feet:118,scale:1,phase};if(s?.sleeping||s?.napping){if(!s.room?.bed&&phase!=='water')return {x:96,feet:126,scale:1,phase};if(phase==='return'){const k=((now+stableHash(s.id||s.species))%(12*60000)-8000)/6000;return {x:(pos.bowl+10)*(1-k)+(pos.bed+25)*k,feet:119-20*k,scale:1.02-.24*k,phase};}return phase==='water'?{x:pos.bowl+10,feet:119,scale:1.02,phase}:{x:pos.bed+25,feet:99,scale:.78,phase};}
- const motion=s?.living?.motion;if(motion?.until>now){const target=motion.item==='bed'?{x:pos.bed+25,feet:97}:motion.item==='bowl'?{x:pos.bowl+10,feet:118}:motion.item==='cushion'?{x:50,feet:118}:motion.item==='plant'?{x:pos.plant-10,feet:110}:motion.item==='shelf'?{x:pos.shelf+20,feet:90}:motion.item==='rug'?{x:95,feet:126}:motion.item==='toybox'?{x:160,feet:133}:{x:145,feet:105};return {...target,feet:target.feet-(motion.kind==='jump'&&!reduced?Math.abs(Math.sin(frame/150))*12:0),scale:.8,phase};}
+ const moment=roomMoment(s,now),interaction=roomMomentPose(s,moment,'classic',now,reduced);if(interaction)return {...interaction,phase};
  if(s?.playroom?.session?.expires>now)return {x:34+s.playroom.session.pet*15,feet:124,scale:1.05,phase};
  const auto=ambientPose(ambient(s,now),pos,reduced);if(auto)return {...auto,phase};
  if(s?.bodyLanguage?.kind==='approach'&&s.bodyLanguage.until>now)return {x:96,feet:134,scale:1.12,phase};

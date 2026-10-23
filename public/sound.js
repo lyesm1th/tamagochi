@@ -1,6 +1,10 @@
 // Short, synthesized pocket-pet sounds: no downloads or network latency.
 // [start seconds, duration, start Hz, end Hz, volume, waveform]
 export const reactions={
+ jump:[[0,.08,180,440,.03,'sine'],[.18,.1,440,220,.025,'triangle']],
+ splash:[[0,.12,650,170,.025,'triangle'],[.16,.09,430,120,.02,'sine']],
+ giggle:[[0,.08,460,640,.025,'sine'],[.11,.08,520,740,.025,'sine'],[.23,.1,480,580,.02,'sine']],
+ page:[[0,.07,160,100,.015,'triangle'],[.09,.06,200,140,.015,'triangle']],
  cook:[[0,.08,180,90,.025,'triangle'],[.16,.09,240,110,.025,'triangle'],[.36,.12,480,800,.02,'sine']],
  craft:[[0,.08,260,140,.03,'triangle'],[.18,.08,300,160,.03,'triangle'],[.4,.15,650,900,.025,'sine']],
  music0:[[0,.14,262,262,.025,'sine'],[.18,.14,330,330,.025,'sine'],[.36,.14,392,392,.025,'sine'],[.54,.22,523,523,.02,'sine']],

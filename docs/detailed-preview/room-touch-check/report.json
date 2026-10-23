@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "detailed layout 0: 14 direct touches",
+    "detailed layout 1: 14 direct touches",
+    "detailed layout 2: 14 direct touches",
+    "detailed: long press, scoped actions, back, purchase + outfit reaction",
+    "classic layout 0: 14 direct touches",
+    "classic layout 1: 14 direct touches",
+    "classic layout 2: 14 direct touches",
+    "classic: long press, scoped actions, back, purchase + outfit reaction"
+  ],
+  "errors": []
+}

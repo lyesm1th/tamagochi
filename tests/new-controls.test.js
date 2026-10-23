@@ -8,8 +8,10 @@ test('four buttons navigate games, cancel family, create egg, and open parent al
  const root=async()=>{for(let i=0;i<4&&get('#menu-icons').children.length!==4;i++)await click('back');assert.equal(get('#menu-icons').children.length,4);};
  const open=async(group,text)=>{await root();for(let i=0;i<4&&!get('#selected-action').textContent.includes(group);i++)await click('right');await click('ok');for(let i=0;i<20&&!get('#selected-action').textContent.includes(text);i++)await click('right');assert.ok(get('#selected-action').textContent.includes(text),text);await click('ok');};
  assert.equal(get('#menu-icons').children.length,4);
- await open('ДІМ','КІМНАТКА');await click('ok');assert.ok(JSON.parse(memory.get('hamagochi-v1')).room.bed);await click('ok');assert.match(get('#choice-detail').textContent,/Поскакати/);await click('ok');let saved=JSON.parse(memory.get('hamagochi-v1'));assert.ok(saved.cozy.items.bed.wear<100);await click('right');await click('right');await click('ok');saved=JSON.parse(memory.get('hamagochi-v1'));assert.equal(saved.living.furniture.bed,1);
- await open('ДІМ','ГАРДЕРОБ');await click('ok');await click('ok');assert.equal(JSON.parse(memory.get('hamagochi-v1')).cozy.wearing.head,'panama');
+ await open('ДІМ','КІМНАТКА');await click('ok');assert.ok(JSON.parse(memory.get('hamagochi-v1')).room.bed);
+ await open('ДІМ','КІМНАТКА');await click('ok');assert.match(get('#choice-detail').textContent,/Поскакати/);await click('ok');let saved=JSON.parse(memory.get('hamagochi-v1'));assert.ok(saved.cozy.items.bed.wear<100);
+ await open('ДІМ','КІМНАТКА');await click('ok');await click('right');await click('right');await click('ok');saved=JSON.parse(memory.get('hamagochi-v1'));assert.equal(saved.living.furniture.bed,1);
+ await open('ДІМ','ГАРДЕРОБ');await click('ok');assert.equal(JSON.parse(memory.get('hamagochi-v1')).cozy.wearing.head,'panama');
  await open('ПРИГОДИ','НАШІ МАЛЕНЬКІ');await click('ok');assert.equal(JSON.parse(memory.get('hamagochi-v1')).living.story.step,1);
  await open('ПРИГОДИ','СПІЛЬНА');assert.match(get('#choice-detail').textContent,/Telegram/);await click('back');
  await open('ПРИГОДИ','ГРАТИ');assert.match(get('#choice-title').textContent,/1\/4/);await click('right');await click('ok');assert.equal(get('#mini-game').hidden,false);await click('back');
