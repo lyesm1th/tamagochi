@@ -40,3 +40,13 @@ main{max-width:500px;padding:20px 14px 28px}
 .device-controls button{width:44px;height:44px;max-width:100%;font-size:16px}
 .device-controls span{font-size:7px;letter-spacing:.6px;margin-top:9px}
 @media(max-width:370px){main{padding:18px 12px 26px}.device{padding:48px 16px 36px;border-radius:62px 62px 82px 82px / 56px 56px 74px 74px}.device-controls{gap:6px;padding-left:1px;padding-right:1px}.lcd{min-height:320px}.device-top{padding:0 2px}#selected-action{font-size:8px}}
+
+/* Four home groups; submenus keep all icons visible. */
+#menu-icons[data-level="root"]{grid-template-columns:repeat(4,minmax(0,1fr));}
+#menu-icons[data-level="category"]{grid-template-columns:repeat(7,minmax(0,1fr));}
+#menu-icons span{font-size:16px;min-width:0;}
+
+.device-top>span:first-child{font-size:clamp(11px,3.2vw,15px);letter-spacing:.2px;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.35;}
+.device-top>#connection{flex-shrink:0;}
+
+header .brand{font-size:clamp(11px,3.3vw,17px);overflow-wrap:anywhere;line-height:1.4;}header{gap:12px;flex-wrap:wrap;}

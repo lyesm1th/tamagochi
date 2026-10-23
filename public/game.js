@@ -1,3 +1,4 @@
+import {bedBonus,furnitureStatus} from './living.js';
 import {updateCozy,noteCozy} from './cozy-life.js';
 import {noteDaily,updateDaily} from './daily-life.js';
 import {ensureWorld,syncDream,wakeStory} from './little-world.js';
@@ -31,7 +32,7 @@ function baseRates(s,now=Date.now()){
  if(st==='Старенький')return {hunger:8,happy:5,clean:8,energy:8,poop:HOUR};
  return {hunger:poor?8:5,happy:poor?7:4,clean:poor?9:4,energy:5,poop:(poor?1:3)*HOUR};
 }
-export function ratesFor(s,now=Date.now()){const r=baseRates(s,now);if(stage(s,now)==='Яєчко'||s.vacation)return r;const trait=traitOf(s);return {...r,hunger:r.hunger*(trait==='glutton'?1.15:1)*(s.room?.bowl ? .9 : 1),happy:r.happy*(trait==='playful'?1.15:1)*(s.room?.plant ? .9 : 1),energy:r.energy*(trait==='sleepy'?1.2:1)};}
+export function ratesFor(s,now=Date.now()){const r=baseRates(s,now);if(stage(s,now)==='Яєчко'||s.vacation)return r;const trait=traitOf(s);return {...r,hunger:r.hunger*(trait==='glutton'?1.15:1)*(s.room?.bowl&&furnitureStatus(s,'bowl')>0 ? .9 : 1),happy:r.happy*(trait==='playful'?1.15:1)*(s.room?.plant&&furnitureStatus(s,'plant')>0 ? .9 : 1),energy:r.energy*(trait==='sleepy'?1.2:1)};}
 export function tick(s,now=Date.now()) {
  if(!s)return s;ensureCompanion(s,now);s.trait??=traitOf(s);ensureWorld(s);if(s.dead)return s;if(s.vacation){s.updated=now;return s;}
  // Old saves keep their birthday and stats. New fields are added in place.
@@ -43,10 +44,10 @@ export function tick(s,now=Date.now()) {
  if(st==='Дорослий'&&s.adultCare==null)s.adultCare=care(s);
  const boundaries=[life.egg,life.baby-5*MINUTE,life.baby,life.child,life.teen,seniorAt(s),seniorAt(s)+3*DAY].map(t=>s.born+t).filter(t=>t>cursor);
  const end=Math.min(now,cursor+15*MINUTE,...boundaries),h=(end-cursor)/HOUR;
- if(st!=='Яєчко'){
+ if(st!=='Яєчко'){for(const id of [...Object.keys(s.room||{}),...Object.keys(s.cozy?.owned||{})]){const item=s.cozy.items[id]??={wear:100,uses:0,known:false};item.wear=Math.max(0,item.wear-h*(s.sleeping?.25:.6));}
  if(s.routine.enabled&&st!=='Малюк')s.sleeping=routineSleeping(s,cursor);
  const nap=st==='Малюк'&&age>=life.baby-5*MINUTE,asleep=s.sleeping||nap;s.napping=nap;syncDream(s,cursor);
- s.hunger=clamp(s.hunger-h*r.hunger);s.happy=clamp(s.happy-h*r.happy);s.clean=clamp(s.clean-h*r.clean);s.energy=clamp(s.energy+h*(asleep?(22+(s.room.bed?4:0)):-r.energy));
+ if(s.social)s.social.mental=clamp(s.social.mental+h);s.hunger=clamp(s.hunger-h*r.hunger);s.happy=clamp(s.happy-h*r.happy);s.clean=clamp(s.clean-h*r.clean);s.energy=clamp(s.energy+h*(asleep?(22+bedBonus(s)):-r.energy));
  s.poopClock+=end-cursor;const droppings=Math.floor(s.poopClock/r.poop);if(droppings){s.poop=Math.min(4,s.poop+droppings);s.poopClock%=r.poop;}
  const neglected=st==='Малюк'?(s.hunger<50||s.happy<50||s.clean<50):(s.hunger<25||s.happy<20||s.clean<25||s.energy<5);
  if(neglected)s.careScore=clamp(s.careScore-h*(st==='Малюк'?20:3));

@@ -29,7 +29,8 @@ export function drawEffects(ctx,s,age,effect,now=Date.now(),reduced=false){
   else if(food==='carrot'){r(5,-3,3,6,'#658c4a');r(10,-3,3,6,'#658c4a');r(3,3,12,7,'#da8f44');r(5,10,8,5,'#da8f44');if(step<2)r(7,15,4,4,'#da8f44');}
   else if(food==='berry'){r(5,-1,5,5,'#658c4a');r(1,4,15,12,'#a8627d');if(step===2)r(0,3,7,8,'#b7c294');}
   else if(food==='meat'){r(1,3,15,12,'#c28686');r(13,6,8,4,'#eee1c7');r(19,3,3,9,'#eee1c7');if(step===2)r(0,2,7,7,'#b7c294');}
-  else{r(0,0,17,17,'#795431');r(2,2,13,13,'#c89b57');r(4,4,3,3,'#62462b');r(10,8,3,3,'#62462b');r(4,12,2,2,'#62462b');if(step>=1)r(-1,1,7,6,'#b7c294');if(step>=2)r(-1,6,10,8,'#b7c294');for(let i=0;i<3;i++)r(-8-i*4,14+(step+i)%3*3,2,2,'#c89b57');}
+  else{const size=17-step*4;r(2,0,Math.max(3,size-4),17,'#795431');r(0,3,size,11,'#795431');r(2,3,Math.max(2,size-4),11,'#c89b57');r(4,4,2,2,'#62462b');if(size>9)r(9,8,2,2,'#62462b');r(4,11,2,2,'#62462b');for(let i=0;i<3;i++)r(-8-i*4,14+(step+i)%3*3,2,2,'#c89b57');}
+  ctx.fillStyle=s.species==='dog'?'#f7f3df':'#e8ecc3';ctx.fillRect(73,young?70:67,10,4);
   ctx.fillStyle=ink;ctx.fillRect(62,young?66:63,step===1?7:4,step===1?5:2);
  }
  if(effect.kind==='clean'){for(let i=0;i<5;i++){ctx.fillStyle='#90b9be';ctx.fillRect(29+i*15,55+((step+i)%3)*9,3,3);}}

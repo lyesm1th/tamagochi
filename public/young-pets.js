@@ -2,8 +2,8 @@
 export function drawYoungPet(ctx,id,age,color,frame=0,sleeping=false,reduced=false){
  const baby=age==='Малюк',ink='#35482e',cream='#f5edcf',pink='#dfa0a8';
  const r=(x,y,w,h,c=ink)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
- const box=(x,y,w,h,c=color)=>{r(x-2,y,w+4,h);r(x,y-2,w,h+4);r(x,y,w,h,c);};
- const eyes=(x,y,gap=14)=>{if(sleeping){r(x,y+2,4,2);r(x+gap,y+2,4,2);}else{r(x,y,3,baby?4:5);r(x+gap,y,3,baby?4:5);}};
+ const box=(x,y,w,h,c=color)=>{r(x-2,y+2,w+4,h-4);r(x+2,y-2,w-4,h+4);r(x,y,w,h);r(x+2,y,w-4,h,c);r(x,y+2,w,h-4,c);r(x+3,y+1,Math.max(2,w-8),1,'#fff0d1');};
+ const eyes=(x,y,gap=14)=>{if(sleeping){r(x,y+2,4,2);r(x+gap,y+2,4,2);}else{r(x,y,3,baby?4:5);r(x+gap,y,3,baby?4:5);r(x,y,1,1,cream);r(x+gap,y,1,1,cream);}};
  const mouth=(x,y)=>{r(x,y,3,2);};
  const step=sleeping||reduced?0:Math.floor(frame/350)%2*2;
  if(age==='Дитина'){
