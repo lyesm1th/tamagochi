@@ -1,3 +1,4 @@
+import {snapshot,nextGeneration,candidates,petId} from '../public/family.js';
 import {planReminder,reminderLines,safeZone,localClock} from './reminders.js';
 import {fresh,act,tick,species} from '../public/game.js';
 const json=(x,status=200)=>Response.json(x,{status,headers:{'Cache-Control':'no-store'}});
@@ -37,9 +38,17 @@ export class PetRoom{
  async fetch(req){
  return this.ctx.blockConcurrencyWhile(async()=>{
  let body;try{const raw=await req.text();if(raw.length>8192)return json({error:'Too large'},413);body=JSON.parse(raw||'{}');}catch{return json({error:'Bad JSON'},400);}
- const path=new URL(req.url).pathname;let s=await this.ctx.storage.get('pet');let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
+ const path=new URL(req.url).pathname;let s=tick(await this.ctx.storage.get('pet'));if(s?.dead)await this.archive(s);let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
  const owner=req.headers.get('X-Pet-Owner'),app=req.headers.get('X-Pet-App');
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
+ if(path==='/api/album'){
+ const options={prefix:'album:',reverse:true,limit:21};if(typeof body.cursor==='string'&&body.cursor.startsWith('album:')&&body.cursor.length<150)options.end=body.cursor;
+ const entries=[...await this.ctx.storage.list(options)];const page=entries.slice(0,20);return json({records:page.map(([,v])=>v),cursor:page.at(-1)?.[0]||null,hasMore:entries.length>20});
+ }
+ if(path==='/api/family'){
+ const next=nextGeneration(s,body.partnerId);if(next.error)return json({error:next.error},400);
+ await this.archive(s,'family',next.record);s=next.state;prefs.pendingAt=0;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({state:s,text:next.text,reminders:{enabled:!!prefs.enabled}});
+ }
  if(path==='/api/reminders'){
  if(typeof body.enabled!=='boolean')return json({error:'Невідоме налаштування'},400);
  if(body.enabled&&!prefs.userId)return json({error:'Відкрий через Telegram'},400);
@@ -49,14 +58,17 @@ export class PetRoom{
  if(path==='/api/adopt'){
  if(s&&!s.dead)return json({error:'У тебе вже є друг.'},409);
  if(!species.some(p=>p.id===body.species))return json({error:'Невідомий вид'},400);
- s=fresh(body.species);if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'У яйці хтось ворушиться. Годинник налаштовано, чекаємо 3 хвилини.'};
+ if(s?.dead)await this.archive(s);s=fresh(body.species);prefs.pendingAt=0;if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'У яйці хтось ворушиться. Годинник налаштовано, чекаємо 3 хвилини.'};
  }else if(path==='/api/state'){s=tick(s);result={state:s||null};}
- else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action);s=result.state||s;}
+ else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action,Date.now(),{game:body.game});s=result.state||s;}
  else return json({error:'Not found'},404);
- if(s)await this.ctx.storage.put('pet',s);
+ if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
  if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}
  result.reminders={enabled:!!prefs.enabled};return json(result);
  });
+ }
+ async archive(s,outcome=s.endReason||'death',record=null){
+ const key='album:'+String(s.born).padStart(16,'0')+':'+petId(s);if(!await this.ctx.storage.get(key))await this.ctx.storage.put(key,record||snapshot(s,outcome));
  }
  async schedule(s,p){
  const planned=planReminder(s,p);await this.ctx.storage.put('reminders',planned.prefs);
@@ -65,7 +77,7 @@ export class PetRoom{
  async alarm(){
  return this.ctx.blockConcurrencyWhile(async()=>{
  const now=Date.now();let s=tick(await this.ctx.storage.get('pet'),now);const p=await this.ctx.storage.get('reminders')||{enabled:false};
- if(s)await this.ctx.storage.put('pet',s);
+ if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
  const planned=planReminder(s,p,now);let prefs=planned.prefs;
  if(!planned.key){await this.ctx.storage.put('reminders',prefs);if(planned.next!==null)await this.ctx.storage.setAlarm(Math.max(now+1000,planned.next));return;}
  if(!this.env.BOT_TOKEN){await this.ctx.storage.setAlarm(now+60*60000);return;}

@@ -1,3 +1,4 @@
+import {traitOf,recordHabit,traits} from './traits.js';
 import {personality,foodFor} from './pet-personality.js';
 export const species = [
  {id:'chicken',name:'Курочка',nick:'Квочка',color:'#e9c954'},
@@ -9,7 +10,7 @@ export const species = [
  {id:'dino',name:'Динозаврик',nick:'Кусьозавр',color:'#7cb3a0'},
  {id:'bunny',name:'Кролик',nick:'Вухань',color:'#e4bacb'}
 ];
-export const fresh = (id,now=Date.now()) => ({species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0,careScore:80,discipline:70,treatStreak:0,poopClock:0,adultCare:null,lifeRules:2});
+export const fresh = (id,now=Date.now()) => ({id:globalThis.crypto?.randomUUID?.()||`${now}-${id}`,generation:1,species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0,careScore:80,discipline:70,treatStreak:0,poopClock:0,adultCare:null,lifeRules:2});
 const clamp=n=>Math.max(0,Math.min(100,n));
 export const MINUTE=60000,HOUR=3600000,DAY=86400000;
 export const life={egg:3*MINUTE,baby:3*MINUTE+HOUR,child:3*MINUTE+HOUR+2*DAY,teen:3*MINUTE+HOUR+5*DAY};
@@ -17,7 +18,7 @@ export function care(s){return clamp((s.careScore??80)*.7+(s.discipline??70)*.3)
 export function temperament(s){const c=s.adultCare??care(s);return c>=80?'Лагідний розумник':c>=50?'Ласкавий буркотун':'Неслухняний бешкетник';}
 export function seniorAt(s){return life.teen+(7+7*(s.adultCare??care(s))/100)*DAY;}
 export function stage(s,now=Date.now()){const age=now-s.born;return age<life.egg?'Яєчко':age<life.baby?'Малюк':age<life.child?'Дитина':age<life.teen?'Підліток':age<seniorAt(s)?'Дорослий':'Старенький';}
-export function ratesFor(s,now=Date.now()){
+function baseRates(s,now=Date.now()){
  const st=stage(s,now),poor=(s.adultCare??care(s))<50;
  if(st==='Яєчко')return {hunger:0,happy:0,clean:0,energy:0,poop:Infinity};
  if(st==='Малюк')return {hunger:55,happy:65,clean:45,energy:25,poop:7*MINUTE};
@@ -26,6 +27,7 @@ export function ratesFor(s,now=Date.now()){
  if(st==='Старенький')return {hunger:8,happy:5,clean:8,energy:8,poop:HOUR};
  return {hunger:poor?8:5,happy:poor?7:4,clean:poor?9:4,energy:5,poop:(poor?1:3)*HOUR};
 }
+export function ratesFor(s,now=Date.now()){const r=baseRates(s,now);if(stage(s,now)==='Яєчко')return r;const trait=traitOf(s);return {...r,hunger:r.hunger*(trait==='glutton'?1.15:1),happy:r.happy*(trait==='playful'?1.15:1),energy:r.energy*(trait==='sleepy'?1.2:1)};}
 export function tick(s,now=Date.now()) {
  if(!s||s.dead)return s;
  // Old saves keep their birthday and stats. New fields are added in place.
@@ -46,11 +48,11 @@ export function tick(s,now=Date.now()) {
  if(st==='Дитина'||st==='Підліток')s.discipline=clamp(s.discipline-h*.35);
  const ill=s.hunger<15||s.clean<15||s.energy<5;
  if(st==='Малюк')s.health=Math.max(1,s.health);else s.health=clamp(s.health+h*(ill?-(st==='Старенький'?12:8):2));
- s.dead=s.health<=0;
+ s.dead=s.health<=0;if(s.dead)s.diedAt??=end;
  }
  cursor=end;
  if(cursor===s.born+life.baby&&st==='Малюк')s.sleeping=false;
- if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;}
+ if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
  s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
  if(s.dead){s.sleeping=false;s.napping=false;}return s;
@@ -67,12 +69,12 @@ export const phrases={
  dirty:['Тут треба трохи прибрати. Я ні на що не натякаю.','У мене лапки. А в тебе — прибиральна місія.','Я тут накоїв. Не сварися, краще допоможи.']};
 export function line(key,id='cat',rng=Math.random,age=null){if(typeof id==='function'){rng=id;id='cat';}const p=personality(id),babyPet={chicken:['Пік-пік… Погладь мій м’який пушок, ніжненько.'],frog:['Ква… Погладь легенько по спинці. Хвостик не тягни.'],dog:['Му-у… Погладь по голівці. Ріжки ще виростуть.'],dino:['Р-р… Погладь мою маленьку спинку. Шипи ще попереду.']};const list=key==='pet'?(age==='Малюк'&&babyPet[id]?babyPet[id]:p.pet):(phrases[key]||phrases.idle);return list[Math.floor(rng()*list.length)%list.length].replaceAll('{touch}',p.touch).replaceAll('{voice}',p.voice);}
 export function babyMeal(id){const food=foodFor(id,'Малюк');return food==='milk'?'Хлюп-хлюп. Молочко! Дякую, моя людино.':food==='grain'?'Пік-пік. Клюю маленькі зернятка. Дякую за кашку!':food==='algae'?'Ква! Маленький пуголовок їсть водорості. Смачно!':'Ам! Маленькі шматочки для маленького динозаврика.';}
-export function act(state,action,now=Date.now()) {
+export function act(state,action,now=Date.now(),context={}) {
  const s=tick(structuredClone(state),now);
  if(!s)return {error:'Спочатку обери друга.'};
  if(s.dead)return {state:s,error:'Друг уже на веселці. Можна обрати нового.'};
  if(now-s.lastAction<650)return {state:s,error:'Не поспішай, у мене лапки.'};
- if(action==='endLife'){s.health=0;s.dead=true;s.sleeping=false;s.updated=now;s.lastAction=now;return {state:s,text:'Прощавай, людино. У нас були хороші обійми. ♡'};}
+ if(action==='endLife'){s.health=0;s.dead=true;s.diedAt=now;s.endReason='ended';s.sleeping=false;s.updated=now;s.lastAction=now;return {state:s,text:'Прощавай, людино. У нас були хороші обійми. ♡'};}
  if(stage(s,now)==='Яєчко')return {state:s,error:'Тссс. У яйці хтось росте. Поки просто почекай.'};
  if(s.napping)return {state:s,error:'Малюк дрімає перед дорослішанням. Не буди його.'};
  if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю. Дай ще п’ять хвилиночок, буркотун.'};
@@ -81,12 +83,12 @@ export function act(state,action,now=Date.now()) {
  case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?babyMeal(s.species):line('feed',s.species);break;
  case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);s.treatStreak++;if(s.treatStreak>2){s.health=clamp(s.health-4);s.careScore=clamp(s.careScore-5);s.discipline=clamp(s.discipline-3);}text=stage(s,now)==='Малюк'?babyMeal(s.species):line('treat',s.species);break;
  case 'clean':s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean',s.species);break;
- case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+9);text=line('pet',s.species,Math.random,stage(s,now));break;
+ case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+(traitOf(s)==='affectionate'?14:9));text=line('pet',s.species,Math.random,stage(s,now));break;
  case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Я в люлю. Посидь поруч, тільки не шаруди.':'Я прокинувся! Де моя людина й мій сніданок?';break;
- case 'discipline':if(s.discipline>90)return {state:s,error:'Я чемний! Можна вже просто обійняти?'};s.discipline=clamp(s.discipline+18);s.careScore=clamp(s.careScore+1);text='Добре-добре, я зрозумів. Але обійняти після виховання треба.';break;
+ case 'discipline':if(s.discipline>90)return {state:s,error:'Я чемний! Можна вже просто обійняти?'};s.discipline=clamp(s.discipline+(traitOf(s)==='stubborn'?12:18));s.careScore=clamp(s.careScore+1);text='Добре-добре, я зрозумів. Але обійняти після виховання треба.';break;
  case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine',s.species);break;
- case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text=line('play',s.species);break;
+ case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':line('play',s.species);break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
- s.xp+=1;s.lastAction=now;return {state:s,text};
+ recordHabit(s,action,now);s.xp+=1;s.lastAction=now;return {state:s,text};
 }

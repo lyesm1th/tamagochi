@@ -8,3 +8,7 @@ body{background:#e9e3d7;background-image:radial-gradient(#b4ac9c55 1px,transpare
 .lcd-icons{grid-template-columns:repeat(12,1fr)}.lcd-icons span{font-size:13px}@media(max-width:370px){.lcd-icons span{font-size:11px}}
 
 .lcd-icons{grid-template-columns:repeat(13,1fr)}.lcd-icons span{font-size:12px}#pet-touch canvas{image-rendering:pixelated}
+
+.lcd-icons{grid-template-columns:repeat(7,1fr)}.lcd-icons span{font-size:17px}#choice-panel{position:relative;z-index:2;text-align:center;min-height:165px;padding:3px 8px 12px}#choice-portrait{display:block;width:100px;height:78px;margin:auto}#choice-title{font:700 10px monospace;display:block}#choice-detail{font:9px/1.5 monospace;margin:5px 0;white-space:pre-line}#game-scene{font:bold 30px/1.5 monospace;white-space:pre}#game-cursor{font:20px monospace;white-space:pre}#game-hint{font-size:9px}#game-title{font-weight:bold}#confirm-panel{max-height:185px;overflow:auto}
+
+#game-canvas{display:block;width:100%;height:96px;image-rendering:pixelated}#game-scene,#game-cursor{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}#mini-game{padding:3px 8px}#game-title{margin:3px 0}#game-hint{margin:3px 0}#choice-detail{overflow-wrap:anywhere}#choice-portrait{image-rendering:pixelated}
