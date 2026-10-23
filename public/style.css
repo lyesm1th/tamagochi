@@ -59,3 +59,5 @@ header .brand{font-size:clamp(11px,3.3vw,17px);overflow-wrap:anywhere;line-heigh
 
 #menu-icons[data-level="root"]{min-height:28px;}#menu-icons[data-level="category"]{min-height:46px;}
 #game-canvas{height:auto;aspect-ratio:64/33;}
+
+#photo-controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}#photo-controls[hidden]{display:none}#photo-controls button{font:inherit;font-size:11px;padding:8px 10px;border:1px solid #7b8b68;background:#dce1c5;color:#35482e;border-radius:5px}

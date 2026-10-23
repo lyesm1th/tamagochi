@@ -1,3 +1,4 @@
+import {ambient,ambientPose} from './lively.js';
 import {drawRoomArt} from './pixel-art.js';
 import {needs,variants,furnitureStatus} from './living.js';
 import {stableHash,behaviorPose} from './traits.js';
@@ -9,6 +10,7 @@ export function scenePose(s,frame=0,reduced=false,now=Date.now()){
  const pos=sceneFurniture(s),phase=nightPhase(s,now);if(s?.dead||s?.vacation)return {x:96,feet:118,scale:1,phase};if(s?.sleeping||s?.napping){if(phase==='return'){const k=((now+stableHash(s.id||s.species))%(12*60000)-8000)/6000;return {x:(pos.bowl+10)*(1-k)+(pos.bed+25)*k,feet:119-20*k,scale:1.02-.24*k,phase};}return phase==='water'?{x:pos.bowl+10,feet:119,scale:1.02,phase}:{x:pos.bed+25,feet:99,scale:.78,phase};}
  const motion=s?.living?.motion;if(motion?.until>now){const target=motion.item==='bed'?{x:pos.bed+25,feet:97}:motion.item==='bowl'?{x:pos.bowl+10,feet:118}:motion.item==='cushion'?{x:50,feet:118}:motion.item==='plant'?{x:pos.plant-10,feet:110}:motion.item==='shelf'?{x:pos.shelf+20,feet:90}:motion.item==='rug'?{x:95,feet:126}:motion.item==='toybox'?{x:160,feet:133}:{x:145,feet:105};return {...target,feet:target.feet-(motion.kind==='jump'&&!reduced?Math.abs(Math.sin(frame/150))*12:0),scale:.8,phase};}
  if(s?.playroom?.session?.expires>now)return {x:34+s.playroom.session.pet*15,feet:124,scale:1.05,phase};
+ const auto=ambientPose(ambient(s,now),pos);if(auto)return {...auto,phase};
  if(s?.bodyLanguage?.kind==='approach'&&s.bodyLanguage.until>now)return {x:96,feet:134,scale:1.12,phase};
  if(s){const gesture=behaviorPose(s,'Дорослий',frame,reduced);if(gesture.kind==='approach')return {x:96,feet:134,scale:1.12,phase};if(gesture.kind==='sit'&&!(s.world?.walk?.expires>now)){const corner=favoriteCorner(s);return corner.index===0?{x:pos.bed+25,feet:99,scale:.78,phase}:corner.index===1?{x:pos.bowl+10,feet:119,scale:1.02,phase}:{x:151,feet:88,scale:.68,phase};}}
 

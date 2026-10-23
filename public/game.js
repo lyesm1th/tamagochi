@@ -1,3 +1,4 @@
+import {updateLively} from './lively.js';
 import {bedBonus,furnitureStatus} from './living.js';
 import {updateCozy,noteCozy} from './cozy-life.js';
 import {noteDaily,updateDaily} from './daily-life.js';
@@ -61,7 +62,7 @@ export function tick(s,now=Date.now()) {
  if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
  s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
- if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);updateDaily(s,now);updateCozy(s,now);return s;
+ if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);updateDaily(s,now);updateCozy(s,now);updateLively(s,now);return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
