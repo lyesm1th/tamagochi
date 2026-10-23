@@ -1,4 +1,5 @@
-import {snapshot,nextGeneration,candidates,petId} from '../public/family.js';
+import {performCompanion,visit} from '../public/companionship.js';
+import {snapshot,nextGeneration,candidates,petId,lineageRows} from '../public/family.js';
 import {planReminder,reminderLines,safeZone,localClock} from './reminders.js';
 import {fresh,act,tick,species} from '../public/game.js';
 const json=(x,status=200)=>Response.json(x,{status,headers:{'Cache-Control':'no-store'}});
@@ -38,9 +39,14 @@ export class PetRoom{
  async fetch(req){
  return this.ctx.blockConcurrencyWhile(async()=>{
  let body;try{const raw=await req.text();if(raw.length>8192)return json({error:'Too large'},413);body=JSON.parse(raw||'{}');}catch{return json({error:'Bad JSON'},400);}
+ if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Bad JSON'},400);
  const path=new URL(req.url).pathname;let s=tick(await this.ctx.storage.get('pet'));if(s?.dead)await this.archive(s);let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
  const owner=req.headers.get('X-Pet-Owner'),app=req.headers.get('X-Pet-App');
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
+ if(path==='/api/tree'){const rows=[...await this.ctx.storage.list({prefix:'album:',reverse:true,limit:1000})].map(([,v])=>v);return json({records:lineageRows(s,rows)});}
+ if(path==='/api/companion'){
+ if(!s)return json({error:'Спочатку обери друга.'},400);const next=performCompanion(s,body.command,body);if(next.error)return json({error:next.error},400);s=next.state;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({...next,reminders:{enabled:!!prefs.enabled}});
+ }
  if(path==='/api/album'){
  const options={prefix:'album:',reverse:true,limit:21};if(typeof body.cursor==='string'&&body.cursor.startsWith('album:')&&body.cursor.length<150)options.end=body.cursor;
  const entries=[...await this.ctx.storage.list(options)];const page=entries.slice(0,20);return json({records:page.map(([,v])=>v),cursor:page.at(-1)?.[0]||null,hasMore:entries.length>20});
@@ -59,8 +65,8 @@ export class PetRoom{
  if(s&&!s.dead)return json({error:'У тебе вже є друг.'},409);
  if(!species.some(p=>p.id===body.species))return json({error:'Невідомий вид'},400);
  if(s?.dead)await this.archive(s);s=fresh(body.species);prefs.pendingAt=0;if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'У яйці хтось ворушиться. Годинник налаштовано, чекаємо 3 хвилини.'};
- }else if(path==='/api/state'){s=tick(s);result={state:s||null};}
- else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action,Date.now(),{game:body.game});s=result.state||s;}
+ }else if(path==='/api/state'){s=tick(s);const greeting=s&&!s.dead?visit(s,Date.now(),body.timezone):null;result={state:s||null,greeting};}
+ else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action,Date.now(),{game:body.game,food:body.food});s=result.state||s;}
  else return json({error:'Not found'},404);
  if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
  if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}

@@ -1,0 +1,49 @@
+import {personality} from './pet-personality.js';
+import {stableHash} from './traits.js';
+const HOUR=3600000,DAY=24*HOUR;
+export const furnishings=[{id:'bed',name:'Ліжечко',price:12,benefit:'+4 енергії/год уві сні'},{id:'bowl',name:'Миска',price:8,benefit:'Ситість падає на 10% повільніше'},{id:'plant',name:'Рослина',price:10,benefit:'Настрій падає на 10% повільніше'},{id:'toy',name:'Іграшка',price:15,benefit:'+3 настрою за гру'}];
+export const foodNames={milk:'Молочко',grain:'Зернятка',algae:'Водорості',meat:'Шматочки м’яса',cookie:'Печиво',hay:'Сіно',fly:'Комашка',berry:'Ягідки',carrot:'Морквинка',fish:'Рибка',kibble:'Корм',grass:'Травичка',apple:'Яблучко',worm:'Черв’ячок',leaf:'Листочок'};
+const foods={cat:['kibble','fish','cookie'],corgi:['kibble','meat','carrot'],dog:['hay','grass','apple'],frog:['fly','worm','algae'],chicken:['grain','berry','leaf'],bear:['berry','fish','apple'],dino:['meat','fish','leaf'],bunny:['hay','carrot','leaf']};
+export function foodsFor(s,age){return age==='Малюк'?[personality(s.species).babyFood]:(foods[s.species]||foods.cat);}
+export function clock(now,tz='Europe/Kyiv'){try{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date(now)).map(v=>[v.type,v.value]));return {hour:Number(parts.hour),day:`${parts.year}-${parts.month}-${parts.day}`};}catch{return clock(now,'Europe/Kyiv');}}
+export function zone(tz){try{new Intl.DateTimeFormat('en',{timeZone:tz}).format();return tz;}catch{return 'Europe/Kyiv';}}
+export function ensureCompanion(s,now=Date.now()){
+ s.id??=`${s.born}-${s.species}`;s.bond??=0;s.memory??={visits:0,lastSeen:0,foods:{},discoveries:[],moments:[]};s.memory.foods??={};s.memory.discoveries??=[];s.memory.moments??=[];s.room??={};s.vacationTotal??=0;
+ s.favoriteFood??=(foods[s.species]||foods.cat)[stableHash(s.id)%3];
+ s.routine??={enabled:false,timezone:'Europe/Kyiv',bed:23,wake:9,meal1:10,meal2:18,play:20,samples:{}};s.routine.samples??={};s.routine.locked??={};s.adventureAt??=now+(10+stableHash(s.id)%21)*60000;
+ s.appearance??={mark:['spot','stripe','star'][stableHash(s.id)%3],color:['#b57a7d','#89aeb4','#baa15a'][stableHash(s.id+'color')%3]};return s;
+}
+export function visit(s,now=Date.now(),tz){ensureCompanion(s,now);if(tz)s.routine.timezone=zone(tz);const gap=s.memory.lastSeen?now-s.memory.lastSeen:Infinity;let greeting=null;
+ if(gap>=30*60000){s.memory.visits++;s.bond=Math.min(100,s.bond+3);s.memory.lastVisit=now;greeting=s.vacation?'Ти повернувся! Я відпочиваю в готелі. Коли додому?':gap>DAY&&s.memory.visits>1?'О, моя людина! Я беріг тобі місце для обіймів.':s.bond>=50?'Моя улюблена людина! Я вже впізнаю твої кроки.':'О, моя людина! Заходь, я тобі радий.';}
+ s.memory.lastSeen=now;return greeting;
+}
+export function routineSleeping(s,now){const r=s.routine;if(!r?.enabled||now<(r.manualUntil||0))return !!s.sleeping;const h=clock(now,r.timezone).hour;return r.bed>r.wake?(h>=r.bed||h<r.wake):(h>=r.bed&&h<r.wake);}
+function learnHour(s,key,now){const r=s.routine;if(r.locked[key]||(key==='feed'&&(r.locked.meal1||r.locked.meal2)))return;const h=clock(now,r.timezone).hour;const bins=r.samples[key]??=Array(24).fill(0);bins[h]++;const ranked=bins.map((n,h)=>({n,h})).sort((a,b)=>b.n-a.n);if(ranked[0].n<3)return;if(key==='feed'){r.meal1=ranked[0].h;if(ranked[1].n>=3)r.meal2=ranked[1].h;}else r[key]=ranked[0].h;}
+export function noteCare(s,action,now=Date.now(),food){ensureCompanion(s,now);s.memory.lastSeen=now;
+ if(now-(s.memory.careAt||0)>=60000){s.memory.careAt=now;s.bond=Math.min(100,s.bond+(['pet','play'].includes(action)?2:1));s.memory.moments=[{action,at:now},...s.memory.moments].slice(0,4);}
+ if(action==='feed'){food??=personality(s.species).food;s.memory.foods[food]=(s.memory.foods[food]||0)+1;s.memory.lastFeed=now;learnHour(s,'feed',now);if(food===s.favoriteFood){s.happy=Math.min(100,s.happy+4);if(!s.memory.discoveries.includes(food))s.memory.discoveries.push(food);}}
+ if(action==='play'){s.memory.lastPlay=now;learnHour(s,'play',now);}
+ if(action==='sleep'){s.routine.manualUntil=now+2*HOUR;learnHour(s,s.sleeping?'bed':'wake',now);}
+}
+export const adventures=[
+ {id:'button',title:'Знайшов ґудзик!',question:'Кругленький скарб. Що з ним робити?',choices:[{label:'Зберегти на згадку',bond:4,souvenir:'Сімейний ґудзик',text:'Тепер у нас є скарб. Маленький, зате наш.'},{label:'Обміняти на 3 монети',coins:3,text:'Вигідна угода! Я майже бізнесмен.'}]},
+ {id:'shadow',title:'Хто це за мною?',question:'Пет злякався власної тіні.',choices:[{label:'Заспокоїти й обійняти',bond:4,happy:6,text:'Це просто тінь? Добре, але обійми залиш.'},{label:'Погратися з тінню',happy:9,energy:-2,text:'А вона повторює за мною! Кумедна зараза.'}]},
+ {id:'stash',title:'Таємний запас',question:'За мискою знайшовся захований смаколик.',choices:[{label:'Поділитися з другом',bond:3,hunger:6,text:'Половинка тобі, половинка мені. Ми команда.'},{label:'Залишити на потім',coins:2,text:'Запаси під контролем. Тримай 2 монетки.'}]},
+ {id:'leaf',title:'Листочок прилетів',question:'На підлогу впав красивий листочок.',choices:[{label:'Зробити маленький гербарій',bond:3,souvenir:'Сімейний листочок',text:'Збережемо його. Колись покажемо малюкам.'},{label:'Поганяти його по кімнаті',happy:8,energy:-2,text:'Шурх-шурх! Оце пригода, оце розвага.'}]}
+];
+export function maybeAdventure(s,now=Date.now(),awake=true,rng=Math.random){ensureCompanion(s,now);if(s.vacation||s.dead||!awake)return;if(s.adventure&&s.adventure.expires<=now){s.adventure=null;s.adventureAt=now+2*HOUR;}if(!s.adventure&&now>=s.adventureAt){const e=adventures[Math.floor(rng()*adventures.length)];s.adventure={id:`${now}-${e.id}`,kind:e.id,expires:now+6*HOUR};s.adventureAt=now+(2+rng()*4)*HOUR;}}
+export function adventureOf(s){return adventures.find(e=>e.id===s?.adventure?.kind);}
+export function performCompanion(state,command,body={},now=Date.now()){
+ if(!state)return {error:'Спочатку обери друга.'};const s=ensureCompanion(structuredClone(state),now);if(s.dead)return {error:'Потрібен живий друг.'};
+ if(command==='vacationStart'){if(s.vacation)return {state:s,text:'Друг уже відпочиває.'};s.vacation={started:now};s.updated=now;return {state:s,text:'Поселився в готелі. Потреби, вік і нагадування на паузі. Гарного відпочинку, моя людино!'};}
+ if(command==='vacationResume'){if(!s.vacation)return {state:s,text:'Ми вже вдома.'};const duration=Math.max(0,now-s.vacation.started);s.born+=duration;s.vacationTotal+=duration;s.routine.manualUntil=(s.routine.manualUntil||0)+duration;if(s.adventure){s.adventure.expires+=duration;}s.adventureAt+=duration;s.vacation=null;s.updated=now;return {state:s,text:'Я вдома! Нічого не зголодніло й не постаріло. Давай обійматися.'};}
+ if(command==='roomBuy'){const item=furnishings.find(i=>i.id===body.item);if(!item)return {error:'Невідома річ.'};if(s.room[item.id])return {state:s,text:'Ця річ уже стоїть у кімнатці.'};if(s.coins<item.price)return {error:`Потрібно ${item.price} монет. Заробимо в мінігрі?`};s.coins-=item.price;s.room[item.id]=true;return {state:s,text:`${item.name} тепер у нашій кімнатці. ${item.benefit}.`};}
+ if(command==='routineToggle'){s.routine.enabled=!s.routine.enabled;s.routine.timezone=zone(body.timezone||s.routine.timezone);return {state:s,text:s.routine.enabled?'Автоматичний сон увімкнено. Час можна змінити стрілками й ОК.':'Автоматичний сон вимкнено. Спатиму за твоєю командою.'};}
+ if(command==='routineHour'){if(!['bed','wake','meal1','meal2','play'].includes(body.field))return {error:'Невідомий час.'};s.routine[body.field]=(s.routine[body.field]+1)%24;if(s.routine.wake===s.routine.bed){s.routine.wake=(s.routine.bed+8)%24;}s.routine.samples[body.field]=Array(24).fill(0);s.routine.locked[body.field]=true;return {state:s,text:'Розпорядок збережено.'};}
+ if(s.vacation)return {error:'Друг відпочиває. Спочатку забери його з готелю.'};
+ if(command==='roomUse'){if(body.item!=='plant'||!s.room.plant)return {error:'Цієї речі немає в кімнатці.'};if(now-(s.roomUseAt||0)<5*60000)return {state:s,text:'Рослина вже полита. Дай їй перепочити.'};s.roomUseAt=now;s.happy=Math.min(100,s.happy+3);s.bond=Math.min(100,s.bond+1);return {state:s,text:'Полили рослину разом. Ростемо, зеленіємо й бурчимо.',effect:'garden'};}
+ if(command==='adventure'){const event=adventureOf(s);if(!event||body.eventId!==s.adventure.id||s.adventure.expires<=now)return {error:'Ця пригода вже закінчилась.'};const c=event.choices[body.choice];if(!c)return {error:'Обери відповідь.'};for(const key of ['hunger','happy','energy'])if(c[key])s[key]=Math.min(100,Math.max(0,s[key]+c[key]));s.coins+=c.coins||0;s.bond=Math.min(100,s.bond+(c.bond||0));if(c.souvenir){s.souvenir=c.souvenir;}s.memory.lastAdventure={title:event.title,at:now};s.adventure=null;return {state:s,text:c.text,effect:'adventure'};}
+ return {error:'Не зрозумів команду.'};
+}
+export function memorySummary(s){ensureCompanion(s);const found=s.memory.discoveries.includes(s.favoriteFood);return `Прив’язаність: ${Math.round(s.bond)}% · зустрічей ${s.memory.visits}\nУлюблена їжа: ${found?foodNames[s.favoriteFood]:'ще досліджуємо'}${s.souvenir?'\nСкарб: '+s.souvenir:''}`;}
+export function routineHint(s,now=Date.now()){if(!s.routine?.enabled||s.vacation)return null;const h=clock(now,s.routine.timezone).hour;if([s.routine.meal1,s.routine.meal2].includes(h)&&now-(s.memory.lastFeed||0)>2*HOUR)return 'У нас за розкладом перекус. Миска вже чекає.';if(h===s.routine.play&&now-(s.memory.lastPlay||0)>2*HOUR)return 'Час вечірньої гри! Я вже готовий.';return null;}

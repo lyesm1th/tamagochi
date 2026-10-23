@@ -11,7 +11,7 @@ export function safeZone(tz){try{new Intl.DateTimeFormat('en',{timeZone:tz}).for
 export function localClock(now,tz){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:safeZone(tz),year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date(now));const v=Object.fromEntries(parts.map(p=>[p.type,p.value]));return {day:`${v.year}-${v.month}-${v.day}`,hour:Number(v.hour)};}
 function daytimeAfter(at,tz,nextDay=false,baseDay=null){for(let i=0;i<150;i++){const c=localClock(at,tz);if(c.hour>=9&&c.hour<23&&(!nextDay||c.day!==baseDay))return at;at+=15*MIN;}return at;}
 export function planReminder(pet,prefs,now=Date.now(),rng=Math.random){
- const p={...prefs};if(!p.enabled||!pet||pet.dead)return {prefs:p,next:null};
+ const p={...prefs};if(!p.enabled||!pet||pet.dead||pet.vacation)return {prefs:p,next:null};
  const clock=localClock(now,p.timezone);if(p.day!==clock.day){p.day=clock.day;p.count=0;}
  if(stage(pet,now)==='Яєчко')return {prefs:p,next:Math.max(now+MIN,pet.born+life.egg)};
  const lows=Object.keys(reminderLines).filter(k=>pet[k]<70&&(k!=='energy'||(!pet.sleeping&&!pet.napping)));

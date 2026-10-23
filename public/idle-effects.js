@@ -5,5 +5,7 @@ export function drawIdle(ctx,pose,s,frame=0){if(!s||s.dead||s.sleeping||s.nappin
  if(pose.kind==='yawn'){r(61,60,7,blink?6:3);r(67,59,4,3);}
  if(pose.kind==='sit'){r(45,79,12,3);r(74,79,12,3);}
  if(pose.kind==='disgust'){r(51,43,8,2);r(70,45,8,2);r(88,40,2,8);r(88,50,2,2);r(33,60+blink*3,6,3);}
+ if(pose.kind==='toy'){r(21+blink*5,80-blink*3,6,6,'#b5828e');r(39,72,8,3);}
+ if(pose.kind==='garden'){r(96,69,7,6,'#8da8af');r(103,72,7,2,'#8da8af');r(112,76+blink*3,2,3,'#8da8af');}
  if(pose.kind==='walk'){r(pose.x>0?35:88,86,4,2,'#728153');}
 }

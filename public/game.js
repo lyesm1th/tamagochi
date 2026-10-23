@@ -1,3 +1,4 @@
+import {ensureCompanion,foodsFor,noteCare,maybeAdventure,routineSleeping} from './companionship.js';
 import {traitOf,recordHabit,traits} from './traits.js';
 import {personality,foodFor} from './pet-personality.js';
 export const species = [
@@ -10,14 +11,14 @@ export const species = [
  {id:'dino',name:'Динозаврик',nick:'Кусьозавр',color:'#7cb3a0'},
  {id:'bunny',name:'Кролик',nick:'Вухань',color:'#e4bacb'}
 ];
-export const fresh = (id,now=Date.now()) => ({id:globalThis.crypto?.randomUUID?.()||`${now}-${id}`,generation:1,species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0,careScore:80,discipline:70,treatStreak:0,poopClock:0,adultCare:null,lifeRules:2});
+export const fresh = (id,now=Date.now()) => ensureCompanion({id:globalThis.crypto?.randomUUID?.()||`${now}-${id}`,generation:1,species:id,name:species.find(s=>s.id===id)?.nick||'Малюк',born:now,updated:now,hunger:85,happy:85,energy:90,clean:100,health:100,poop:0,sleeping:false,coins:20,xp:0,dead:false,lastAction:0,careScore:80,discipline:70,treatStreak:0,poopClock:0,adultCare:null,lifeRules:2},now);
 const clamp=n=>Math.max(0,Math.min(100,n));
 export const MINUTE=60000,HOUR=3600000,DAY=86400000;
 export const life={egg:3*MINUTE,baby:3*MINUTE+HOUR,child:3*MINUTE+HOUR+2*DAY,teen:3*MINUTE+HOUR+5*DAY};
 export function care(s){return clamp((s.careScore??80)*.7+(s.discipline??70)*.3);}
 export function temperament(s){const c=s.adultCare??care(s);return c>=80?'Лагідний розумник':c>=50?'Ласкавий буркотун':'Неслухняний бешкетник';}
 export function seniorAt(s){return life.teen+(7+7*(s.adultCare??care(s))/100)*DAY;}
-export function stage(s,now=Date.now()){const age=now-s.born;return age<life.egg?'Яєчко':age<life.baby?'Малюк':age<life.child?'Дитина':age<life.teen?'Підліток':age<seniorAt(s)?'Дорослий':'Старенький';}
+export function stage(s,now=Date.now()){const age=(s.vacation?.started??now)-s.born;return age<life.egg?'Яєчко':age<life.baby?'Малюк':age<life.child?'Дитина':age<life.teen?'Підліток':age<seniorAt(s)?'Дорослий':'Старенький';}
 function baseRates(s,now=Date.now()){
  const st=stage(s,now),poor=(s.adultCare??care(s))<50;
  if(st==='Яєчко')return {hunger:0,happy:0,clean:0,energy:0,poop:Infinity};
@@ -27,9 +28,9 @@ function baseRates(s,now=Date.now()){
  if(st==='Старенький')return {hunger:8,happy:5,clean:8,energy:8,poop:HOUR};
  return {hunger:poor?8:5,happy:poor?7:4,clean:poor?9:4,energy:5,poop:(poor?1:3)*HOUR};
 }
-export function ratesFor(s,now=Date.now()){const r=baseRates(s,now);if(stage(s,now)==='Яєчко')return r;const trait=traitOf(s);return {...r,hunger:r.hunger*(trait==='glutton'?1.15:1),happy:r.happy*(trait==='playful'?1.15:1),energy:r.energy*(trait==='sleepy'?1.2:1)};}
+export function ratesFor(s,now=Date.now()){const r=baseRates(s,now);if(stage(s,now)==='Яєчко'||s.vacation)return r;const trait=traitOf(s);return {...r,hunger:r.hunger*(trait==='glutton'?1.15:1)*(s.room?.bowl ? .9 : 1),happy:r.happy*(trait==='playful'?1.15:1)*(s.room?.plant ? .9 : 1),energy:r.energy*(trait==='sleepy'?1.2:1)};}
 export function tick(s,now=Date.now()) {
- if(!s||s.dead)return s;
+ if(!s)return s;ensureCompanion(s,now);s.trait??=traitOf(s);if(s.dead)return s;if(s.vacation){s.updated=now;return s;}
  // Old saves keep their birthday and stats. New fields are added in place.
  s.careScore??=80;s.discipline??=70;s.treatStreak??=0;s.poopClock??=0;
  // Integrate by fifteen-minute slices so offline neglect matches online time.
@@ -40,8 +41,9 @@ export function tick(s,now=Date.now()) {
  const boundaries=[life.egg,life.baby-5*MINUTE,life.baby,life.child,life.teen,seniorAt(s),seniorAt(s)+3*DAY].map(t=>s.born+t).filter(t=>t>cursor);
  const end=Math.min(now,cursor+15*MINUTE,...boundaries),h=(end-cursor)/HOUR;
  if(st!=='Яєчко'){
+ if(s.routine.enabled&&st!=='Малюк')s.sleeping=routineSleeping(s,cursor);
  const nap=st==='Малюк'&&age>=life.baby-5*MINUTE,asleep=s.sleeping||nap;
- s.hunger=clamp(s.hunger-h*r.hunger);s.happy=clamp(s.happy-h*r.happy);s.clean=clamp(s.clean-h*r.clean);s.energy=clamp(s.energy+h*(asleep?22:-r.energy));
+ s.hunger=clamp(s.hunger-h*r.hunger);s.happy=clamp(s.happy-h*r.happy);s.clean=clamp(s.clean-h*r.clean);s.energy=clamp(s.energy+h*(asleep?(22+(s.room.bed?4:0)):-r.energy));
  s.poopClock+=end-cursor;const droppings=Math.floor(s.poopClock/r.poop);if(droppings){s.poop=Math.min(4,s.poop+droppings);s.poopClock%=r.poop;}
  const neglected=st==='Малюк'?(s.hunger<50||s.happy<50||s.clean<50):(s.hunger<25||s.happy<20||s.clean<25||s.energy<5);
  if(neglected)s.careScore=clamp(s.careScore-h*(st==='Малюк'?20:3));
@@ -55,7 +57,7 @@ export function tick(s,now=Date.now()) {
  if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
  s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
- if(s.dead){s.sleeping=false;s.napping=false;}return s;
+ if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
@@ -75,6 +77,8 @@ export function act(state,action,now=Date.now(),context={}) {
  if(s.dead)return {state:s,error:'Друг уже на веселці. Можна обрати нового.'};
  if(now-s.lastAction<650)return {state:s,error:'Не поспішай, у мене лапки.'};
  if(action==='endLife'){s.health=0;s.dead=true;s.diedAt=now;s.endReason='ended';s.sleeping=false;s.updated=now;s.lastAction=now;return {state:s,text:'Прощавай, людино. У нас були хороші обійми. ♡'};}
+ if(s.vacation)return {state:s,error:'Друг у готелі. Обери відпустку, щоб повернути його додому.'};
+ if(action==='feed'&&context.food&&!foodsFor(s,stage(s,now)).includes(context.food))return {state:s,error:'Ця їжа не підходить цьому пету та його віку.'};
  if(stage(s,now)==='Яєчко')return {state:s,error:'Тссс. У яйці хтось росте. Поки просто почекай.'};
  if(s.napping)return {state:s,error:'Малюк дрімає перед дорослішанням. Не буди його.'};
  if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю. Дай ще п’ять хвилиночок, буркотун.'};
@@ -87,8 +91,8 @@ export function act(state,action,now=Date.now(),context={}) {
  case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Я в люлю. Посидь поруч, тільки не шаруди.':'Я прокинувся! Де моя людина й мій сніданок?';break;
  case 'discipline':if(s.discipline>90)return {state:s,error:'Я чемний! Можна вже просто обійняти?'};s.discipline=clamp(s.discipline+(traitOf(s)==='stubborn'?12:18));s.careScore=clamp(s.careScore+1);text='Добре-добре, я зрозумів. Але обійняти після виховання треба.';break;
  case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine',s.species);break;
- case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15);s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':line('play',s.species);break;
+ case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15+(s.room.toy?3:0));s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':line('play',s.species);break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
- recordHabit(s,action,now);s.xp+=1;s.lastAction=now;return {state:s,text};
+ noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);s.xp+=1;s.lastAction=now;return {state:s,text};
 }
