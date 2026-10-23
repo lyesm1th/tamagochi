@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "detailed: 8 distinct outfits without purchase",
+    "detailed: 10 home goods",
+    "detailed: 3 destinations before starting",
+    "classic: 8 distinct outfits without purchase",
+    "classic: 10 home goods",
+    "classic: 3 destinations before starting"
+  ],
+  "errors": []
+}

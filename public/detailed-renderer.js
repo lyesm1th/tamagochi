@@ -112,3 +112,5 @@ export function drawDetailedFamily(canvas,s,scene,frame=0,reduced=false){canvas.
 export function detailedPose(s,pose){const motion=s?.living?.motion;if(motion?.until>Date.now()){const rect=layout(s)[motion.item];if(rect)return {...pose,x:(rect[0]+rect[2]/2)/2,feet:(rect[1]+rect[3]+9)/2};}return pose;}
 
 export function drawDetailedDreamProp(c,key,x,y,w,h=w){return prop(c,key,x,y,w,h);}
+
+export function detailedSelectionBounds(s,id){return id==='toy'||id==='ball'?[258,247,38,36]:id==='laser'?[164,233,40,32]:id==='music'?[160,233,56,50]:layout(s)[id]||null;}
