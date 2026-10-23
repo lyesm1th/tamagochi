@@ -1,3 +1,4 @@
+import {drawItemVariant,drawToyVariant,drawDesignAccent} from './item-designs.js';
 import {drawMood} from './room-mood.js';
 // Integer-coordinate 16-bit-style sprites: small palette, strong silhouettes.
 const ink='#304d43',cream='#fff0d1',white='#f7f3df',pink='#e5a0a6';
@@ -50,8 +51,8 @@ export function drawRoomArt(c,s,frame=0,reduced=false,night=false,pos={bed:8,bow
  if(variant===1){r(x+3,77,46,8,'#d4a38d');r(x+6,74,40,4,'#d4a38d');}
  if(wear('bed')<45){r(x+20,94,3,6,darkWood);r(x+23,98,5,2,darkWood);}if(broken){r(x+5,101,39,5,floor);r(x+9,104,14,4,wood);r(x+23,101,14,4,wood);r(x+18,110,6,3,cream);r(x+36,113,8,3,cream);}
  }
- if(owned('plant')){const x=pos.plant;outline(x-2,72,17,18,v('plant')===1?'#b3a6c5':'#d8cba6');r(x,73,13,3,wood);r(x+5,51,3,23,'#5c8056');r(x-5,54,13,6,'#71925f');r(x-7,51,7,4,'#71925f');r(x+8,59,10,5,'#71925f');r(x+12,56,7,4,'#71925f');if(wear('plant')<30){r(x-6,53,12,6,wall);r(x-5,91,7,3,'#71925f');}}
- if(owned('bowl')||goods.fountain){const x=pos.bowl;outline(x,117,26,9,v('bowl')===1?'#b3a6c5':'#7d9f80');r(x+3,116,20,3,cream);r(x+6,118,14,2,'#698d77');r(x+11,122,4,2,cream);if(goods.fountain&&wear('fountain')>0){r(x+11,108,3,9,'#a4c8cb');r(x+9,106,7,3,'#c6e0d4');}}
+ if(owned('plant')&&!drawItemVariant(c,s,'plant',pos.plant-8,49,28,42)){const x=pos.plant;outline(x-2,72,17,18,v('plant')===1?'#b3a6c5':'#d8cba6');r(x,73,13,3,wood);r(x+5,51,3,23,'#5c8056');r(x-5,54,13,6,'#71925f');r(x-7,51,7,4,'#71925f');r(x+8,59,10,5,'#71925f');r(x+12,56,7,4,'#71925f');if(wear('plant')<30){r(x-6,53,12,6,wall);r(x-5,91,7,3,'#71925f');}}
+ if((owned('bowl')||goods.fountain)&&!drawItemVariant(c,s,'bowl',pos.bowl,114,26,14)){const x=pos.bowl;outline(x,117,26,9,v('bowl')===1?'#b3a6c5':'#7d9f80');r(x+3,116,20,3,cream);r(x+6,118,14,2,'#698d77');r(x+11,122,4,2,cream);if(goods.fountain&&wear('fountain')>0){r(x+11,108,3,9,'#a4c8cb');r(x+9,106,7,3,'#c6e0d4');}}
  if(goods.shelf){r(pos.shelf,32,42,4,darkWood);r(pos.shelf+3,36,3,5,darkWood);r(pos.shelf+36,36,3,5,darkWood);for(let i=0;i<4;i++){r(pos.shelf+3+i*9,17+i%2*4,7,15-i%2*4,['#9a87b0','#d3b477','#86a390','#b7847e'][i]);r(pos.shelf+4+i*9,20+i%2*4,2,9-i%2*4,'#d7d3b6');}if(wear('shelf')<30){r(pos.shelf+23,20,16,12,wall);r(92,130,12,3,'#9a87b0');r(107,135,10,4,'#d3b477');}}
  if(goods.lamp){r(178,82,2,20,darkWood);r(172,100,14,4,darkWood);r(170,74,18,9,night?'#f1dda3':'#e0c69d');r(173,71,12,4,night?'#f1dda3':'#e0c69d');}
  if(goods.tent){const x=pos.tent;r(x,63,40,30,'#b28f80');r(x+5,55,30,8,'#b28f80');r(x+10,48,20,8,'#b28f80');r(x+16,43,8,6,'#b28f80');outline(x+12,67,16,26,'#5b7667');r(x+14,91,12,2,lightWood);}
@@ -59,7 +60,8 @@ export function drawRoomArt(c,s,frame=0,reduced=false,night=false,pos={bed:8,bow
  if(goods.mirror){outline(145,9,20,32,wood);r(148,12,14,26,'#aac8c3');r(150,14,3,14,'#d2e2d0');}
  if(goods.post){r(5,127,24,5,darkWood);outline(14,97,7,30,lightWood);for(let i=0;i<5;i++)r(16,101+i*5,3,1,wood);}
  if(goods.toybox){outline(149,128,35,14,wood);r(148,126,37,4,lightWood);r(164,131,5,4,'#dbc68e');}
- if((s?.room?.toy||s?.playroom?.toys?.ball)&&!(s?.journal?.gesture?.kind==='ball'&&s.journal.gesture.until>Date.now())){outline(133,126,10,9,'#b3a6c5');r(136,125,5,2,'#d7c8d9');r(137,129,3,3,cream);}
+ if((s?.room?.toy||s?.playroom?.toys?.ball)&&!(s?.journal?.gesture?.kind==='ball'&&s.journal.gesture.until>Date.now())&&!drawToyVariant(c,s,133,124,12,12)){outline(133,126,10,9,'#b3a6c5');r(136,125,5,2,'#d7c8d9');r(137,129,3,3,cream);}
+ for(const [id,rect]of Object.entries({rug:[59,121,76,17],curtains:[9,7,52,44],shelf:[pos.shelf,17,42,24],lamp:[170,71,18,33],tent:[pos.tent,43,40,50],cushion:[38,108,25,13],fountain:[pos.bowl,106,26,20],mirror:[145,9,20,32],post:[5,97,24,35],toybox:[149,126,35,16],box:[4,121,25,17]}))if(id==='box'?s?.room?.box!==false:owned(id))drawDesignAccent(c,s,id,...rect);
  // Cracks and debris are persistent, functional indicators of furniture wear.
  const anchors={bed:[pos.bed+30,97],plant:[pos.plant,78],bowl:[pos.bowl+5,121],rug:[78,128],shelf:[pos.shelf+12,34],lamp:[178,88],tent:[pos.tent+10,73],cushion:[47,115],fountain:[pos.bowl+15,119],mirror:[151,24],post:[16,112],curtains:[11,34],toybox:[158,135]};
  for(const [id,[x,y]]of Object.entries(anchors)){if(!owned(id))continue;if(v(id)&&id!=='bed')r(x,y,7,2,v(id)===1?'#b3a6c5':'#aacbc1');if(wear(id)<65){r(x,y,2,3,darkWood);r(x+2,y+3,2,3,darkWood);}if(wear(id)<30)for(let i=0;i<4;i++)r(Math.min(187,x-7+i*6),Math.min(140,y+10+i%2*4),4,2,wood);}
