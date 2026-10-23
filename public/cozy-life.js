@@ -13,7 +13,7 @@ export function itemOwned(s,id){return !!(s.cozy?.owned[id]||s.cozy?.outfits[id]
 export function ownedThings(s){return allThings.filter(i=>itemOwned(s,i.id));}
 export function opinion(s,id){const c=ensureCozy(s),key=clothes.some(i=>i.id===id)?'cloth':'object',pref=c.preferences[key];return id===pref.love?'love':id===pref.annoy?'annoy':'neutral';}
 export const opinionNames={love:'Обожнюю ♡',annoy:'Дратує!',neutral:'Нормальна штука',unknown:'Ще знайомимося'};
-export function itemStatus(s,id){return s.cozy?.items[id]||{wear:100,uses:0,known:false};}
+export function itemStatus(s,id){return s.cozy?.items?.[id]||{wear:100,uses:0,known:false};}
 export function touchItem(s,id,now=Date.now()){const c=ensureCozy(s,now),item=c.items[id]??={wear:100,uses:0,known:false};const first=item.uses===0;item.uses++;item.wear=Math.max(0,item.wear-4);item.known=true;const taste=opinion(s,id);if(!first){s.happy=clamp(s.happy+(taste==='love'?5:taste==='annoy'?-3:1));}if(taste==='annoy'){s.bodyLanguage={kind:'turned',until:now+6000};c.peace.tension=Math.min(5,c.peace.tension+1);}return first?'Придивляюсь і знайомлюся. Що це ти приніс, людино?':taste==='love'?'Оце моя улюблена штука. Нікому не віддам!':taste==='annoy'?'Не люблю це. Прибери, будь ласка. Я вже бурчу.':'Нормальна штука. Нехай буде.';}
 function ready(s,now){return s.dead||s.vacation||s.sleeping||s.napping||now-s.born<180000?'Нехай друг буде вдома, прокинеться й вилупиться.':null;}
 export function localHour(s,now=Date.now()){try{return Number(new Intl.DateTimeFormat('en',{timeZone:s.routine?.timezone||'Europe/Kyiv',hour:'2-digit',hourCycle:'h23'}).format(now));}catch{return new Date(now).getUTCHours();}}
