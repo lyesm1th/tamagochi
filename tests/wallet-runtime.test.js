@@ -22,11 +22,14 @@ test('SQLite Workers: authenticated owner mint, pocket, gift, retries, legacy co
  const op=crypto.randomUUID();r=await call('100','wallet',{command:'gift',amount:250,op});const code=r.wallet.gifts[0].code;assert.match(code,/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{2}$/);assert.equal(r.wallet.balance,999250);
  r=await call('100','wallet',{command:'gift',amount:250,op});assert.equal(r.wallet.balance,999250);
  r=await call('200','wallet',{command:'redeem',code:code.toLowerCase().replaceAll('-',' ')});assert.equal(r.state.coins,270);assert.equal(r.wallet.balance,0);assert.equal(r.wallet.owner,false);
- r=await call('200','wallet',{command:'redeem',code});assert.equal(r.state.coins,270);
+ const repeated=await mf.dispatchFetch('https://game.test/api/wallet',{method:'POST',headers:{'X-Telegram-Init-Data':auth('200')},body:JSON.stringify({command:'redeem',code})});assert.equal(repeated.status,400);assert.match((await repeated.json()).error,/уже використано/);r=await call('200','wallet',{command:'status'});assert.equal(r.state.coins,270);
  const denied=await mf.dispatchFetch('https://game.test/api/wallet',{method:'POST',headers:{'X-Telegram-Init-Data':auth('200')},body:JSON.stringify({command:'refill',owner:true})});assert.equal(denied.status,400);
- const legacy='gift-'+crypto.randomUUID();await seed('shared-wallet-v1',{[legacy]:{issuer:'100',amount:10,recipient:null}});r=await call('200','wallet',{command:'redeem',code:legacy});assert.equal(r.state.coins,280);
+ const legacy='gift-'+crypto.randomUUID();await seed('shared-wallet-v1',{[legacy]:{issuer:'100',amount:10,recipient:null}});const revoked=await mf.dispatchFetch('https://game.test/api/wallet',{method:'POST',headers:{'X-Telegram-Init-Data':auth('200')},body:JSON.stringify({command:'redeem',code:legacy})});assert.equal(revoked.status,400);assert.match((await revoked.json()).error,/анульовано/);
  // Purchase using credited gift, without a separate transfer.
- r=await call('200','living',{command:'roomStyle',kind:'wall',index:1});assert.equal(r.state.coins,220);
+ r=await call('200','living',{command:'roomStyle',kind:'wall',index:1});assert.equal(r.state.coins,210);
+ r=await call('100','wallet',{command:'gift',amount:40,op:crypto.randomUUID()});const raceCode=r.wallet.gifts[0].code;
+ const race=await Promise.all(['200','300'].map(id=>mf.dispatchFetch('https://game.test/api/wallet',{method:'POST',headers:{'X-Telegram-Init-Data':auth(id)},body:JSON.stringify({command:'redeem',code:raceCode})})));assert.deepEqual(race.map(x=>x.status).sort(),[200,400]);
+ r=await call('100','wallet',{command:'status'});assert.equal(r.wallet.gifts[0].status,'redeemed');
  const p=makePet();p.cozy.hide={spot:'box',expires:Date.now()+300000};p.lively={secret:{kind:'box',at:Date.now(),until:Date.now()+300000}};await seed('100',{pet:p});r=await call('100','state',{roomReturn:true});assert.equal(r.state.cozy.hide,null);assert.equal(r.state.lively.secret,null);
  }finally{await mf.dispose();}
 });
