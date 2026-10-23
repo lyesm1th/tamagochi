@@ -1,3 +1,4 @@
+import {performWorld,wakeStory} from '../public/little-world.js';
 import {performCompanion,visit} from '../public/companionship.js';
 import {snapshot,nextGeneration,candidates,petId,lineageRows} from '../public/family.js';
 import {planReminder,reminderLines,safeZone,localClock} from './reminders.js';
@@ -44,8 +45,8 @@ export class PetRoom{
  const owner=req.headers.get('X-Pet-Owner'),app=req.headers.get('X-Pet-App');
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
  if(path==='/api/tree'){const rows=[...await this.ctx.storage.list({prefix:'album:',reverse:true,limit:1000})].map(([,v])=>v);return json({records:lineageRows(s,rows)});}
- if(path==='/api/companion'){
- if(!s)return json({error:'Спочатку обери друга.'},400);const next=performCompanion(s,body.command,body);if(next.error)return json({error:next.error},400);s=next.state;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({...next,reminders:{enabled:!!prefs.enabled}});
+ if(path==='/api/companion'||path==='/api/world'){
+ if(!s)return json({error:'Спочатку обери друга.'},400);const next=(path==='/api/world'?performWorld:performCompanion)(s,body.command,body);if(next.error)return json({error:next.error},400);s=next.state;await this.ctx.storage.put('pet',s);if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}return json({...next,reminders:{enabled:!!prefs.enabled}});
  }
  if(path==='/api/album'){
  const options={prefix:'album:',reverse:true,limit:21};if(typeof body.cursor==='string'&&body.cursor.startsWith('album:')&&body.cursor.length<150)options.end=body.cursor;
@@ -65,7 +66,7 @@ export class PetRoom{
  if(s&&!s.dead)return json({error:'У тебе вже є друг.'},409);
  if(!species.some(p=>p.id===body.species))return json({error:'Невідомий вид'},400);
  if(s?.dead)await this.archive(s);s=fresh(body.species);prefs.pendingAt=0;if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'У яйці хтось ворушиться. Годинник налаштовано, чекаємо 3 хвилини.'};
- }else if(path==='/api/state'){s=tick(s);const greeting=s&&!s.dead?visit(s,Date.now(),body.timezone):null;result={state:s||null,greeting};}
+ }else if(path==='/api/state'){s=tick(s);const greeting=s&&!s.dead?visit(s,Date.now(),body.timezone):null;const story=s&&!s.dead?wakeStory(s):null;result={state:s||null,greeting:story||greeting};}
  else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action,Date.now(),{game:body.game,food:body.food});s=result.state||s;}
  else return json({error:'Not found'},404);
  if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);

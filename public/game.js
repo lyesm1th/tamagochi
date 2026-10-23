@@ -1,3 +1,4 @@
+import {ensureWorld,syncDream,wakeStory} from './little-world.js';
 import {ensureCompanion,foodsFor,noteCare,maybeAdventure,routineSleeping} from './companionship.js';
 import {traitOf,recordHabit,traits} from './traits.js';
 import {personality,foodFor} from './pet-personality.js';
@@ -30,9 +31,9 @@ function baseRates(s,now=Date.now()){
 }
 export function ratesFor(s,now=Date.now()){const r=baseRates(s,now);if(stage(s,now)==='Яєчко'||s.vacation)return r;const trait=traitOf(s);return {...r,hunger:r.hunger*(trait==='glutton'?1.15:1)*(s.room?.bowl ? .9 : 1),happy:r.happy*(trait==='playful'?1.15:1)*(s.room?.plant ? .9 : 1),energy:r.energy*(trait==='sleepy'?1.2:1)};}
 export function tick(s,now=Date.now()) {
- if(!s)return s;ensureCompanion(s,now);s.trait??=traitOf(s);if(s.dead)return s;if(s.vacation){s.updated=now;return s;}
+ if(!s)return s;ensureCompanion(s,now);s.trait??=traitOf(s);ensureWorld(s);if(s.dead)return s;if(s.vacation){s.updated=now;return s;}
  // Old saves keep their birthday and stats. New fields are added in place.
- s.careScore??=80;s.discipline??=70;s.treatStreak??=0;s.poopClock??=0;
+ syncDream(s,s.updated);s.careScore??=80;s.discipline??=70;s.treatStreak??=0;s.poopClock??=0;
  // Integrate by fifteen-minute slices so offline neglect matches online time.
  let cursor=s.updated,steps=0;
  while(cursor<now&&!s.dead&&steps++<12000){
@@ -42,7 +43,7 @@ export function tick(s,now=Date.now()) {
  const end=Math.min(now,cursor+15*MINUTE,...boundaries),h=(end-cursor)/HOUR;
  if(st!=='Яєчко'){
  if(s.routine.enabled&&st!=='Малюк')s.sleeping=routineSleeping(s,cursor);
- const nap=st==='Малюк'&&age>=life.baby-5*MINUTE,asleep=s.sleeping||nap;
+ const nap=st==='Малюк'&&age>=life.baby-5*MINUTE,asleep=s.sleeping||nap;s.napping=nap;syncDream(s,cursor);
  s.hunger=clamp(s.hunger-h*r.hunger);s.happy=clamp(s.happy-h*r.happy);s.clean=clamp(s.clean-h*r.clean);s.energy=clamp(s.energy+h*(asleep?(22+(s.room.bed?4:0)):-r.energy));
  s.poopClock+=end-cursor;const droppings=Math.floor(s.poopClock/r.poop);if(droppings){s.poop=Math.min(4,s.poop+droppings);s.poopClock%=r.poop;}
  const neglected=st==='Малюк'?(s.hunger<50||s.happy<50||s.clean<50):(s.hunger<25||s.happy<20||s.clean<25||s.energy<5);
@@ -57,7 +58,7 @@ export function tick(s,now=Date.now()) {
  if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
  s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
- if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}return s;
+ if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
@@ -94,5 +95,6 @@ export function act(state,action,now=Date.now(),context={}) {
  case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15+(s.room.toy?3:0));s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':line('play',s.species);break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
+ syncDream(s,now);if(action==='sleep'&&!s.sleeping){const story=wakeStory(s);if(story)text+=' '+story;}
  noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);s.xp+=1;s.lastAction=now;return {state:s,text};
 }

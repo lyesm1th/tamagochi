@@ -1,6 +1,16 @@
 // Short, synthesized pocket-pet sounds: no downloads or network latency.
 // [start seconds, duration, start Hz, end Hz, volume, waveform]
 export const reactions={
+ bath:[[0,.08,450,1000,.02,'sine'],[.12,.09,600,1400,.025,'sine'],[.28,.13,350,900,.02,'sine'],[.48,.1,750,1600,.02,'sine']],
+ groom:[[0,.12,210,140,.025,'triangle'],[.2,.12,230,150,.025,'triangle'],[.4,.15,260,180,.02,'sine']],
+ blanket:[[0,.3,180,260,.025,'sine'],[.35,.4,260,120,.02,'sine']],
+ trick:[[0,.1,440,660,.03,'square'],[.15,.1,660,880,.03,'square'],[.3,.18,880,1100,.025,'sine']],
+ walk:[[0,.07,240,180,.025,'triangle'],[.2,.07,270,200,.025,'triangle'],[.4,.07,240,180,.025,'triangle']],
+ gift:[[0,.12,500,750,.03,'sine'],[.17,.18,750,1000,.025,'sine']],
+ sun:[[0,.1,900,1400,.02,'sine'],[.14,.1,1200,850,.02,'sine'],[.36,.15,1000,1500,.02,'sine']],
+ rain:Array.from({length:12},(_,i)=>[i*.07,.04,450+(i*137)%900,200,.012,'sine']),
+ cloud:[[0,.5,240,180,.015,'sine'],[.3,.4,200,260,.012,'triangle']],
+ storm:[[0,.3,90,40,.025,'triangle'],[.15,.5,60,25,.02,'sawtooth'],[.6,.3,45,25,.015,'triangle']],
  milk:[[0,.12,260,160,.04,'sine'],[.18,.13,290,150,.04,'sine'],[.38,.16,230,100,.04,'triangle'],[.6,.12,310,210,.03,'sine']],
  feed:[[0,.09,180,80,.07,'triangle'],[.13,.07,240,110,.06,'sine'],[.26,.09,170,75,.07,'triangle'],[.39,.08,260,100,.06,'sine'],[.55,.13,310,240,.04,'sine']],
  treat:[[0,.08,230,100,.06,'triangle'],[.12,.08,270,110,.06,'triangle'],[.28,.12,500,700,.035,'sine'],[.43,.16,700,850,.03,'sine']],
@@ -30,6 +40,6 @@ export function createSound(makeContext,enabled=true){
  function unlock(){if(!on)return Promise.resolve(false);try{context ||= makeContext();if(context.state==='closed')context=makeContext();return Promise.resolve(context.state==='running'?undefined:context.resume()).then(()=>context.state==='running').catch(()=>false);}catch{return Promise.resolve(false);}}
  function tone([delay,duration,from,to,volume,type],pitch=1){const o=context.createOscillator(),g=context.createGain(),t=context.currentTime+delay;o.type=type;o.frequency.setValueAtTime(from*pitch,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,to*pitch),t+duration);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(volume,t+Math.min(.015,duration/3));g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(context.destination);active.add(o);o.onended=()=>{active.delete(o);o.disconnect();g.disconnect();};o.start(t);o.stop(t+duration+.01);}
  async function beep(freq=660){if(!on||!await unlock()||!on)return false;try{tone([0,.075,freq,freq,.035,'square']);return true;}catch{return false;}}
- async function react(action,species){const recipe=action==='pet'?(affectionSounds[species]||reactions.pet):reactions[action];if(!recipe||!on||!await unlock()||!on)return false;try{stop();const pitch={chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
+ async function react(action,species){const recipe=['pet','ritual'].includes(action)?(affectionSounds[species]||reactions.pet):reactions[action];if(!recipe||!on||!await unlock()||!on)return false;try{stop();const pitch={chicken:1.35,cat:1.05,corgi:.95,frog:.7,bear:.65,dog:.75,dino:.6,bunny:1.25}[species]||1;for(const note of recipe)tone(note,pitch);return true;}catch{stop();return false;}}
  return {unlock,beep,react,get enabled(){return on;},set enabled(v){on=!!v;if(!on)stop();},suspend(){stop();if(context?.state==='running')return context.suspend().catch(()=>{});}};
 }

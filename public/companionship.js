@@ -1,3 +1,4 @@
+import {ensureWorld} from './little-world.js';
 import {personality} from './pet-personality.js';
 import {stableHash} from './traits.js';
 const HOUR=3600000,DAY=24*HOUR;
@@ -11,7 +12,7 @@ export function ensureCompanion(s,now=Date.now()){
  s.id??=`${s.born}-${s.species}`;s.bond??=0;s.memory??={visits:0,lastSeen:0,foods:{},discoveries:[],moments:[]};s.memory.foods??={};s.memory.discoveries??=[];s.memory.moments??=[];s.room??={};s.vacationTotal??=0;
  s.favoriteFood??=(foods[s.species]||foods.cat)[stableHash(s.id)%3];
  s.routine??={enabled:false,timezone:'Europe/Kyiv',bed:23,wake:9,meal1:10,meal2:18,play:20,samples:{}};s.routine.samples??={};s.routine.locked??={};s.adventureAt??=now+(10+stableHash(s.id)%21)*60000;
- s.appearance??={mark:['spot','stripe','star'][stableHash(s.id)%3],color:['#b57a7d','#89aeb4','#baa15a'][stableHash(s.id+'color')%3]};return s;
+ ensureWorld(s);s.appearance??={mark:['spot','stripe','star'][stableHash(s.id)%3],color:['#b57a7d','#89aeb4','#baa15a'][stableHash(s.id+'color')%3]};return s;
 }
 export function visit(s,now=Date.now(),tz){ensureCompanion(s,now);if(tz)s.routine.timezone=zone(tz);const gap=s.memory.lastSeen?now-s.memory.lastSeen:Infinity;let greeting=null;
  if(gap>=30*60000){s.memory.visits++;s.bond=Math.min(100,s.bond+3);s.memory.lastVisit=now;greeting=s.vacation?'Ти повернувся! Я відпочиваю в готелі. Коли додому?':gap>DAY&&s.memory.visits>1?'О, моя людина! Я беріг тобі місце для обіймів.':s.bond>=50?'Моя улюблена людина! Я вже впізнаю твої кроки.':'О, моя людина! Заходь, я тобі радий.';}
@@ -36,7 +37,7 @@ export function adventureOf(s){return adventures.find(e=>e.id===s?.adventure?.ki
 export function performCompanion(state,command,body={},now=Date.now()){
  if(!state)return {error:'Спочатку обери друга.'};const s=ensureCompanion(structuredClone(state),now);if(s.dead)return {error:'Потрібен живий друг.'};
  if(command==='vacationStart'){if(s.vacation)return {state:s,text:'Друг уже відпочиває.'};s.vacation={started:now};s.updated=now;return {state:s,text:'Поселився в готелі. Потреби, вік і нагадування на паузі. Гарного відпочинку, моя людино!'};}
- if(command==='vacationResume'){if(!s.vacation)return {state:s,text:'Ми вже вдома.'};const duration=Math.max(0,now-s.vacation.started);s.born+=duration;s.vacationTotal+=duration;s.routine.manualUntil=(s.routine.manualUntil||0)+duration;if(s.adventure){s.adventure.expires+=duration;}s.adventureAt+=duration;s.vacation=null;s.updated=now;return {state:s,text:'Я вдома! Нічого не зголодніло й не постаріло. Давай обійматися.'};}
+ if(command==='vacationResume'){if(!s.vacation)return {state:s,text:'Ми вже вдома.'};const duration=Math.max(0,now-s.vacation.started);s.born+=duration;s.vacationTotal+=duration;s.routine.manualUntil=(s.routine.manualUntil||0)+duration;if(s.adventure){s.adventure.expires+=duration;}s.adventureAt+=duration;if(s.world.sleepAt)s.world.sleepAt+=duration;for(const k of Object.keys(s.world.cooldowns))s.world.cooldowns[k]+=duration;for(const k of ['walk','activity'])if(s.world[k])s.world[k].expires+=duration;s.vacation=null;s.updated=now;return {state:s,text:'Я вдома! Нічого не зголодніло й не постаріло. Давай обійматися.'};}
  if(command==='roomBuy'){const item=furnishings.find(i=>i.id===body.item);if(!item)return {error:'Невідома річ.'};if(s.room[item.id])return {state:s,text:'Ця річ уже стоїть у кімнатці.'};if(s.coins<item.price)return {error:`Потрібно ${item.price} монет. Заробимо в мінігрі?`};s.coins-=item.price;s.room[item.id]=true;return {state:s,text:`${item.name} тепер у нашій кімнатці. ${item.benefit}.`};}
  if(command==='routineToggle'){s.routine.enabled=!s.routine.enabled;s.routine.timezone=zone(body.timezone||s.routine.timezone);return {state:s,text:s.routine.enabled?'Автоматичний сон увімкнено. Час можна змінити стрілками й ОК.':'Автоматичний сон вимкнено. Спатиму за твоєю командою.'};}
  if(command==='routineHour'){if(!['bed','wake','meal1','meal2','play'].includes(body.field))return {error:'Невідомий час.'};s.routine[body.field]=(s.routine[body.field]+1)%24;if(s.routine.wake===s.routine.bed){s.routine.wake=(s.routine.bed+8)%24;}s.routine.samples[body.field]=Array(24).fill(0);s.routine.locked[body.field]=true;return {state:s,text:'Розпорядок збережено.'};}
