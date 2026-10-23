@@ -1,4 +1,4 @@
-import {cozyPages,performCozy,homeGoods,clothes,ownedThings,itemStatus,opinion,opinionNames,dishes,ingredients,additionsFor,isFavoriteMeal,hideSpots,isNight,nightPhase} from './cozy-life.js';
+import {cozyPages,performCozy,updateCozy,homeGoods,clothes,ownedThings,itemStatus,opinion,opinionNames,dishes,ingredients,additionsFor,isFavoriteMeal,hideSpots,isNight,nightPhase} from './cozy-life.js';
 import {drawExpandedRoom,scenePose,drawHideClue,drawClothes,drawCozyEvent} from './cozy-effects.js';
 import {playroomPages,toys,recipes,layouts,bedding,decorFields,performPlayroom,furniturePositions,favoriteCorner} from './playroom.js';
 import {drawPlayroom} from './playroom-effects.js';
@@ -124,7 +124,7 @@ setInterval(async()=>{if(!state||busy||loading||mode!=='normal'||document.hidden
 document.addEventListener('visibilitychange',()=>{if(document.hidden){void audio.suspend();if(game)endGame(false,true);}else if(!busy&&mode==='normal')void load();});render();void load();
 
 let displayedStage=state?stage(state):null,displayedBorn=state?.born;
-setInterval(()=>{if(!state||state.dead)return;const current=stage(state);if(displayedBorn===state.born&&displayedStage&&displayedStage!==current){speak(current==='Малюк'?'Трісь! Я вилупився. Де моя людина й обійми?':current==='Дитина'?'Я виспався й підріс. Дивися, які лапки!':current==='Підліток'?'Я вже підліток. Характер росте швидше за лапки.':current==='Старенький'?'Я вже старенький. Посидь зі мною, моя людино.':'Я дорослий! Але на ручки все одно хочу.');void audio.react('adopt',state.species);}displayedStage=current;displayedBorn=state.born;if(mode==='normal'&&!busy)render();},1000);
+setInterval(()=>{if(!state||state.dead)return;const removed=state.cozy?.lastRemoved?.at;updateCozy(state);if(state.cozy?.lastRemoved?.at!==removed){if(!online)save();speak('Зняв незручний одяг. Давай приміряємо щось інше, людино?');if(mode==='wardrobe'&&!busy)render();}const current=stage(state);if(displayedBorn===state.born&&displayedStage&&displayedStage!==current){speak(current==='Малюк'?'Трісь! Я вилупився. Де моя людина й обійми?':current==='Дитина'?'Я виспався й підріс. Дивися, які лапки!':current==='Підліток'?'Я вже підліток. Характер росте швидше за лапки.':current==='Старенький'?'Я вже старенький. Посидь зі мною, моя людино.':'Я дорослий! Але на ручки все одно хочу.');void audio.react('adopt',state.species);}displayedStage=current;displayedBorn=state.born;if(mode==='normal'&&!busy)render();},1000);
 
 async function toggleReminders(){
  if(!online){speak('Нагадування доступні в Telegram. Відкрий гру з бота.');return;}
