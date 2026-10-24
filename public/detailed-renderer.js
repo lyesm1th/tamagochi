@@ -1,3 +1,4 @@
+import {paintSeatedHat} from './tailored-wardrobe.js';
 import {emotionSprites} from './emotion-sprite-manifest.js';
 import {paintExpression,expressionSelection,expressionReady,loadEmotionSprite,emotionStage} from './emotion-sprites.js';
 import {enrichmentPose,enrichPose,drawEnrichment,transformEnriched} from './room-enrichment.js';
@@ -32,11 +33,11 @@ const treasureMasks={cap:['0011111100','0112222110','1123333211','1232222321','1
 function treasure(c,id,x,y,size=22){if(id==='leaf'){prop(c,'leaf',x,y,size);return;}const mask=treasureMasks[id]||treasureMasks.stone,pal={cap:['#67596d','#aa94b6','#d3bfdc'],stone:['#65716b','#9eafa4','#cdd5c7'],feather:['#8c795a','#c5b17e','#eee2b5'],button:['#856373','#bf94a7','#edd0d5'],shell:['#987966','#d7b29b','#f2ddbf']}[id]||['#65716b','#9eafa4','#cdd5c7'],unit=size/10;for(let yy=0;yy<mask.length;yy++)for(let xx=0;xx<10;xx++){const bit=Number(mask[yy][xx]);if(bit)shade(c,x+xx*unit,y+yy*unit,Math.ceil(unit),Math.ceil(unit),pal[bit-1]);}}
 
 function ageOf(s){return s?.portraitStage||s&&stage(s)||'Дорослий';}
-function sheetOf(s,effect,now){const age=ageOf(s);if(s?.sleeping||s?.napping)return 'sleep';if(age==='Малюк')return 'babies';if(age==='Дитина')return 'children';if(age==='Підліток')return 'teens';if(s?.sleeping||s?.napping)return 'sleep';const kind=active(effect,now);return ['pet','ritual','gift','adventure'].includes(kind)?'happy':['feed','treat','cook'].includes(kind)?'eating':'adults';}
+function sheetOf(s,effect,now){const age=ageOf(s);if(s?.sleeping||s?.napping)return 'sleep';if(age==='Малюк')return 'babies';if(age==='Дитина')return 'children';if(age==='Підліток')return 'teens';if(s?.sleeping||s?.napping)return 'sleep';return 'adults';} // Keep the original face and fitted silhouette during care actions.
 const ageScale=age=>age==='Малюк'?.40:age==='Дитина'?.64:age==='Підліток'?.84:age==='Старенький'?.94:1;
 // Clothing positions are normalized to each atlas sprite, not the old rectangular body.
 export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age);return {eyes:a.eyes,neck:a.neck,torso:a.top+a.height/2,head:a.hat,age};}
-function clothes(c,s,box,age,sheet){const base=sprites.get(sheet+':'+s.species);if(!base)return;paintFittedClothes(c,base,s.species,age,sheet,s.cozy?.wearing,box.x,s.sleeping||s.napping);const layout=wardrobeLayout(s.species,age,sheet,box,s.cozy?.wearing,s.sleeping||s.napping);for(const p of layout.pieces){if(p.slot==='body'||p.slot==='neck')continue;if(p.slot==='eyes'&&p.id==='glasses'){
+function clothes(c,s,box,age,sheet){const base=sprites.get(sheet+':'+s.species);if(!base)return;paintFittedClothes(c,base,s.species,age,sheet,s.cozy?.wearing,box.x,s.sleeping||s.napping);const layout=wardrobeLayout(s.species,age,sheet,box,s.cozy?.wearing,s.sleeping||s.napping);for(const p of layout.pieces){if(p.slot==='body'||p.slot==='neck')continue;if(p.slot==='head'){paintSeatedHat(c,base,s.species,age,p.id,box.x);continue;}if(p.slot==='eyes'&&p.id==='glasses'){
  const a=emotionSprites[s.species]?.stages[emotionStage(age)];if(!a)continue;const scaleX=box.w/a.size[0],scaleY=box.h/a.size[1],u=Math.max(1,Math.round(box.h/90)),y=box.y+a.eyes[2]*scaleY,xs=a.eyes.slice(0,2).map(x=>box.x+x*scaleX),rr=(x,y,w,h,color)=>{c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
  for(const x of xs){rr(x-7*u,y-7*u,14*u,2*u,'#304d43');rr(x-7*u,y+6*u,14*u,2*u,'#304d43');rr(x-9*u,y-5*u,2*u,11*u,'#304d43');rr(x+7*u,y-5*u,2*u,11*u,'#304d43');rr(x-7*u,y-5*u,u,3*u,'#b9d6c4');}rr(xs[0]+8*u,y-u,Math.max(u,xs[1]-xs[0]-16*u),2*u,'#304d43');
  }else stamp(c,'clothing',p.id,p.x,p.y,p.w,p.h);}}

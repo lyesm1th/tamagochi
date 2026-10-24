@@ -1,3 +1,7 @@
+# Current visual policy
+
+Replacement eyes and mouths are disabled following in-game review. See [FIT-REPAIR.md](FIT-REPAIR.md) for the original-face and tailored-outfit implementation. The expression-atlas section below documents the superseded prototype; its images are not loaded or drawn by the live renderer.
+
 # Character, expression sprites and wardrobe
 
 The five existing traits remain intact. Six stable axes extend them: affection, independence, curiosity, playfulness, sensitivity and stubbornness. Fourteen emotion states (including calm) retain their cause, intensity and wall-clock expiry; the last 20 seconds gradually settle. Care, food preferences, repetition, room updates, repairs and touch/toy events supply causes. Necessary care bypasses the bounded optional-interaction refusal gate. The status action explains the current state; 42 contextual lines are selected once per episode. Calm activity scheduling stays in place.
