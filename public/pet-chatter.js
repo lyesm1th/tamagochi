@@ -1,3 +1,4 @@
+import {emotionLine} from './emotion-dialogue.js';
 import {ambientSlot} from './calm-behavior.js';
 import {chooseDialogue} from './pet-dialogue.js';
 const thoughtCache=new Map();
@@ -49,6 +50,7 @@ export function chatter(s,now=Date.now()){
  const key=(s.id||s.species)+':'+slot.id;if(kind==='thought'&&!thoughtCache.has(key)){thoughtCache.set(key,wordSeed%2?chooseDialogue(s,slot.at):thoughts[wordSeed%thoughts.length]);if(thoughtCache.size>128)thoughtCache.delete(thoughtCache.keys().next().value);}let text=kind==='thought'?thoughtCache.get(key):voice[wordSeed%voice.length];
  if(kind==='thought'&&seed%5===0&&s.social?.friends?.[0])text='Цікаво, що зараз робить '+s.social.friends[0].name+'? Потім зустрінемось на майданчику.';
  if(kind==='thought'&&seed%7===0&&s.journal?.drawings?.length)text='Мій малюнок треба повісити рівніше. Хоча ні. Це авторський нахил.';
+ const emotionalText=emotionLine(s,now);if(emotionalText){text=emotionalText;return {id:block+':emotion',kind:'thought',text,item:'front',progress:slot.progress,tune:0};}
  return {id:block+':'+kind,kind,text,item:'front',progress:slot.progress,tune:seed%3};
 }
 export const chatterVoiceCount=Object.keys(voices).length;

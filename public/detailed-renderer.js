@@ -1,3 +1,5 @@
+import {emotionSprites} from './emotion-sprite-manifest.js';
+import {paintExpression,expressionSelection,expressionReady,loadEmotionSprite,emotionStage} from './emotion-sprites.js';
 import {enrichmentPose,enrichPose,drawEnrichment,transformEnriched} from './room-enrichment.js';
 import {roomRects,roomMoment,roomMomentPose,drawRoomResponse,withRoomGesture} from './room-life.js';
 import {drawBanana} from './new-pet-art.js';
@@ -34,18 +36,24 @@ function sheetOf(s,effect,now){const age=ageOf(s);if(s?.sleeping||s?.napping)ret
 const ageScale=age=>age==='Малюк'?.40:age==='Дитина'?.64:age==='Підліток'?.84:age==='Старенький'?.94:1;
 // Clothing positions are normalized to each atlas sprite, not the old rectangular body.
 export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age);return {eyes:a.eyes,neck:a.neck,torso:a.top+a.height/2,head:a.hat,age};}
-function clothes(c,s,box,age,sheet){const base=sprites.get(sheet+':'+s.species);if(!base)return;paintFittedClothes(c,base,s.species,age,sheet,s.cozy?.wearing,box.x,s.sleeping||s.napping);const layout=wardrobeLayout(s.species,age,sheet,box,s.cozy?.wearing,s.sleeping||s.napping);for(const p of layout.pieces){if(p.slot==='body'||p.slot==='neck')continue;stamp(c,'clothing',p.id,p.x,p.y,p.w,p.h);}if(layout.hands.length){for(const hand of layout.hands){const sx=hand.x-box.x,sy=hand.y-box.y;c.drawImage(base,sx,sy,hand.w,hand.h,hand.x,hand.y,hand.w,hand.h);}}}
+function clothes(c,s,box,age,sheet){const base=sprites.get(sheet+':'+s.species);if(!base)return;paintFittedClothes(c,base,s.species,age,sheet,s.cozy?.wearing,box.x,s.sleeping||s.napping);const layout=wardrobeLayout(s.species,age,sheet,box,s.cozy?.wearing,s.sleeping||s.napping);for(const p of layout.pieces){if(p.slot==='body'||p.slot==='neck')continue;if(p.slot==='eyes'&&p.id==='glasses'){
+ const a=emotionSprites[s.species]?.stages[emotionStage(age)];if(!a)continue;const scaleX=box.w/a.size[0],scaleY=box.h/a.size[1],u=Math.max(1,Math.round(box.h/90)),y=box.y+a.eyes[2]*scaleY,xs=a.eyes.slice(0,2).map(x=>box.x+x*scaleX),rr=(x,y,w,h,color)=>{c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+ for(const x of xs){rr(x-7*u,y-7*u,14*u,2*u,'#304d43');rr(x-7*u,y+6*u,14*u,2*u,'#304d43');rr(x-9*u,y-5*u,2*u,11*u,'#304d43');rr(x+7*u,y-5*u,2*u,11*u,'#304d43');rr(x-7*u,y-5*u,u,3*u,'#b9d6c4');}rr(xs[0]+8*u,y-u,Math.max(u,xs[1]-xs[0]-16*u),2*u,'#304d43');
+ }else stamp(c,'clothing',p.id,p.x,p.y,p.w,p.h);}}
 // Bake the pet, fitted clothes and foreground paws into one sprite before scene movement.
 // Room, portraits, sandbox and games all draw this same dressed bitmap.
-export function dressedSprite(pet,id,age,sheet){
+export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expressive=true){
  const base=sprites.get(sheet+':'+id);if(!base)return null;
- const wearing=pet.cozy?.wearing||{},key=JSON.stringify([id,age,sheet,!!(pet.sleeping||pet.napping),...['body','neck','head','eyes'].map(slot=>[wearing[slot],itemStatus(pet,wearing[slot]).wear<30])]);
+ const expression=expressive&&!['happy','eating','sleep'].includes(sheet)?expressionSelection(pet,age,now,reduced):null;
+ const wearing=pet.cozy?.wearing||{},key=JSON.stringify([id,age,sheet,expression?[expression.kind,expression.frame,Math.round(expression.strength*10)]:null,!!(pet.sleeping||pet.napping),...['body','neck','head','eyes'].map(slot=>[wearing[slot],itemStatus(pet,wearing[slot]).wear<30])]);
  if(dressedSprites.has(key))return dressedSprites.get(key);
+ if(expression&&!expressionReady(id)){loadEmotionSprite(id);return dressedSprite(pet,id,age,sheet,now,reduced,false);}
  const pad=Math.ceil(base.height*.25),cv=document.createElement('canvas');cv.width=base.width+pad*2;cv.height=base.height+pad*2;
  const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(base,pad,pad);
+ if(expression)paintExpression(ctx,pet,age,pad,now,reduced);
  clothes(ctx,{...pet,species:id},{x:pad,y:pad,w:base.width,h:base.height},age,sheet);
  const result={image:cv,pad,width:base.width,height:base.height};dressedSprites.set(key,result);
- if(dressedSprites.size>256)dressedSprites.delete(dressedSprites.keys().next().value);
+ if(dressedSprites.size>128)dressedSprites.delete(dressedSprites.keys().next().value);
  return result;
 }
 function youngEyelids(c,s,box,age){if(!['Малюк','Дитина','Підліток'].includes(age)||!s.sleeping&&!s.napping)return;const {x,y,w,h}=box,eye=detailedAnchors(s.species,age).eyes,col={dog:'#f8eddb',cat:'#cbb1d9',chicken:'#efd077',frog:'#b4ce82',corgi:'#f5e4cb',bear:'#b98b6c',dino:'#9fbea0',bunny:'#efc0ce'}[s.species];for(const xx of [.33,.67]){shade(c,x+w*(xx-.07),y+h*(eye-.04),w*.14,h*.085,col);shade(c,x+w*(xx-.055),y+h*(eye+.005),w*.11,Math.max(1,h*.014),'#344c43');}}
@@ -68,7 +76,7 @@ export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=fals
  if(age==='Яєчко'){const wobble=reduced?0:Math.sin(frame/230)*.05;prop(c,'egg',x-height*.23,feet-height*.60,height*.46,height*.60,{rotate:wobble});return;}
  const sheet=sheetOf(pet,effect,Date.now()),rect=detailedArt[sheet]?.cells?.[id]||detailedArt['new_'+sheet]?.cells?.[id];if(!rect)return;const sprite=sprites.get(sheet+':'+id),ratio=sprite?sprite.width/sprite.height:rect[2]/rect[3],w=Math.min(height*1.3,height*ratio)*(age==='Малюк'?1.14:age==='Дитина'?1.08:age==='Підліток'?.88:1),h=height,box={x:x-w/2,y:feet-h,w,h};
  // A single atlas style is used everywhere, including albums and the sandbox.
- const dressed=dressedSprite(pet,id,age,sheet);if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький')c.filter='grayscale(.72) saturate(.6)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
+ const dressed=dressedSprite(pet,id,age,sheet,Date.now(),reduced,!active(effect,Date.now()));if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький')c.filter='grayscale(.72) saturate(.6)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
  if(pet.appearance){const col=pet.appearance.color||'#bba16b';shade(c,box.x+w*.25,box.y+h*.79,3,3,col);if(pet.appearance.mark==='stripe')shade(c,box.x+w*.25,box.y+h*.83,4,1,col);}
  if(!pet.sleeping&&!pet.napping&&careForm(pet)==='radiant')sparkles(c,box.x-8,box.y+h*.2,frame,reduced);if(careForm(pet)==='scruffy'){shade(c,box.x+w*.72,box.y+h*.82,4,3,'#9a8a70');shade(c,box.x+w*.76,box.y+h*.86,3,2,'#9a8a70');}
  effects(c,pet,box,effect,frame,reduced);

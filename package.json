@@ -8,11 +8,15 @@
     "deploy": "wrangler deploy",
     "test": "node --test",
     "check": "node --check src/worker.js && node --check public/app.js && node --check public/game.js && node scripts/check-assets.js",
-    "build": "node scripts/build-client.js && npm run check"
+    "build": "node scripts/build-client.js && npm run check",
+    "build:sprites": "node scripts/build-emotion-sprites.mjs",
+    "test:sprites": "node --test tests/sprite-integrity.test.js"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0",
+    "@napi-rs/canvas": "1.0.13",
     "esbuild": "0.28.2",
-    "miniflare": "5.20261019.2-beta"
+    "miniflare": "5.20261019.2-beta",
+    "sharp": "0.34.5",
+    "wrangler": "^4.0.0"
   }
 }

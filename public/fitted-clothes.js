@@ -1,27 +1,51 @@
 import {wardrobeAnatomy} from './detailed-wardrobe.js';
-// Garments are painted onto the body's pixels, rather than shrinking the shop icon.
+import {emotionSprites} from './emotion-sprite-manifest.js';
+import {emotionStage} from './emotion-sprites.js';
+const palettes={sweater:['#653946','#a96377','#d68a9c','#efd0c3'],raincoat:['#775524','#d5a63f','#f4cd64','#fff0b5'],pajamas:['#584869','#9380b4','#b8a5d0','#ece1e9']};
+function polygon(c,points,color){c.fillStyle=color;c.beginPath();c.moveTo(...points[0]);for(const p of points.slice(1))c.lineTo(...p);c.closePath();c.fill();}
+// Each garment has a fabric silhouette and opaque colours. No body texture is
+// blended through it and no rectangular paw cutouts are restored over it.
 export function paintFittedClothes(ctx,base,species,age,sheet,worn={},pad=0,sleeping=false){
- const a=wardrobeAnatomy(species,age,sheet),w=base.width,h=base.height;
- const sample=base.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h),out=ctx.getImageData(pad,pad,w,h),d=out.data,src=sample.data;
- const body=sleeping?null:worn.body,neck=worn.neck,cx=a.cx*w,top=a.top*h,bottom=(a.top+a.height)*h,left=(a.cx-a.width/2)*w,right=(a.cx+a.width/2)*w,neckY=(sleeping?.83:a.neck)*h;
- const palettes={sweater:[[108,61,66],[163,98,106],[207,144,147]],raincoat:[[140,105,43],[204,165,66],[235,201,107]],pajamas:[[111,91,145],[161,137,183],[208,184,218]]};
- const colour=(p,palette)=>{const light=(src[p]*.21+src[p+1]*.72+src[p+2]*.07)/255;return palette[light<.4?0:light<.78?1:2];};
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){
- const p=(y*w+x)*4;if(src[p+3]<128)continue;const edge=x===0||y===0||x===w-1||y===h-1||src[p-4+3]<128||src[p+4+3]<128||src[p-w*4+3]<128||src[p+w*4+3]<128;let col=null;
- if(body&&palettes[body]&&x>=left&&x<=right&&y>=top&&y<bottom&&!edge){col=colour(p,palettes[body]);
-  if(body==='sweater'&&((y-Math.round(top))%9<2||Math.abs((x-Math.round(left))%8-4)===(y-Math.round(top))%7))col=palettes.sweater[0];
-  if(body==='pajamas'&&x%13<2&&y%12<2)col=[235,217,210];
-  if(body==='raincoat'&&Math.abs(x-cx)<1.5)col=palettes.raincoat[0];
-  if(body==='raincoat'&&Math.abs(x-cx-5)<1.5&&(y-Math.round(top))%12<3)col=[245,224,151];
-  if(y<top+2||y>bottom-3)col=palettes[body][0];if(y<top+Math.max(2,h*.035)&&Math.abs(x-cx)<w*.10*(1-(y-top)/(h*.04)))col=null;
+ const a=wardrobeAnatomy(species,age,sheet),w=base.width,h=base.height,cv=typeof document!=='undefined'?document.createElement('canvas'):null;if(!cv)return;
+ cv.width=w;cv.height=h;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
+ const m=emotionSprites[species]?.stages[emotionStage(age)],ey=m?m.eyes[2]/m.size[1]:a.eyes,cx=m?(m.eyes[0]+m.eyes[1])/2/m.size[0]*w:a.cx*w;
+ const top=Math.round(Math.max(a.top,ey+.19)*h),bottom=Math.round(Math.min(.92,Math.max(.86,a.top+a.height))*h),width=a.width*w,left=cx-width/2,right=cx+width/2,unit=Math.max(1,Math.round(h/85));
+ const r=(x,y,ww,hh,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(ww)),Math.max(1,Math.round(hh)));};
+ if(!sleeping&&palettes[worn.body]){
+  const [dark,mid,light,accent]=palettes[worn.body],shoulder=top+2*unit,hem=bottom-2*unit;
+  // Sleeves meet the chest along the shoulder seam and end above bare toes.
+  const shirt=[[left+4*unit,top],[right-4*unit,top],[right+3*unit,shoulder+4*unit],[right+unit,hem-3*unit],[right-3*unit,hem],[left+3*unit,hem],[left-unit,hem-3*unit],[left-3*unit,shoulder+4*unit]];
+  for(const [fx,fy,fw,fh]of a.hands){const hx=(fx+fw/2)*w,end=Math.min(bottom-3*unit,(fy+fh*.62)*h),half=fw*w*.48,join=Math.max(left+3*unit,Math.min(right-3*unit,hx));
+   const sleeve=[[join-3*unit,top+unit],[join+3*unit,top+unit],[hx+half,end-2*unit],[hx+half-unit,end],[hx-half+unit,end],[hx-half,end-2*unit]];
+   polygon(c,sleeve,dark);polygon(c,sleeve.map(([x,y])=>[x+(x<hx?unit:-unit),y+(y<top+3*unit?unit:-unit)]),mid);r(hx-half+unit,end-3*unit,half*2-2*unit,unit,light);
+  }
+  polygon(c,shirt,dark);polygon(c,shirt.map(([x,y])=>[x+(x<cx?unit:-unit),y+(y<top+4*unit?unit:-unit)]),mid);
+  r(left+5*unit,top+2*unit,width-10*unit,2*unit,light);
+  r(left+4*unit,hem-3*unit,width-8*unit,unit,light);r(left+3*unit,hem-unit,width-6*unit,unit,dark);
+  // Closed cuffs, rather than holes exposing the old forearm rectangles.
+  r(left,hem-5*unit,5*unit,2*unit,dark);r(right-5*unit,hem-5*unit,5*unit,2*unit,dark);
+  r(left+unit,hem-5*unit,3*unit,unit,light);r(right-4*unit,hem-5*unit,3*unit,unit,light);
+  if(worn.body==='sweater'){
+   r(left+4*unit,top+8*unit,width-8*unit,2*unit,accent);
+   for(let x=left+7*unit;x<right-5*unit;x+=6*unit){r(x,top+12*unit,2*unit,unit,light);r(x+unit,top+11*unit,unit,3*unit,light);}
+   for(let x=left+4*unit;x<right-3*unit;x+=3*unit)r(x,hem-2*unit,unit,2*unit,dark);
+  }else if(worn.body==='raincoat'){
+   r(cx-unit,top+3*unit,2*unit,hem-top-4*unit,dark);r(cx,top+3*unit,unit,hem-top-4*unit,light);
+   for(let y=top+5*unit;y<hem-3*unit;y+=5*unit)r(cx+3*unit,y,2*unit,2*unit,accent);
+   for(const x of [left+6*unit,right-12*unit]){r(x,hem-8*unit,6*unit,5*unit,dark);r(x+unit,hem-7*unit,4*unit,3*unit,mid);}
+  }else{
+   for(let y=top+6*unit;y<hem-3*unit;y+=6*unit)for(let x=left+6*unit;x<right-5*unit;x+=7*unit){r(x,y,2*unit,2*unit,accent);r(x+unit,y-unit,unit,4*unit,accent);}
+   r(cx,top+4*unit,unit,hem-top-7*unit,dark);
+  }
+  // A stitched neckline, not a gap into the original body.
+  r(cx-5*unit,top,10*unit,2*unit,dark);r(cx-4*unit,top+unit,8*unit,unit,accent);
  }
- // A neck band wraps across the shoulders; its tail lies on the body silhouette.
- if(neck&&!edge){const bandWidth=a.width*w,bandTop=neckY-2,bandBottom=neckY+Math.max(4,h*.04),band=x>cx-bandWidth/2&&x<cx+bandWidth/2&&y>=bandTop&&y<bandBottom;
- const tail=neck==='scarf'&&x>cx+bandWidth*.12&&x<cx+bandWidth*.27&&y>=bandBottom&&y<Math.min(h*.94,bandBottom+h*.15);
- if(band||tail){const palette=neck==='bow'?[[41,83,110],[65,128,158],[111,178,198]]:[[148,75,57],[203,120,90],[237,164,123]];col=colour(p,palette);if(y<bandTop+1||y>=bandBottom-1&&band||tail&&(y%7<2))col=palette[0];}
+ if(worn.neck){const y=sleeping?h*.83:top+unit,band=width*.78;
+  if(worn.neck==='scarf'){r(cx-band/2-1,y-1,band+2,6*unit,'#743f3e');r(cx-band/2,y,band,4*unit,'#ca776f');r(cx-band/2+unit,y+unit,band-2*unit,unit,'#eca699');r(cx+band*.18,y+3*unit,6*unit,10*unit,'#743f3e');r(cx+band*.18+unit,y+4*unit,4*unit,8*unit,'#ca776f');for(let n=0;n<3;n++)r(cx+band*.18+unit+n*unit*1.5,y+12*unit,unit,2*unit,'#e9ab95');}
+  if(worn.neck==='bow'){polygon(c,[[cx-9*unit,y-2*unit],[cx-2*unit,y],[cx-2*unit,y+4*unit],[cx-9*unit,y+6*unit]],'#284b68');polygon(c,[[cx+9*unit,y-2*unit],[cx+2*unit,y],[cx+2*unit,y+4*unit],[cx+9*unit,y+6*unit]],'#284b68');r(cx-8*unit,y,5*unit,3*unit,'#609ab2');r(cx+3*unit,y,5*unit,3*unit,'#609ab2');r(cx-2*unit,y,4*unit,5*unit,'#284b68');r(cx-unit,y+unit,2*unit,2*unit,'#96c7ce');}
  }
- if(col){d[p]=col[0];d[p+1]=col[1];d[p+2]=col[2];}
- }
- ctx.putImageData(out,pad,pad);
- if(neck==='bow'){const x=pad+cx,y=pad+neckY+2,unit=Math.max(1,Math.round(h/50));ctx.fillStyle='#386f89';for(let row=-2;row<=2;row++){const width=(3-Math.abs(row))*unit;ctx.fillRect(Math.round(x-4*unit),Math.round(y+row*unit),width,unit);ctx.fillRect(Math.round(x+4*unit-width),Math.round(y+row*unit),width,unit);}ctx.fillStyle='#80bbcf';ctx.fillRect(Math.round(x-unit),Math.round(y-unit),unit*2,unit*3);}
+ // Preserve the clean base silhouette and tail. Every covered pixel is opaque.
+ const cloth=c.getImageData(0,0,w,h),mask=base.getContext('2d').getImageData(0,0,w,h).data;
+ for(let q=0;q<cloth.data.length;q+=4){cloth.data[q+3]=cloth.data[q+3]>=128&&mask[q+3]>=128?255:0;if(!cloth.data[q+3])cloth.data[q]=cloth.data[q+1]=cloth.data[q+2]=0;}
+ c.putImageData(cloth,0,0);ctx.drawImage(cv,pad,pad);
 }

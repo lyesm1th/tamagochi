@@ -41,11 +41,16 @@ export function quietBody(s,now=Date.now()){
 }
 // Static, subtle silhouettes; no extra autonomous animation or wardrobe layer.
 export function withQuietBody(c,pose,paint,reduced=false){
- const kind=pose?.quietBody;if(!kind||!pose.quiet||reduced){paint();return;}
+ const kind=pose?.quietBody,e=pose?.emotion;if((!kind&&!e?.strength)||!pose.quiet||reduced){paint();return;}
  c.save();c.translate(pose.x,pose.feet);
  if(kind==='content')c.scale(1.055,.94);
  if(kind==='sleepy'||kind==='unwell'){c.rotate(.065);c.scale(1.02,.95);}
  if(kind==='withdrawn'){c.scale(.96,.94);c.rotate(-.07+Math.sin(Date.now()/1400)*.015);}
  if(kind==='ask')c.rotate(-.12);
- c.translate(-pose.x,-pose.feet);paint();c.restore();if(kind==='withdrawn'){const unit=c.canvas?.width>=384?2:1,size=(pose.quietSize||1)*pose.scale*unit,y=pose.feet-48*size,phase=(Date.now()%6000)/6000;if(phase<.45){c.fillStyle='#83baca';c.fillRect(Math.round(pose.x+12*size),Math.round(y+phase*12*size),unit,2*unit);}}
+ if(e?.strength){const onset=Math.max(0,Date.now()-(e.at||0)),beat=onset<3000?Math.sin(onset/170)*Math.max(0,1-onset/3000):0;
+ if(['sad','hurt','bored'].includes(e.kind)){c.scale(1,1-.035*e.strength);c.rotate(-.035*e.strength);}
+ if(e.kind==='angry')c.translate(beat*2,0);
+ if(e.kind==='amused'){c.rotate(beat*.035);c.scale(1,1-Math.abs(beat)*.025);}
+ if(['curious','surprised','shy'].includes(e.kind))c.rotate((e.kind==='shy'?-1:1)*.045*e.strength);
+ }c.translate(-pose.x,-pose.feet);paint();c.restore();
 }
