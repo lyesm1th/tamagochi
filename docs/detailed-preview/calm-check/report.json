@@ -1,0 +1,7 @@
+{
+  "checks": [
+    "detailed: stationary rest, immediate tap, break after action",
+    "classic: stationary rest, immediate tap, break after action"
+  ],
+  "errors": []
+}

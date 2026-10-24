@@ -1,3 +1,6 @@
+import {ambientSlot} from './calm-behavior.js';
+import {chooseDialogue} from './pet-dialogue.js';
+const thoughtCache=new Map();
 import {newPets} from './new-pets.js';
 import {stableHash} from './traits.js';
 import {weatherAt} from './weather.js';
@@ -41,11 +44,11 @@ const thoughts=[
 ];
 export function chatter(s,now=Date.now()){
  if(!s||s.dead||s.sleeping||s.napping||s.vacation||now-s.born<180000||s.journal?.together||s.cozy?.hide?.expires>now||s.world?.walk?.expires>now||Math.min(s.hunger??0,s.health??0,s.energy??0)<50||(s.happy??0)<40||weatherAt(now).id==='storm')return null;
- const offset=stableHash(s.id||s.species)%90000,clock=now+offset,block=Math.floor(clock/90000),phase=clock%90000;if(phase>=22000)return null;
+ const slot=ambientSlot(s,now);if(slot?.lane!=='chatter')return null;const block=slot.block,phase=now-slot.at;
  const seed=stableHash((s.id||s.species)+':chatter:'+block),wordSeed=mix(stableHash((s.id||s.species)+':words:'+block)),kind=['hum','dance','thought'][seed%3],voice=voices[s.species]||voices.cat;
- let text=kind==='thought'?thoughts[wordSeed%thoughts.length]:voice[wordSeed%voice.length];
+ const key=(s.id||s.species)+':'+slot.id;if(kind==='thought'&&!thoughtCache.has(key)){thoughtCache.set(key,wordSeed%2?chooseDialogue(s,slot.at):thoughts[wordSeed%thoughts.length]);if(thoughtCache.size>128)thoughtCache.delete(thoughtCache.keys().next().value);}let text=kind==='thought'?thoughtCache.get(key):voice[wordSeed%voice.length];
  if(kind==='thought'&&seed%5===0&&s.social?.friends?.[0])text='Цікаво, що зараз робить '+s.social.friends[0].name+'? Потім зустрінемось на майданчику.';
  if(kind==='thought'&&seed%7===0&&s.journal?.drawings?.length)text='Мій малюнок треба повісити рівніше. Хоча ні. Це авторський нахил.';
- return {id:block+':'+kind,kind,text,item:'front',progress:phase/22000,tune:seed%3};
+ return {id:block+':'+kind,kind,text,item:'front',progress:slot.progress,tune:seed%3};
 }
 export const chatterVoiceCount=Object.keys(voices).length;

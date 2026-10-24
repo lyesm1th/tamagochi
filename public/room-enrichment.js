@@ -1,3 +1,4 @@
+import {ambientSlot} from './calm-behavior.js';
 import {drawToyVariant} from './item-designs.js';
 import {stableHash} from './traits.js';
 import {weatherAt} from './weather.js';
@@ -17,7 +18,7 @@ export function updateEnrichment(s,now=Date.now()){
  const e=s.living?.enrichment;if(!e)return;e.traces=e.traces.filter(t=>t.until>now);if(s.dead||s.vacation)return;
  if(e.session&&e.session.until<=now)e.session=null;
  if(e.touch?.until<=now)e.touch=null;if(e.home?.until<=now)e.home=null;
- if(e.traces.length&&e.tidyAt<=now&&roomAvailable(s,now)&&!(e.session?.until>now)&&!(e.home?.until>now)&&!(e.touch?.until>now)&&!(s.living.motion?.until>now)){
+ if(e.traces.length&&e.tidyAt<=now&&ambientSlot(s,now)?.lane==='room'&&roomAvailable(s,now)&&!(e.session?.until>now)&&!(e.home?.until>now)&&!(e.touch?.until>now)&&!(s.living.motion?.until>now)){
  const first=e.traces[0];e.tidying={...first,at:now,until:now+6500};e.traces.shift();e.tidyAt=now+90000;
  }
 }
@@ -37,17 +38,17 @@ export function toyPosition(run,rects={},now=Date.now(),reduced=false){
 export function enrichmentAction(state,body={},now=Date.now(),rects={}){
  if(!state)return {error:'Спочатку обери друга.'};const s=structuredClone(state),e=ensureEnrichment(s);
  if(body.event==='stop'){e.session=null;return {state:s,text:'Іграшка почекає. Я поруч.'};}
- if(body.event==='clean'){e.traces=[];e.tidying={item:'rug',kind:'tidy',at:now,until:now+6500};return {state:s,text:'Підправили ковдру й поскладали дрібниці.',effect:'clean'};}
+ if(body.event==='clean'){e.session=null;e.touch=null;e.home=null;s.living.motion=null;s.living.reaction=null;if(s.journal)s.journal.gesture=null;e.traces=[];e.tidying={item:'rug',kind:'tidy',at:now,until:now+6500};return {state:s,text:'Підправили ковдру й поскладали дрібниці.',effect:'clean'};}
  if(!roomAvailable(s,now))return {error:'Пограємо вдома, коли друг прокинеться й вилупиться.'};
  if(body.event==='touch'){
- if(!['stroke','tickle','nose'].includes(body.kind))return {error:'Невідомий жест.'};e.home=null;e.session=null;e.touch={kind:body.kind,at:now,until:now+4500};s.living.motion=null;s.living.reaction=null;if(s.journal)s.journal.gesture=null;
+ if(!['stroke','tickle','nose'].includes(body.kind))return {error:'Невідомий жест.'};e.tidying=null;e.home=null;e.session=null;e.touch={kind:body.kind,at:now,until:now+4500};s.living.motion=null;s.living.reaction=null;if(s.journal)s.journal.gesture=null;
  if(now-(e.touchRewardAt||0)>=60000){e.touchRewardAt=now;s.happy=clamp(s.happy+3,0,100);s.bond=clamp((s.bond||0)+1,0,100);}
  const nose={pig:'п’ятачок',duck:'дзьобик',chicken:'дзьобик',penguin:'дзьобик'}[s.species]||'носик';const text=body.kind==='nose'?'Біп! Це мій '+nose+'. Твій тепер теж перевіримо.':body.kind==='tickle'?'Хі-хі! Лоскотно: '+sensitivePlaces[s.species]+'. Все, здаюся!':'М-м… ніжненько. '+sensitivePlaces[s.species]+'. Ще трошки, людино.';
  return {state:s,text,effect:body.kind==='tickle'?'giggle':'pet'};
  }
  if(body.event==='start'){
  if(!roomGames.some(([id])=>id===body.kind))return {error:'Обери іграшку.'};if(['ball','yarn'].includes(body.kind)&&!s.room?.toy&&!s.playroom?.toys?.ball)return {error:'Спочатку придбай іграшку для кімнати.'};if(body.kind==='duck'&&!s.room?.bowl&&!s.cozy?.owned?.fountain)return {error:'Качечці потрібна мисочка або фонтанчик.'};
- e.home=null;e.touch=null;e.session={id:'room-'+now,kind:body.kind,at:now,until:now+90000,x:120,y:125,vx:42,vy:-16,hits:0,turn:0,last:0,water:s.cozy?.owned?.fountain?'fountain':'bowl',obstacles:Object.keys(rects).filter(id=>['bed','tent','post','toybox','cushion','bowl','fountain'].includes(id)&&(s.room?.[id]||s.cozy?.owned?.[id]))};s.living.motion=null;s.living.reaction=null;if(s.journal)s.journal.gesture=null;
+ e.tidying=null;e.home=null;e.touch=null;e.session={id:'room-'+now,kind:body.kind,at:now,until:now+90000,x:120,y:125,vx:42,vy:-16,hits:0,turn:0,last:0,water:s.cozy?.owned?.fountain?'fountain':'bowl',obstacles:Object.keys(rects).filter(id=>['bed','tent','post','toybox','cushion','bowl','fountain'].includes(id)&&(s.room?.[id]||s.cozy?.owned?.[id]))};s.living.motion=null;s.living.reaction=null;if(s.journal)s.journal.gesture=null;
  return {state:s,text:{ball:'Коти м’яч пальцем — я наздожену!',yarn:'Тягни клубок. Нитка вже живе своїм життям.',feather:'Поводи пір’їнкою. Лапки готові!',sun:'Веди сонячного зайчика. Я його впіймаю!',duck:'Торкнись водички — качечка гойдається!'}[body.kind],effect:'play'};
  }
  const run=e.session;if(!run||run.until<=now||body.session!==run.id)return {error:'Ця гра вже завершилася.'};
@@ -69,14 +70,14 @@ export function enrichmentPose(s,rects,now=Date.now(),reduced=false){
  if(e?.session?.until>now){const p=toyPosition(e.session,rects,now,reduced),kind=e.session.kind;const k=reduced?1:1-Math.exp(-Math.max(0,now-e.session.at)/700);return {x:(e.session.petX??96)+(clamp(p.x-14,20,172)-(e.session.petX??96))*k,feet:(e.session.petY??130)+(clamp(p.y+10,103,136)-(e.session.petY??130))*k,scale:.94,interaction:{kind:'play',item:'toy',acting:true,at:e.session.at},enriched:{kind,point:p}};}
  const touch=e?.touch;if(touch?.until>now)return {x:96,feet:133,scale:1.05,interaction:{kind:touch.kind==='tickle'?'dance':'outfit',item:'front',acting:true,at:touch.at},enriched:{kind:touch.kind}};
  // Quiet weather moments have their own time window; no obligation or penalty.
- if(!s.lively)return null;const clock=now+stableHash(s.id||s.species)%53000;if(clock%53000>10000)return null;if(s.living?.motion?.until>now||s.living?.reaction?.until>now||s.journal?.gesture?.until>now)return null;
+ if(!s.lively)return null;const slot=ambientSlot(s,now);if(slot?.lane!=='weather')return null;if(s.living?.motion?.until>now||s.living?.reaction?.until>now||s.journal?.gesture?.until>now)return null;
  const weather=weatherAt(now).id,r=rects.window||[14,8,43,43],kind=weather==='sun'?'warmSpot':weather==='rain'?'raindrops':weather==='storm'?'listenRain':'cloudWatch';
- return {x:weather==='sun'?80:r[0]+r[2]/2,feet:weather==='sun'?130:103,scale:.8,interaction:{kind:weather==='sun'?'nest':'watch',item:'window',acting:true,at:now-clock%53000},enriched:{kind}};
+ return {x:weather==='sun'?80:r[0]+r[2]/2,feet:weather==='sun'?130:103,scale:.8,interaction:{kind:weather==='sun'?'nest':'watch',item:'window',acting:true,at:slot.at},enriched:{kind}};
 }
 export function enrichPose(s,pose,now=Date.now(),reduced=false){if(pose?._enriched)return pose;if(!s||!pose||s.dead||s.sleeping||s.napping||s.vacation)return pose;const p={...pose,_enriched:true},mood=moodOf(s);p.enriched={...p.enriched,mood};if(reduced)return p;
- if(mood==='springy'&&!p.interaction?.approaching)p.feet-=Math.max(0,Math.sin(now/240))*2;
+ if(mood==='springy'&&p.enriched?.point&&!p.interaction?.approaching)p.feet-=Math.max(0,Math.sin(now/400))*1.5;
  if(mood==='sleepy')p.scale*=.97;
- const active=p.interaction?.acting||p.enriched?.point;if(active){const gait=speciesMotions[s.species];p.enriched.gait=gait;if(gait==='hop'||gait==='earHop')p.feet-=Math.abs(Math.sin(now/240))*6;if(gait==='slide'){p.x=clamp(p.x+Math.sin(now/600)*6,40,152);p.scale*=.88;}if(gait==='hang'&&p.interaction?.item==='post'){p.feet=133;p.x=clamp(p.x,24,168);p.scale*=.55;}if(gait==='stomp')p.feet+=Math.abs(Math.sin(now/240))*2;}
+ const active=p.interaction?.acting&&['play','jump','stretch','roll','dance','splash'].includes(p.interaction.kind)||p.enriched?.point;if(active){const gait=speciesMotions[s.species];p.enriched.gait=gait;if(gait==='hop'||gait==='earHop')p.feet-=Math.abs(Math.sin(now/240))*6;if(gait==='slide'){p.x=clamp(p.x+Math.sin(now/600)*6,40,152);p.scale*=.88;}if(gait==='hang'&&p.interaction?.item==='post'){p.feet=133;p.x=clamp(p.x,24,168);p.scale*=.55;}if(gait==='stomp')p.feet+=Math.abs(Math.sin(now/240))*2;}
  return p;
 }
 export function noteHomeScene(s,gap,now=Date.now()){

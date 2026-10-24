@@ -17,10 +17,8 @@ function baseScenePose(s,frame=0,reduced=false,now=Date.now()){
  if(s?.playroom?.session?.expires>now)return {x:34+s.playroom.session.pet*15,feet:124,scale:1.05,phase};
  const auto=ambientPose(ambient(s,now),pos,reduced);if(auto)return {...auto,phase};
  if(s?.bodyLanguage?.kind==='approach'&&s.bodyLanguage.until>now)return {x:96,feet:134,scale:1.12,phase};
- if(s){const gesture=behaviorPose(s,'Дорослий',frame,reduced);if(gesture.kind==='approach')return {x:96,feet:134,scale:1.12,phase};if(gesture.kind==='sit'&&!(s.world?.walk?.expires>now)){const corner=favoriteCorner(s);return corner.index===0?{x:pos.bed+25,feet:99,scale:.78,phase}:corner.index===1?{x:pos.bowl+10,feet:119,scale:1.02,phase}:{x:151,feet:88,scale:.68,phase};}}
-
- const need=needs(s);if(need&&!reduced){const targets={bed:[pos.bed+25,99],bowl:[pos.bowl+10,119],cushion:[50,119],rug:[96,126]},[x,feet]=targets[need.pose]||[96,120];return {x,feet,scale:feet<100?.78:1,phase};}
- const d=reduced ? .5 : (Math.sin(frame/4700)+1)/2;return {x:96+(reduced?0:Math.sin(frame/3200)*43),feet:85+45*d,scale:.65+.45*d,phase};
+ const need=needs(s);if(need){const targets={bed:[pos.bed+25,99],bowl:[pos.bowl+10,119],cushion:[50,119],rug:[96,126]},[x,feet]=targets[need.pose]||[96,124];return {x,feet,scale:feet<110?.78:.9,phase,quiet:true};}
+ return {x:96,feet:124,scale:.9,phase,quiet:true};
 }
 export function scenePose(s,frame=0,reduced=false,now=Date.now()){return enrichPose(s,enrichmentPose(s,roomRects(s,'classic'),now,reduced)||baseScenePose(s,frame,reduced,now),now,reduced);}
 export function drawExpandedRoom(c,s,frame=0,reduced=false,now=Date.now()){
