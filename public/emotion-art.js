@@ -30,4 +30,4 @@ export function drawPixelExpression(c,id,e,now=Date.now(),reduced=false){
  else r(mx-(m==='small'?2:4),my,m==='small'?4:8,1);
  if(recipe.tear>=0&&!reduced&&e.strength>.6){const [x,y]=eyes[0];r(x+2,y+4+recipe.tear*4,2,3,'#77b5cf');r(x+2,y+4+recipe.tear*4,1,1,'#d4f0ed');}
 }
-export function pixelEmotion(s,now=Date.now()){if(s?.suppressEmotion)return null;const e=emotionOf(s,now);return e.strength>.1?e:null;}
+export function pixelEmotion(){return null;} // Preserve the original pixel-art face.

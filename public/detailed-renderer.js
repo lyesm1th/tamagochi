@@ -44,13 +44,13 @@ function clothes(c,s,box,age,sheet){const base=sprites.get(sheet+':'+s.species);
 // Room, portraits, sandbox and games all draw this same dressed bitmap.
 export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expressive=true){
  const base=sprites.get(sheet+':'+id);if(!base)return null;
- const expression=expressive&&!['happy','eating','sleep'].includes(sheet)?expressionSelection(pet,age,now,reduced):null;
+ const expression=null; // Keep the original illustrated eyes and mouth, in every emotional state.
  const wearing=pet.cozy?.wearing||{},key=JSON.stringify([id,age,sheet,expression?[expression.kind,expression.frame,Math.round(expression.strength*10)]:null,!!(pet.sleeping||pet.napping),...['body','neck','head','eyes'].map(slot=>[wearing[slot],itemStatus(pet,wearing[slot]).wear<30])]);
  if(dressedSprites.has(key))return dressedSprites.get(key);
  if(expression&&!expressionReady(id)){loadEmotionSprite(id);return dressedSprite(pet,id,age,sheet,now,reduced,false);}
  const pad=Math.ceil(base.height*.25),cv=document.createElement('canvas');cv.width=base.width+pad*2;cv.height=base.height+pad*2;
  const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(base,pad,pad);
- if(expression)paintExpression(ctx,pet,age,pad,now,reduced);
+
  clothes(ctx,{...pet,species:id},{x:pad,y:pad,w:base.width,h:base.height},age,sheet);
  const result={image:cv,pad,width:base.width,height:base.height};dressedSprites.set(key,result);
  if(dressedSprites.size>128)dressedSprites.delete(dressedSprites.keys().next().value);
