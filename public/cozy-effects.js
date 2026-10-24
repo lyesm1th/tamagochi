@@ -1,6 +1,9 @@
 import {enrichmentPose,enrichPose,drawEnrichment} from './room-enrichment.js';
 import {roomRects} from './room-life.js';
 import {roomFurniture,roomMoment,roomMomentPose} from './room-life.js';
+import {stage} from './pet-life.js';
+const stageForFarewell=(s,now)=>stage(s,now)!=='Яєчко';
+const quietSize=(s,now)=>s?({'Малюк':.4,'Дитина':.64,'Підліток':.84}[stage(s,now)]||1):1;
 import {quietBody} from './relationship-life.js';
 import {newPets} from './new-pets.js';
 import {drawRoomJournal} from './journal-effects.js';
@@ -21,7 +24,7 @@ function baseScenePose(s,frame=0,reduced=false,now=Date.now()){
  const need=needs(s);if(need){const targets={bed:[pos.bed+25,99],bowl:[pos.bowl+10,119],cushion:[50,119],rug:[96,126]},[x,feet]=targets[need.pose]||[96,124];return {x,feet,scale:feet<110?.78:.9,phase,quiet:true};}
  return {x:96,feet:124,scale:.9,phase,quiet:true};
 }
-export function scenePose(s,frame=0,reduced=false,now=Date.now()){const p=enrichPose(s,enrichmentPose(s,roomRects(s,'classic'),now,reduced)||baseScenePose(s,frame,reduced,now),now,reduced);return {...p,quietBody:p.quiet?quietBody(s,now):null};}
+export function scenePose(s,frame=0,reduced=false,now=Date.now()){if(s?.farewellPreview)return {x:96,feet:124,scale:.9,quiet:true,quietSize:quietSize(s,now),quietBody:stageForFarewell(s,now)?'withdrawn':null};const p=enrichPose(s,enrichmentPose(s,roomRects(s,'classic'),now,reduced)||baseScenePose(s,frame,reduced,now),now,reduced);return {...p,quietSize:quietSize(s,now),quietBody:p.quiet?quietBody(s,now):null};}
 export function drawExpandedRoom(c,s,frame=0,reduced=false,now=Date.now()){
  const night=s?.cozy?.nightMode&&isNight(s,now),pos=sceneFurniture(s),goods=s?.cozy?.owned||{},r=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),w,h);},step=reduced?0:Math.floor(frame/400)%3;
  if(s?.world?.walk?.expires>now){const place=s.world.walk.place;r(0,0,192,144,night?'#587775':'#b6cbb6');r(0,61,192,83,night?'#738766':'#97b77c');for(let i=0;i<6;i++){r(64-i*5,68+i*13,64+i*10,13,'#b7ad86');r(5+i*32,86+i%2*25,2,6,'#628453');}for(const x of [7,157]){r(x+12,37,8,61,'#9a805b');r(x,19,33,35,place==='forest'?'#64815c':'#809b66');}if(place==='pond'){r(28,108,135,24,'#8eafb0');r(38,104,115,5,'#8eafb0');for(let i=0;i<6;i++)r(35+i*22,113+(i+step)%3*5,12,1,'#c1d3c3');}return;}

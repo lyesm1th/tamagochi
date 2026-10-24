@@ -111,7 +111,7 @@ export function drawDetailedMiniGame(canvas,g,s,now=Date.now()){canvas.width=384
 
 export function drawDetailedFamily(canvas,s,scene,frame=0,reduced=false){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');drawDetailedRoom(c,s,frame,reduced);c.imageSmoothingEnabled=false;c.drawImage(scene.parent,41,127,145,114);c.drawImage(scene.partner,199,127,145,114);prop(c,'heart',170,93,42);}
 
-export function detailedPose(s,pose,reduced=false){return enrichPose(s,enrichmentPose(s,roomRects(s,'detailed'),Date.now(),reduced)||roomMomentPose(s,roomMoment(s),'detailed',Date.now(),reduced)||pose,Date.now(),reduced);}
+export function detailedPose(s,pose,reduced=false){if(s?.farewellPreview)return pose;return enrichPose(s,enrichmentPose(s,roomRects(s,'detailed'),Date.now(),reduced)||roomMomentPose(s,roomMoment(s),'detailed',Date.now(),reduced)||pose,Date.now(),reduced);}
 
 export function drawDetailedDreamProp(c,key,x,y,w,h=w){return prop(c,key,x,y,w,h);}
 

@@ -31,6 +31,7 @@ export function bedtimeInvitation(s,now=Date.now()){
 }
 export function relationshipHint(s,now=Date.now()){return bedtimeInvitation(s,now)?`Погладиш ${personality(s.species).touch}, як перед сном? Я вже вмостився.`:null;}
 export function quietBody(s,now=Date.now()){
+ if(s?.farewellPreview)return 'withdrawn';
  if(!s||manualActivity(s,now)||now<calmUntil(s)||now-s.born<180000||s.world?.activity?.expires>now)return null;
  if((s.health??100)<35)return 'unwell';
  if((s.energy??100)<40)return 'sleepy';
@@ -44,7 +45,7 @@ export function withQuietBody(c,pose,paint,reduced=false){
  c.save();c.translate(pose.x,pose.feet);
  if(kind==='content')c.scale(1.055,.94);
  if(kind==='sleepy'||kind==='unwell'){c.rotate(.065);c.scale(1.02,.95);}
- if(kind==='withdrawn'){c.scale(-.96,.96);c.rotate(-.09);}
+ if(kind==='withdrawn'){c.scale(.96,.94);c.rotate(-.07+Math.sin(Date.now()/1400)*.015);}
  if(kind==='ask')c.rotate(-.12);
- c.translate(-pose.x,-pose.feet);paint();c.restore();
+ c.translate(-pose.x,-pose.feet);paint();c.restore();if(kind==='withdrawn'){const unit=c.canvas?.width>=384?2:1,size=(pose.quietSize||1)*pose.scale*unit,y=pose.feet-48*size,phase=(Date.now()%6000)/6000;if(phase<.45){c.fillStyle='#83baca';c.fillRect(Math.round(pose.x+12*size),Math.round(y+phase*12*size),unit,2*unit);}}
 }

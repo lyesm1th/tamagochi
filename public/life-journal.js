@@ -22,12 +22,7 @@ export function makeDrawing(s,now=Date.now()){
  j.drawingSerial=(j.drawingSerial||0)+1;const row={id:'drawing-'+now+'-'+j.drawingSerial,subject,seed,at:now,title:subject==='together'?'Це ми з тобою':subject==='friend'?'Мій друг '+friend.name:'Моя улюблена їжа',friend:friend?.name||null,species:s.species,food:s.favoriteFood||'cookie',comment:subject==='together'?'Людина трохи крива вийшла. Зате моя.':subject==='friend'?'Це мій друг. Вуха майже правильно намалював.':'Натюрморт. З’їв би, але папір шкода.'};
  j.drawings.unshift(row);j.drawings=j.drawings.slice(0,24);j.pinned??=row.id;photo(s,row.id,row.title,row.comment,'drawing',now);return row;
 }
-export function farewell(s,outcome='death'){
- const worn=Object.values(s.cozy?.wearing||{}),things=Object.entries(s.cozy?.items||{}).sort((a,b)=>(b[1].uses||0)-(a[1].uses||0)),item=things.find(([,v])=>v.uses>0)?.[0]||worn[0];
- const labels={bed:'ліжечко',ball:'м’ячик',toy:'іграшку',sweater:'светрик',bow:'метелик',scarf:'шарфик',panama:'панамку',rug:'килимок',plant:'рослинку',music:'музичну скриньку',laser:'світлову цятку'};
- const friend=(s.social?.friends||[]).slice().sort((a,b)=>b.score-a.score)[0],skills=Object.entries(s.playroom?.skills||{}).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]),game={ball:'ганяти м’ячик',laser:'полювати на світлову цятку',music:'слухати нашу музику'}[skills[0]?.[0]],care=s.memory?.moments||[];
- const lines=[outcome==='family'?'Моя людино, я залишаю тобі нове маленьке диво.':'Моя людино, дякую за наш маленький світ.'];if(item)lines.push('Пам’ятаєш '+(labels[item]||'мою улюблену річ')+'? Воно пахло домом.');if(friend)lines.push('І '+friend.name+' — наші пригоди я теж заберу із собою.');if(game)lines.push('Найкраще було '+game+'.');if(care.some(m=>m.action==='pet'))lines.push('А твої почухування — взагалі без конкуренції.');if(!item&&!friend&&!game)lines.push('Навіть наші короткі хвилинки були моїми.');lines.push('Не сумуй надто довго, дурко. Мої лапки залишилися в твоїй пам’яті.');return {text:lines.join(' '),item:item||null,friend:friend?.name||null,game:skills[0]?.[0]||null};
-}
+export {farewell} from './farewell.js';
 export function noteJournalCare(s,action,now=Date.now()){
  const j=ensureJournal(s,now);if(['pet','feed','play','clean'].includes(action)){if(s.lively)s.lively.secret=null;if(s.cozy)s.cozy.hide=null;}if(['pet','ritual','blanket'].includes(action)){const fear=(s.sleeping||s.napping)?null:weatherAt(now).id==='storm'?'storm':null;if(fear&&j.courage[fear]<3&&j.practice[fear]?.step===2)completeCourage(s,fear,now);}
  if(action==='bath'&&j.practice.bath?.step===2)completeCourage(s,'bath',now);
