@@ -1,5 +1,4 @@
 import {characterLabel,emotionOf,emotionNames} from './emotions.js';
-import {drawEmotion} from './emotion-art.js';
 import {farewellPlea} from './farewell.js';
 import {createApiClient} from './api-client.js';
 import {idleSpeechDue} from './calm-behavior.js';
@@ -86,14 +85,14 @@ function drawBase(canvas,id,frame=0,s=null,preview=false,spriteOnly=false){if(de
  box(52,43,24,31,light);r(56,37,16,8,ink);r(57,39,14,7,light);r(49,53,3,15,ink);r(76,53,3,15,ink);
  r(55,51,5,5,spec.color);r(66,59,6,5,spec.color);r(56,67,4,4,spec.color);r(65+(index%3)*2,46,3,3,ink);r(57+(index%4)*3,61,3,3,spec.color);
  if((Date.now()-s.born)>life.egg-60000){r(62,48,3,7);r(59,55,3,4);r(62,59,3,5);r(65,64,3,5);}c.restore();return;}
- if(!preview&&(age==='Малюк'||age==='Дитина'||age==='Підліток')){drawYoungPet(c,id,age,spec.color,frame,s?.sleeping,reduced);drawClothes(c,s,age,frame);c.restore();return;}
+ if(!preview&&(age==='Малюк'||age==='Дитина'||age==='Підліток')){drawYoungPet(c,id,age,spec.color,frame,s?.sleeping,reduced,s);drawClothes(c,s,age,frame);c.restore();return;}
  drawPetArt(c,id,frame,s,reduced||preview);drawClothes(c,s,age,frame);
  c.restore();
 }
 function drawClassic(canvas,id,frame=0,s=null,preview=false,spriteOnly=false){if(detailedReady()&&!(canvas===$('#pet')&&familyScene&&Date.now()<familyScene.until)){drawDetailedPortrait(canvas,id,s,frame,preview,effect,reduced);return;}
  if(canvas===$('#pet')&&familyScene&&Date.now()<familyScene.until){canvas.width=128;canvas.height=100;const ctx=canvas.getContext('2d');ctx.clearRect(0,0,128,100);ctx.drawImage(familyScene.parent,0,15,68,70);ctx.drawImage(familyScene.partner,60,15,68,70);ctx.fillStyle='#b46c7c';for(let i=0;i<3;i++){const x=31+i*25,y=14-(Math.floor(frame/200)+i)%3*3;ctx.fillRect(x,y,4,3);ctx.fillRect(x+6,y,4,3);ctx.fillRect(x,y+3,10,3);ctx.fillRect(x+2,y+6,6,3);ctx.fillRect(x+4,y+9,2,2);}return;}
  const sleeping=s&&(s.sleeping||s.napping),pet=s?{...s,sleeping}:s;
- drawBase(canvas,id,frame,pet,preview,spriteOnly);
+ drawBase(canvas,id,frame,pet?{...pet,suppressEmotion:effectActive()}:pet,preview,spriteOnly);
  if(preview||!s||s.dead)return;
  const c=canvas.getContext('2d'),age=s.portraitStage||stage(s),pose=spriteOnly?{...behaviorPose(s,age,frame,reduced),x:0}:poseFor(s,age,frame);c.save();c.translate(pose.x,pose.y+Math.round((reduced||s.vacation?0:Math.sin(frame/270)*2)-Math.max(0,bounce)));
  if(age!=='Яєчко'&&(age==='Підліток'||age==='Дорослий'||age==='Старенький')){
@@ -101,7 +100,7 @@ function drawClassic(canvas,id,frame=0,s=null,preview=false,spriteOnly=false){if
  if(age==='Дорослий'&&(s.adultCare??care(s))>=80&&!s.cozy?.wearing?.head){c.fillStyle='#c7a449';c.fillRect(59,28,14,3);c.fillRect(59,23,3,5);c.fillRect(65,21,3,7);c.fillRect(70,23,3,5);}
  if(age==='Старенький'){c.fillStyle='#c7c8bb';c.fillRect(53,39,20,5);c.fillRect(48,43,5,5);c.fillRect(74,43,5,5);c.strokeStyle='#35482e';c.lineWidth=1;c.strokeRect(49,46,11,9);c.strokeRect(69,46,11,9);c.fillStyle='#35482e';c.fillRect(60,50,9,1);}
  }
- drawForm(c,s,age,frame,reduced);drawMark(c,s,age);drawAdventure(c,s.portraitStage?null:effect,Date.now());if(age!=='Яєчко'&&!effectActive())drawIdle(c,pose,s,frame);drawEffects(c,{...s,poop:0},age,s.portraitStage?null:effect,Date.now(),reduced);if(!effectActive())drawEmotion(c,s,age,null,Date.now(),reduced);c.restore();if(spriteOnly){drawWorld(c,{...s,world:{...s.world,walk:null}},age,s.portraitStage?null:effect,Date.now(),reduced);drawCozyEvent(c,s,effect,Date.now(),reduced);return;}drawWeather(c,s,frame,reduced);drawWorld(c,s,age,s.portraitStage?null:effect,Date.now(),reduced);drawDaily(c,s,s.portraitStage?null:effect,Date.now(),reduced);drawPlayroom(c,s,s.portraitStage?null:effect,Date.now(),reduced);drawCozyEvent(c,s,effect,Date.now(),reduced);if(s.poop)drawEffects(c,{...s,sleeping:false,napping:false},age,null,Date.now(),reduced);
+ drawForm(c,s,age,frame,reduced);drawMark(c,s,age);drawAdventure(c,s.portraitStage?null:effect,Date.now());if(age!=='Яєчко'&&!effectActive())drawIdle(c,pose,s,frame);drawEffects(c,{...s,poop:0},age,s.portraitStage?null:effect,Date.now(),reduced);c.restore();if(spriteOnly){drawWorld(c,{...s,world:{...s.world,walk:null}},age,s.portraitStage?null:effect,Date.now(),reduced);drawCozyEvent(c,s,effect,Date.now(),reduced);return;}drawWeather(c,s,frame,reduced);drawWorld(c,s,age,s.portraitStage?null:effect,Date.now(),reduced);drawDaily(c,s,s.portraitStage?null:effect,Date.now(),reduced);drawPlayroom(c,s,s.portraitStage?null:effect,Date.now(),reduced);drawCozyEvent(c,s,effect,Date.now(),reduced);if(s.poop)drawEffects(c,{...s,sleeping:false,napping:false},age,null,Date.now(),reduced);
 }
 let petLayer=null;
 function draw(canvas,id,frame=0,s=null,preview=false){if(canvas===$('#pet')&&s&&mode==='confirm'&&['endLife','endLifeFinal'].includes(confirmKind))s={...s,sleeping:false,napping:false,farewellPreview:true};if(graphicsMode==='detailed'&&typeof Image!=='undefined'&&!detailedReady()){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#c6cfae';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#50674e';ctx.font='10px monospace';ctx.fillText('Готую кімнату…',8,canvas.height/2);return;}if(detailedReady()){if(canvas===$('#pet')&&!preview&&familyScene&&Date.now()<familyScene.until){drawDetailedFamily(canvas,s,familyScene,frame,reduced);}else if(canvas===$('#pet')&&!preview){const pos=smoothPose(detailedPose(s,scenePose(s,frame,reduced),reduced),frame,s);const visual=s&&(pos.ambient?.kind==='doze'||pos.interaction?.acting&&pos.interaction.kind==='doze')?{...s,napping:true}:s&&['water','return'].includes(pos.phase)?{...s,sleeping:false,napping:false}:s;drawDetailedMain(canvas,visual,id,frame,reduced,pos,effect);}else drawDetailedPortrait(canvas,id,s,frame,preview,effect,reduced);return;}

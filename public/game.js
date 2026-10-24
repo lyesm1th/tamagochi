@@ -1,4 +1,5 @@
-import {emotionalRefusal,noteEmotion,emotionLines} from './emotions.js';
+import {emotionLine} from './emotion-dialogue.js';
+import {emotionalRefusal,noteEmotion} from './emotions.js';
 import {noteCalm} from './calm-behavior.js';
 import {updateEnrichment,markRoomTrace} from './room-enrichment.js';
 import {roomMoment} from './room-life.js';
@@ -105,5 +106,5 @@ export function act(state,action,now=Date.now(),context={}) {
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
  syncDream(s,now);if(action==='sleep'&&!s.sleeping){const story=wakeStory(s);if(story)text+=' '+story;}
- noteCozy(s,action,now);noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);noteEmotion(s,action,now,context);if(emotionLines[s.emotion?.kind])text+=' '+emotionLines[s.emotion.kind];noteCalm(s,now,true);s.xp+=1;s.lastAction=now;return {state:s,text};
+ noteCozy(s,action,now);noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);noteEmotion(s,action,now,context);const emotionalText=emotionLine(s,now);if(emotionalText)text+=' '+emotionalText;noteCalm(s,now,true);s.xp+=1;s.lastAction=now;return {state:s,text};
 }
