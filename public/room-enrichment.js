@@ -1,3 +1,4 @@
+import {drawToyVariant} from './item-designs.js';
 import {stableHash} from './traits.js';
 import {weatherAt} from './weather.js';
 import {stage} from './pet-life.js';
@@ -93,13 +94,13 @@ export function drawEnrichment(c,s,pose,rects={},now=Date.now(),reduced=false){
  }
  if(!pose)return;const v=pose.enriched||{},x=pose.x,y=pose.feet,beat=reduced?0:Math.floor(now/200)%3;
  if(v.kind==='warmSpot'){for(let i=0;i<5;i++)r(41+i*6,110+i*2,48-i*3,4,'#efd98b33');}
- if(['raindrops','listenRain','cloudWatch'].includes(v.kind)){const a=rects.window||[14,8,43,43];for(let i=0;i<4;i++)r(a[0]+8+i*7,a[1]+16+(i+beat)%3*7,1,5,'#94b8c5');if(v.kind==='listenRain'){r(x-15,y-16,30,11,'#b4a1c4');r(x-12,y-14,24,2,'#dac8de');}}
+ if(['raindrops','listenRain','cloudWatch'].includes(v.kind)){const a=rects.window||[14,8,43,43];if(v.kind==='cloudWatch'){r(a[0]+10,a[1]+14,19,4,'#e9e7d5');r(a[0]+14,a[1]+11,11,3,'#e9e7d5');}else for(let i=0;i<4;i++)r(a[0]+8+i*7,a[1]+16+(i+beat)%3*7,1,5,'#94b8c5');if(v.kind==='listenRain'){r(x-15,y-16,30,11,'#b4a1c4');r(x-12,y-14,24,2,'#dac8de');}}
  if(v.kind==='home'&&v.noticing){r(x+18,y-50,2,7,'#a58961');r(x+18,y-41,2,2,'#a58961');}
  if(v.kind==='tidy'){for(let i=0;i<3;i++){r(x-16+i*14,y-28-i%2*8,1,5,'#e6d39e');r(x-18+i*14,y-26-i%2*8,5,1,'#e6d39e');}}
  if(v.kind==='nose'){r(x+14,y-42,2,6,'#bc8c85');r(x+14,y-34,2,2,'#bc8c85');}
  if(v.kind==='stroke'||v.kind==='tickle'){for(let i=0;i<2;i++){const a=x-20+i*35,b=y-42-beat*2;r(a,b,3,3,'#c18398');r(a+5,b,3,3,'#c18398');r(a,b+3,8,3,'#c18398');r(a+2,b+6,4,2,'#c18398');}}
  const run=e?.session;if(run?.until>now&&v.point){const p=v.point;
- if(run.kind==='ball'||run.kind==='yarn'){if(run.kind==='yarn'){const length=clamp(run.turn*4,6,42);for(let i=0;i<length;i++)r(p.x-i,p.y+Math.sin(i/4)*2,1,1,'#b99ac4');}r(p.x-5,p.y-7,10,9,run.kind==='yarn'?'#b397c1':'#a8b98e');r(p.x-3,p.y-5,6,1,'#e4dbbf');r(p.x-1,p.y-6,1,7,'#e4dbbf');}
+ if(run.kind==='ball'||run.kind==='yarn'){if(run.kind==='yarn'){const length=clamp(run.turn*4,6,42);for(let i=0;i<length;i++)r(p.x-i,p.y+Math.sin(i/4)*2,1,1,'#b99ac4');}if(run.kind!=='ball'||!drawToyVariant(c,s,p.x-5,p.y-7,10,10)){r(p.x-5,p.y-7,10,9,run.kind==='yarn'?'#b397c1':'#a8b98e');r(p.x-3,p.y-5,6,1,'#e4dbbf');r(p.x-1,p.y-6,1,7,'#e4dbbf');}}
  if(run.kind==='feather'){r(p.x,p.y-10,1,20,'#a78d66');for(let i=0;i<5;i++){r(p.x-4+i%2,p.y-10+i*3,8,2,'#bdabc9');}}
  if(run.kind==='sun'){r(p.x-5,p.y-3,11,7,'#f1df8e');r(p.x-2,p.y-7,2,16,'#f1df8e');r(p.x-8,p.y,17,1,'#fff1b5');}
  if(run.kind==='duck'){r(p.x-7,p.y-3,13,6,'#e3c76e');r(p.x+2,p.y-7,6,6,'#efd681');r(p.x+8,p.y-4,4,2,'#cf9455');r(p.x+5,p.y-6,1,1,'#415a4e');for(let i=0;i<2;i++)r(p.x-12-i*3,p.y+5+i*3,24+i*6,1,'#a3c9cb');}
