@@ -1,3 +1,4 @@
+import {feel} from './emotions.js';
 import {ambientSlot} from './calm-behavior.js';
 import {drawToyVariant} from './item-designs.js';
 import {stableHash} from './traits.js';
@@ -43,6 +44,7 @@ export function enrichmentAction(state,body={},now=Date.now(),rects={}){
  if(body.event==='touch'){
  if(!['stroke','tickle','nose'].includes(body.kind))return {error:'Невідомий жест.'};e.tidying=null;e.home=null;e.session=null;e.touch={kind:body.kind,at:now,until:now+4500};s.living.motion=null;s.living.reaction=null;if(s.journal)s.journal.gesture=null;
  if(now-(e.touchRewardAt||0)>=60000){e.touchRewardAt=now;s.happy=clamp(s.happy+3,0,100);s.bond=clamp((s.bond||0)+1,0,100);}
+ feel(s,body.kind==='tickle'?'amused':body.kind==='nose'?'surprised':'content',body.kind==='tickle'?'Мене лоскочуть':'Ніжний дотик',now,.7,45000);
  const nose={pig:'п’ятачок',duck:'дзьобик',chicken:'дзьобик',penguin:'дзьобик'}[s.species]||'носик';const text=body.kind==='nose'?'Біп! Це мій '+nose+'. Твій тепер теж перевіримо.':body.kind==='tickle'?'Хі-хі! Лоскотно: '+sensitivePlaces[s.species]+'. Все, здаюся!':'М-м… ніжненько. '+sensitivePlaces[s.species]+'. Ще трошки, людино.';
  return {state:s,text,effect:body.kind==='tickle'?'giggle':'pet'};
  }
@@ -59,7 +61,7 @@ export function enrichmentAction(state,body={},now=Date.now(),rects={}){
  run.vx=Number.isFinite(body.dx)?clamp(body.dx*4,-110,110):35;run.vy=Number.isFinite(body.dy)?clamp(body.dy*4,-80,80):-15;
  if(near||['feather','sun','duck'].includes(run.kind))run.hits++;
  if(run.hits>=5){markRoomTrace(s,run.kind==='duck'?'fountain':run.kind==='yarn'?'post':'toybox',now);run.hits=0;run.rounds=(run.rounds||0)+1;
- if(now-(e.playRewardAt||0)>=5*60000){e.playRewardAt=now;s.happy=clamp(s.happy+6,0,100);s.bond=clamp((s.bond||0)+1,0,100);return {state:s,text:'Зловив! Давай ще. Ти хороша банда для моїх лапок.',effect:'pet'};}}
+ if(now-(e.playRewardAt||0)>=5*60000){feel(s,'proud','Впіймав іграшку!',now,.7,60000);e.playRewardAt=now;s.happy=clamp(s.happy+6,0,100);s.bond=clamp((s.bond||0)+1,0,100);return {state:s,text:'Зловив! Давай ще. Ти хороша банда для моїх лапок.',effect:'pet'};}}
  return {state:s,text:'',effect:null};
 }
 export function moodOf(s){if(s?.sleeping||s?.napping||s?.energy<35)return 'sleepy';if(s?.cozy?.peace?.tension>0||s?.happy<35)return 'sulky';if(s?.happy>=80&&s?.energy>=50)return 'springy';return 'calm';}

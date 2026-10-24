@@ -1,3 +1,4 @@
+import {emotionalRefusal,noteEmotion,emotionLines} from './emotions.js';
 import {noteCalm} from './calm-behavior.js';
 import {updateEnrichment,markRoomTrace} from './room-enrichment.js';
 import {roomMoment} from './room-life.js';
@@ -90,6 +91,7 @@ export function act(state,action,now=Date.now(),context={}) {
  if(stage(s,now)==='Яєчко')return {state:s,error:'Тссс. У яйці хтось росте. Поки просто почекай.'};
  if(s.napping)return {state:s,error:'Малюк дрімає перед дорослішанням. Не буди його.'};
  if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю. Дай ще п’ять хвилиночок, буркотун.'};
+ const refusal=emotionalRefusal(s,action,now);if(refusal)return {state:s,error:refusal};
  let text='';
  switch(action){
  case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?babyMeal(s.species):line('feed',s.species);break;
@@ -103,5 +105,5 @@ export function act(state,action,now=Date.now(),context={}) {
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
  syncDream(s,now);if(action==='sleep'&&!s.sleeping){const story=wakeStory(s);if(story)text+=' '+story;}
- noteCozy(s,action,now);noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);noteCalm(s,now,true);s.xp+=1;s.lastAction=now;return {state:s,text};
+ noteCozy(s,action,now);noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);noteEmotion(s,action,now,context);if(emotionLines[s.emotion?.kind])text+=' '+emotionLines[s.emotion.kind];noteCalm(s,now,true);s.xp+=1;s.lastAction=now;return {state:s,text};
 }
