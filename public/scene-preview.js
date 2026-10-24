@@ -14,7 +14,7 @@ export function scenePreview(state,mode,choice=0,now=Date.now(),selection=null){
  const s=structuredClone(state),view={state:s,mode,focus:null,effect:null,label:'',game:null};
  s.world??={};s.cozy??={};s.cozy.owned??={};s.cozy.wearing??={};s.cozy.stored??={};s.room??={};s.playroom??={};s.playroom.toys??={};s.playroom.crafted??={};s.living??={};s.living.furniture??={};
  // Selected things stay visible even if the real pet is hiding or out walking.
- s.world.walk=null;s.cozy.hide=null;s.playroom.session=null;s.living.motion=null;s.journal&&delete s.journal.gesture;
+ s.world.walk=null;s.cozy.hide=null;s.playroom.session=null;s.living.motion=null;if(s.living.enrichment){s.living.enrichment.session=null;s.living.enrichment.touch=null;s.living.enrichment.home=null;}s.journal&&delete s.journal.gesture;
  const fx=(kind,food)=>view.effect={kind,food,started:now-now%1600,until:now+2000};
  const place=id=>{delete s.cozy.stored[id];if(['bed','bowl','plant','toy','box'].includes(id))s.room[id]=true;else if(['ball','laser','music'].includes(id))s.playroom.toys[id]=true;else s.cozy.owned[id]=true;view.focus=id;};
  const wear=item=>{s.sleeping=false;s.napping=false;s.vacation=null;s.dead=false;s.cozy.wearing[item.slot]=item.id;view.focus='pet';view.label='ПРИМІРКА · ОК — ОБРАТИ';if(stage(s,now)==='Яєчко'){s.portraitStage='Дорослий';view.label='ПРИМІРКА ДОРОСЛОЇ ФОРМИ';}};

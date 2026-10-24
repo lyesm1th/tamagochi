@@ -1,3 +1,4 @@
+import {noteHomeScene} from './room-enrichment.js';
 import {newPets} from './new-pets.js';
 import {drawToyVariant} from './item-designs.js';
 import {chatter} from './pet-chatter.js';
@@ -34,7 +35,7 @@ export function ambient(s,now=Date.now()){
 export function returnHome(s,gap,now=Date.now()){
  if(!awake(s,now)||gap<5*MIN||!Number.isFinite(gap))return null;s.lively??={};const shy=gap>=6*60*MIN;
  const text=shy?'Я не чекав. Просто сидів біля дверей. Ну… йди вже обійму.':'Моя людина! Я тут! Іди сюди, у мене обійми!';
- s.lively.welcome={kind:shy?'shy':'run',at:now,until:now+16000,text};return text;
+ s.lively.welcome={kind:shy?'shy':'run',at:now,until:now+16000,text};return noteHomeScene(s,gap,now)||text;
 }
 export function updateLively(s,now=Date.now()){
  if(!awake(s,now))return;s.lively??={};const l=s.lively;if(l.secret&&now-l.secret.at>=12000)l.secret=null;l.nextAt??=now+20*MIN;if(now<l.nextAt)return;l.nextAt=now+(20+stableHash(s.id+now)%21)*MIN;
