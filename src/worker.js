@@ -1,3 +1,4 @@
+import {requestOnce,requestSignature,protectedRequest,validRequestId} from './request-receipts.js';
 import {walletAction,bankAction} from './wallet.js';
 import {sandboxFetch} from './sandbox.js';
 import {livingAction} from '../public/living.js';
@@ -33,13 +34,13 @@ export default {async fetch(req,env){
  if(req.method!=='POST')return json({error:'Method not allowed'},405);
  if(Number(req.headers.get('content-length'))>8192)return json({error:'Too large'},413);
  if(req.headers.get('origin')&&req.headers.get('origin')!==url.origin)return json({error:'Forbidden'},403);
- if(!env.BOT_TOKEN)return json({error:'У Cloudflare не задано BOT_TOKEN. Додай токен цього бота в Settings → Variables and Secrets як Secret, потім застосуй зміни.'},503);
+ if(!env.BOT_TOKEN)return json({permanent:true,error:'У Cloudflare не задано BOT_TOKEN. Додай токен цього бота в Settings → Variables and Secrets як Secret, потім застосуй зміни.'},503);
  const user=await validate(req.headers.get('X-Telegram-Init-Data'),env.BOT_TOKEN);
  if(!user)return json({error:'Відкрий гру через Telegram. Сесія могла закінчитись.'},401);
  const id=env.PETS.idFromName(String(user.id));
- return env.PETS.get(id).fetch(new Request('https://pet'+url.pathname,{method:'POST',headers:{'X-Pet-Owner':String(user.id),'X-Pet-App':url.origin},body:await req.text()}));
+ return env.PETS.get(id).fetch(new Request('https://pet'+url.pathname,{method:'POST',headers:{'X-Pet-Owner':String(user.id),'X-Pet-App':url.origin,'X-Request-ID':req.headers.get('X-Request-ID')||''},body:await req.text()}));
  }
- return env.ASSETS.fetch(req);
+ const asset=await env.ASSETS.fetch(req);if(url.pathname==='/'||url.pathname==='/index.html'){const headers=new Headers(asset.headers);headers.set('Cache-Control','no-store');return new Response(asset.body,{status:asset.status,headers});}return asset;
 }};
 export class PetRoom{
  constructor(ctx,env={}){this.ctx=ctx;this.env=env;}
@@ -47,10 +48,17 @@ export class PetRoom{
  return this.ctx.blockConcurrencyWhile(async()=>{
  let body;try{const raw=await req.text();if(raw.length>8192)return json({error:'Too large'},413);body=JSON.parse(raw||'{}');}catch{return json({error:'Bad JSON'},400);}
  if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Bad JSON'},400);
+ const path=new URL(req.url).pathname,id=req.headers.get('X-Request-ID');
+ if(id&&!validRequestId(id))return json({error:'Некоректний ідентифікатор запиту.'},400);
+ if(id&&protectedRequest(path,body))return requestOnce(this.ctx.storage,id,await requestSignature(path,body),()=>this.execute(req,body));
+ return this.execute(req,body);
+ });
+ }
+ async execute(req,body){
  const path=new URL(req.url).pathname;if(path==='/internal/bank')return json(await bankAction(this.ctx.storage,req.headers.get('X-Pet-Owner'),body));if(path==='/internal/sandbox')return json(await sandboxFetch(this.ctx.storage,req.headers.get('X-Pet-Owner'),body));let s=tick(await this.ctx.storage.get('pet'));if(s?.dead)await this.archive(s);let result;let prefs=await this.ctx.storage.get('reminders')||{enabled:false};
  const owner=req.headers.get('X-Pet-Owner'),app=req.headers.get('X-Pet-App');
  if(owner&&/^\d+$/.test(owner)){prefs.userId=Number(owner);prefs.appUrl=app;}
- if(path==='/api/wallet'){if(s)await this.ctx.storage.put('pet',s);const bank=this.env.PETS.get(this.env.PETS.idFromName('shared-wallet-v1'));try{const result=await walletAction(this.ctx.storage,owner,String(this.env.OWNER_TELEGRAM_ID||'').trim()===owner,body,async payload=>{const response=await bank.fetch(new Request('https://pet/internal/bank',{method:'POST',headers:{'X-Pet-Owner':owner},body:JSON.stringify(payload)}));return response.json();});if(result.wallet)result.wallet.ownerConfigured=!!String(this.env.OWNER_TELEGRAM_ID||'').trim();return json(result,result.error?400:200);}catch(error){console.error('Wallet operation failed',body.command,error.name,error.message);return json({error:'Не вдалося завершити переказ. Відкрий гаманець ще раз — незавершений подарунок відновиться.'},503);}}
+ if(path==='/api/wallet'){if(s)await this.ctx.storage.put('pet',s);const bank=this.env.PETS.get(this.env.PETS.idFromName('shared-wallet-v1'));try{const result=await walletAction(this.ctx.storage,owner,String(this.env.OWNER_TELEGRAM_ID||'').trim()===owner,{...body,requestId:req.headers.get('X-Request-ID')||undefined},async payload=>{const response=await bank.fetch(new Request('https://pet/internal/bank',{method:'POST',headers:{'X-Pet-Owner':owner},body:JSON.stringify(payload)}));return response.json();});if(result.wallet)result.wallet.ownerConfigured=!!String(this.env.OWNER_TELEGRAM_ID||'').trim();return json(result,result.error?400:200);}catch(error){console.error('Wallet operation failed',body.command,error.name,error.message);return json({error:'Не вдалося завершити переказ. Відкрий гаманець ще раз — незавершений подарунок відновиться.'},503);}}
  if(path==='/api/sandbox'){
  if(!s||s.dead||s.vacation||s.sleeping||s.napping||Date.now()-s.born<180000)return json({error:'На майданчик підемо після сну й вилуплення.'},400);
  if(!['join','poll','leave','hello','play','tease','avoid'].includes(body.command))return json({error:'Невідома дія.'},400);
@@ -88,7 +96,6 @@ export class PetRoom{
  if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
  if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}
  result.reminders={enabled:!!prefs.enabled};return json(result);
- });
  }
  async archive(s,outcome=s.endReason||'death',record=null){
  const key='album:'+String(s.born).padStart(16,'0')+':'+petId(s);if(!await this.ctx.storage.get(key))await this.ctx.storage.put(key,record||snapshot(s,outcome));
@@ -98,7 +105,7 @@ export class PetRoom{
  if(planned.next!==null){await this.ctx.storage.setAlarm(Math.max(Date.now()+1000,planned.next));}else if(this.ctx.storage.deleteAlarm){await this.ctx.storage.deleteAlarm();}
  }
  async alarm(){
- return this.ctx.blockConcurrencyWhile(async()=>{
+ const delivery=await this.ctx.blockConcurrencyWhile(async()=>{
  const now=Date.now();let s=tick(await this.ctx.storage.get('pet'),now);const p=await this.ctx.storage.get('reminders')||{enabled:false};
  if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
  const planned=planReminder(s,p,now);let prefs=planned.prefs;
@@ -110,8 +117,11 @@ export class PetRoom{
  const list=reminderLines[planned.key],text=s.name+': '+list[Math.floor(Math.random()*list.length)];
  const body={chat_id:prefs.userId,text};
  if(prefs.appUrl&&/^https:\/\//.test(prefs.appUrl))body.reply_markup={inline_keyboard:[[{text:'🐾 До пета',web_app:{url:prefs.appUrl}}]]};
- try{const response=await fetch('https://api.telegram.org/bot'+this.env.BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(10000)});const result=await response.json();if(result.error_code===403||result.error_code===400){prefs.enabled=false;await this.ctx.storage.put('reminders',prefs);await this.ctx.storage.deleteAlarm();}}catch{/* Next reserved window retries without message bursts. */}
+ return {body,sentAt:now};
  });
+ if(!delivery)return;
+ // External network latency must not block requests to this pet.
+ try{const response=await fetch('https://api.telegram.org/bot'+this.env.BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(delivery.body),signal:AbortSignal.timeout(10000)});const result=await response.json();if(result.error_code===403||result.error_code===400){await this.ctx.blockConcurrencyWhile(async()=>{const current=await this.ctx.storage.get('reminders');if(current?.lastSent===delivery.sentAt){current.enabled=false;await this.ctx.storage.put('reminders',current);await this.ctx.storage.deleteAlarm();}});}}catch{/* Reserved next window prevents duplicate sends. */}
  }
 
 }
