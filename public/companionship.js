@@ -1,4 +1,5 @@
 import {noteRoomReaction,roomLine} from './room-life.js';
+import {noteRelationshipCare} from './relationship-life.js';
 import {newPets} from './new-pets.js';
 import {returnHome} from './lively.js';
 import {ensureCozy} from './cozy-life.js';
@@ -26,7 +27,7 @@ export function visit(s,now=Date.now(),tz){ensureCompanion(s,now);if(tz)s.routin
 }
 export function routineSleeping(s,now){const r=s.routine;if(!r?.enabled||now<(r.manualUntil||0))return !!s.sleeping;const h=clock(now,r.timezone).hour;return r.bed>r.wake?(h>=r.bed||h<r.wake):(h>=r.bed&&h<r.wake);}
 function learnHour(s,key,now){const r=s.routine;if(r.locked[key]||(key==='feed'&&(r.locked.meal1||r.locked.meal2)))return;const h=clock(now,r.timezone).hour;const bins=r.samples[key]??=Array(24).fill(0);bins[h]++;const ranked=bins.map((n,h)=>({n,h})).sort((a,b)=>b.n-a.n);if(ranked[0].n<3)return;if(key==='feed'){r.meal1=ranked[0].h;if(ranked[1].n>=3)r.meal2=ranked[1].h;}else r[key]=ranked[0].h;}
-export function noteCare(s,action,now=Date.now(),food){ensureCompanion(s,now);s.memory.lastSeen=now;
+export function noteCare(s,action,now=Date.now(),food){ensureCompanion(s,now);s.memory.lastSeen=now;noteRelationshipCare(s,action,now);
  if(now-(s.memory.careAt||0)>=60000){s.memory.careAt=now;s.bond=Math.min(100,s.bond+(['pet','play'].includes(action)?2:1));s.memory.moments=[{action,at:now},...s.memory.moments].slice(0,4);}
  if(action==='feed'){food??=personality(s.species).food;s.memory.foods[food]=(s.memory.foods[food]||0)+1;s.memory.lastFeed=now;learnHour(s,'feed',now);if(food===s.favoriteFood){s.happy=Math.min(100,s.happy+4);if(!s.memory.discoveries.includes(food))s.memory.discoveries.push(food);}}
  if(action==='play'){s.memory.lastPlay=now;learnHour(s,'play',now);}
