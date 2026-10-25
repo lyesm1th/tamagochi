@@ -1,5 +1,5 @@
 import {weatherAt} from './weather.js';
-export {weatherAt} from './weather.js';
+export {weatherAt};
 import {cozyPages,noteCozy} from './cozy-life.js';
 import {playroomPages} from './playroom.js';
 import {dailyPages,noteDaily} from './daily-life.js';

@@ -5,7 +5,7 @@ import {updateEnrichment,markRoomTrace} from './room-enrichment.js';
 import {roomMoment} from './room-life.js';
 import {newSpecies,newPets} from './new-pets.js';
 import {MINUTE,HOUR,DAY,life,care,seniorAt,stage} from './pet-life.js';
-export {MINUTE,HOUR,DAY,life,care,seniorAt,stage} from './pet-life.js';
+export {MINUTE,HOUR,DAY,life,care,seniorAt,stage};
 import {updateJournal} from './life-journal.js';
 import {updateLively} from './lively.js';
 import {bedBonus,furnitureStatus} from './living.js';
