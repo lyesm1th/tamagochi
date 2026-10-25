@@ -1,4 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
+import {roomGameControls} from './room-game-controls.js';
 import {createWalletOperationId} from './wallet-operation-id.js';
 import {roomStyleOptions,sceneActionOrigin} from './ui-scene-data.js';
 import {advanceSmoothPose} from './smooth-pose.js';
@@ -268,8 +269,8 @@ let pendingRoomPlay=null,lastRoomDrag=0;
 async function roomGameRequest(body){if(busy||loading){pendingRoomPlay=body;return;}await living('roomPlay',{...body,style:graphicsMode});}
 function renderRoomGames(){const root=$('#room-game-controls');root.replaceChildren();root.hidden=mode!=='normal'||!roomAvailable(state);if(root.hidden)return;const run=state.living?.enrichment?.session;
  const add=(label,fn,active=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.className=active?'selected':'';b.disabled=busy;b.onclick=()=>{void audio.unlock();fn();};root.append(b);};
- for(const [id,name]of roomGames)add(name,()=>void roomGameRequest({event:'start',kind:id}),run?.kind===id&&run.until>Date.now());
- if(run?.until>Date.now())add('↶ Закінчити',()=>void roomGameRequest({event:'stop'}));if(state.living?.enrichment?.traces?.length)add('Прибрати сліди',()=>void roomGameRequest({event:'clean'}));
+ for(const entry of roomGameControls(roomGames,run,state.living?.enrichment?.traces,Date.now()))
+  add(entry.label,()=>void roomGameRequest(entry.request),entry.active);
 }
 setInterval(()=>{if(pendingRoomPlay&&!busy&&!loading&&mode==='normal'){const body=pendingRoomPlay;pendingRoomPlay=null;void roomGameRequest(body);}},150);
 function uiBelongingChoices(s){return belongingOptions(s,belongingItem,belongingChoices,ownedThings);}
