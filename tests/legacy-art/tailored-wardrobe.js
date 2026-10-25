@@ -1,4 +1,4 @@
-import {emotionSprites} from './emotion-sprite-manifest.js';
+import {emotionSprites} from '../../public/emotion-sprite-manifest.js';
 const stageOf=age=>age==='Малюк'?'babies':age==='Дитина'?'children':age==='Підліток'?'teens':'adults';
 // Neckline, width factor and hem are measured against each species' original
 // illustrated anatomy. Eye landmarks locate the head; they never redraw it.

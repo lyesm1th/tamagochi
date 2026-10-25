@@ -5,7 +5,7 @@ import {createCanvas,loadImage} from '@napi-rs/canvas';
 import {emotionSprites} from '../public/emotion-sprite-manifest.js';
 import {detailedArt} from '../public/detailed-art-manifest.js';
 import {isolateSprite} from '../public/sprite-cleanup.js';
-import {paintFittedClothes} from '../public/fitted-clothes.js';
+import {paintFittedClothes} from './legacy-art/fitted-clothes.js';
 import {emotionFrame,expressionRecipe,emotionKinds} from '../public/emotion-frames.js';
 const ages=['Малюк','Дитина','Підліток','Дорослий'];
 const load=src=>loadImage(new URL('../public'+src,import.meta.url).pathname);

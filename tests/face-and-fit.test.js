@@ -4,8 +4,8 @@ import {createCanvas,loadImage} from '@napi-rs/canvas';
 import {detailedArt} from '../public/detailed-art-manifest.js';
 import {emotionSprites} from '../public/emotion-sprite-manifest.js';
 import {isolateSprite} from '../public/sprite-cleanup.js';
-import {paintFittedClothes} from '../public/fitted-clothes.js';
-import {paintSeatedHat} from '../public/tailored-wardrobe.js';
+import {paintFittedClothes} from './legacy-art/fitted-clothes.js';
+import {paintSeatedHat} from './legacy-art/tailored-wardrobe.js';
 import {pixelEmotion} from '../public/emotion-art.js';
 const ages=['Малюк','Дитина','Підліток','Дорослий'];
 test('clothes and seated hats preserve the original illustrated eyes and mouth in all 56 forms',async()=>{
