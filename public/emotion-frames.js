@@ -1,5 +1,7 @@
 // Four authored expression frames, followed by a long quiet hold.
-export const emotionKinds=['sad','angry','annoyed','amused','bored','curious','surprised','shy','anxious','hurt','proud','grateful','content'];
+import {emotionNames} from './emotions.js';
+// Single source of truth: calm has no authored animation recipe.
+export const emotionKinds=Object.keys(emotionNames).filter(kind=>kind!=='calm');
 export function emotionFrame(e,now=Date.now(),reduced=false){
  if(reduced||!e?.strength)return 0;
  const elapsed=Math.max(0,now-(e.at||0)),phase=elapsed%12000;
