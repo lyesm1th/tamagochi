@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {join,dirname} from 'node:path';
 const root=fileURLToPath(new URL('../',import.meta.url));
 export function gitBlobHash(bytes){
- return createHash('sha1').update(Buffer.from('blob '+bytes.length+'\\0')).update(bytes).digest('hex');
+ return createHash('sha1').update(Buffer.from('blob '+bytes.length+String.fromCharCode(0))).update(bytes).digest('hex');
 }
 export function checkVisualBaseline(){
  const expected=JSON.parse(readFileSync(join(root,'tests/baselines/visual-files.json'),'utf8'));
