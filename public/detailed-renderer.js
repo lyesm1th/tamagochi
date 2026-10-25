@@ -1,5 +1,6 @@
 import {loadWardrobeAssets,repairedOriginal,dressedBody,wearHeadwear,wearNeckwear} from './authored-wardrobe.js';
 import {emotionalAppearance,expressionFrame,withEmotionalPose} from './pet-expression.js';
+import {loadDinoFaceAssets,dinoFaceBase,dinoFaceLayer,dinoFaceEmotionKey} from './dino-face-layers.js';
 import {petAnatomy} from './pet-anatomy.js';
 import {enrichmentPose,enrichPose,drawEnrichment,transformEnriched} from './room-enrichment.js';
 import {roomRects,roomMoment,roomMomentPose,drawRoomResponse,withRoomGesture} from './room-life.js';
@@ -20,7 +21,7 @@ import {careForm,weatherAt} from './little-world.js';
 const sprites=new Map(),dressedSprites=new Map();
 const images=new Map();let loaded=false,loading=null;
 export const detailedReady=()=>loaded;
-export function loadDetailedAssets(){if(typeof Image==='undefined')return Promise.resolve(false);if(loading)return loading;loading=Promise.all(Object.entries(detailedArt).map(([name,asset])=>new Promise((resolve,reject)=>{const image=new Image(),timer=setTimeout(()=>reject(Error('art timeout '+name)),20000);image.onload=()=>{clearTimeout(timer);try{images.set(name,image);const grid=name==='props'?[128,128]:name==='furniture'?[192,asset.height/4]:[192,192];if(!['walks'].includes(name))for(const [key,rect]of Object.entries(asset.cells)){const sprite=isolateSprite(image,rect,name==='furniture'?null:grid,name.startsWith('new_'));if(key==='monkey')sprite.getContext('2d').clearRect(0,Math.floor(sprite.height*.62),Math.ceil(sprite.width*.12),sprite.height);if(name==='sleep'&&key==='cat')sprite.getContext('2d').clearRect(0,0,12,sprite.height);sprites.set(name.replace(/^new_/,'')+':'+key,sprite);};resolve();}catch(error){reject(error);}};image.onerror=()=>{clearTimeout(timer);reject(Error('art missing '+name));};image.src=asset.src;}))).then(()=>loadWardrobeAssets()).then(()=>{for(const id of ['pig','sheep','fox','monkey','duck','penguin']){const base=repairedOriginal(id);if(base)sprites.set('adults:'+id,base);}return loaded=true;}).catch(()=>{loading=null;return false;});return loading;}
+export function loadDetailedAssets(){if(typeof Image==='undefined')return Promise.resolve(false);if(loading)return loading;loading=Promise.all(Object.entries(detailedArt).map(([name,asset])=>new Promise((resolve,reject)=>{const image=new Image(),timer=setTimeout(()=>reject(Error('art timeout '+name)),20000);image.onload=()=>{clearTimeout(timer);try{images.set(name,image);const grid=name==='props'?[128,128]:name==='furniture'?[192,asset.height/4]:[192,192];if(!['walks'].includes(name))for(const [key,rect]of Object.entries(asset.cells)){const sprite=isolateSprite(image,rect,name==='furniture'?null:grid,name.startsWith('new_'));if(key==='monkey')sprite.getContext('2d').clearRect(0,Math.floor(sprite.height*.62),Math.ceil(sprite.width*.12),sprite.height);if(name==='sleep'&&key==='cat')sprite.getContext('2d').clearRect(0,0,12,sprite.height);sprites.set(name.replace(/^new_/,'')+':'+key,sprite);};resolve();}catch(error){reject(error);}};image.onerror=()=>{clearTimeout(timer);reject(Error('art missing '+name));};image.src=asset.src;}))).then(()=>Promise.all([loadWardrobeAssets(),loadDinoFaceAssets()])).then(()=>{for(const id of ['pig','sheep','fox','monkey','duck','penguin']){const base=repairedOriginal(id);if(base)sprites.set('adults:'+id,base);}return loaded=true;}).catch(()=>{loading=null;return false;});return loading;}
 const active=(effect,now)=>effect&&effect.until>now?effect.kind:null;
 function stamp(c,sheet,key,x,y,w,h,options={}){const image=sprites.get(sheet+':'+key)||images.get(sheet),rect=sprites.has(sheet+':'+key)?[0,0,image.width,image.height]:detailedArt[sheet]?.cells?.[key];if(!image||!rect)return false;c.save();c.imageSmoothingEnabled=false;if(options.alpha!=null)c.globalAlpha=options.alpha;if(options.filter)c.filter=options.filter;if(options.rotate){c.translate(Math.round(x+w/2),Math.round(y+h/2));c.rotate(options.rotate);x=-w/2;y=-h/2;}c.drawImage(image,...rect,Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));c.restore();return true;}
 function background(c,key,w=384,h=288){const image=images.get(key);if(!image)return;c.imageSmoothingEnabled=false;c.drawImage(image,0,0,image.width,image.height,0,0,w,h);}
@@ -38,20 +39,31 @@ const ageScale=age=>age==='Малюк'?.40:age==='Дитина'?.64:age==='Пі�
 export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age);return {eyes:a.eyes,neck:a.neck,torso:a.top+a.height/2,head:a.hat,age};}
 // Compose one complete dressed actor. All scene movement uses this bitmap.
 export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expressive=true){
- const base=sprites.get(sheet+':'+id);if(!base)return null;
- const wearing=pet.cozy?.wearing||{},sleep=!!(pet.sleeping||pet.napping),key=JSON.stringify([id,age,sheet,sleep,...['body','neck','head','eyes'].map(slot=>wearing[slot])]);
+ const original=sprites.get(sheet+':'+id);if(!original)return null;
+ const wearing=pet?.cozy?.wearing||{},sleep=!!(pet?.sleeping||pet?.napping);
+ const layered=id==='dino'&&sheet==='teens'&&!!dinoFaceBase()&&!!dinoFaceLayer('calm');
+ const base=layered?dinoFaceBase():original;
+ const faceKey=layered?(sleep?'sleepy':expressive?dinoFaceEmotionKey(pet,now):'calm'):null;
+ const key=JSON.stringify([id,age,sheet,sleep,faceKey,...['body','neck','head','eyes'].map(slot=>wearing[slot])]);
  let result=dressedSprites.get(key);
  if(!result){
   const pad=Math.ceil(base.height*.40),cv=document.createElement('canvas');cv.width=base.width+pad*2;cv.height=base.height+pad*2;const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
   ctx.drawImage(dressedBody(base,id,sheet,wearing.body),pad,pad);
-  if(!sleep){wearNeckwear(ctx,id,sheet,wearing.neck,pad,base);wearHeadwear(ctx,base,sprites.get('clothing:'+wearing.head),id,sheet,wearing.head,pad);
-   if(wearing.eyes==='glasses'){const a=petAnatomy[id]?.[sheet];if(a){const eyes=a.eyes.map(b=>[(b[0]+b[2])/2,(b[1]+b[3])/2]),gap=eyes[1][0]-eyes[0][0],art=sprites.get('clothing:glasses'),ww=gap*2.1,hh=ww*art.height/art.width;ctx.drawImage(art,Math.round(pad+(eyes[0][0]+eyes[1][0])/2-ww/2),Math.round(pad+(eyes[0][1]+eyes[1][1])/2-hh*.43),Math.round(ww),Math.round(hh));}}
+  if(!sleep){
+   wearNeckwear(ctx,id,sheet,wearing.neck,pad,base);
+   wearHeadwear(ctx,base,sprites.get('clothing:'+wearing.head),id,sheet,wearing.head,pad);
+  }
+  if(layered){const face=dinoFaceLayer(faceKey);if(face)ctx.drawImage(face,pad,pad);}
+  if(!sleep&&wearing.eyes==='glasses'){
+   const a=petAnatomy[id]?.[sheet],art=sprites.get('clothing:glasses');
+   if(a&&art){const eyes=a.eyes.map(b=>[(b[0]+b[2])/2,(b[1]+b[3])/2]),gap=eyes[1][0]-eyes[0][0],ww=gap*2.1,hh=ww*art.height/art.width;
+    ctx.drawImage(art,Math.round(pad+(eyes[0][0]+eyes[1][0])/2-ww/2),Math.round(pad+(eyes[0][1]+eyes[1][1])/2-hh*.43),Math.round(ww),Math.round(hh));
+   }
   }
   result={image:cv,pad,width:base.width,height:base.height};dressedSprites.set(key,result);if(dressedSprites.size>128)dressedSprites.delete(dressedSprites.keys().next().value);
  }
  if(!expressive||sleep||id==='dino')return result;
  const appearance=emotionalAppearance(pet,now,reduced);if(!appearance.strength)return result;
- // Expression transforms sample only the already dressed actor's original pixels.
  return {...result,image:expressionFrame(result.image,id,sheet,appearance,result.pad)};
 }
 function sparkles(c,x,y,frame,reduced){for(let i=0;i<3;i++){const yy=y-i*12-(reduced?0:Math.floor(frame/300+i)%3*3);shade(c,x+i*13,yy,2,7,'#dfbb66');shade(c,x+i*13-2,yy+2,6,2,'#dfbb66');}}
