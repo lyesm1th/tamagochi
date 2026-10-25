@@ -18,8 +18,13 @@ export const emotionalWords={
  proud:['Бачив? Це я сам! Ну, майже сам.','Оце я молодець. Хвали, поки дозволяю.','Маленький пет — велике досягнення!'],
  grateful:['Дякую, моя людино. Бурчу, але ціную.','Ти про мене подбав. Це дуже тепло всередині.','За турботу — обійми. Безкоштовно, не звикай.']
 };
-export function emotionLine(s,now=Date.now()){
- const e=emotionOf(s,now);if(!e.strength||!emotionalWords[e.kind])return null;
+// Accept the exact emotional snapshot used by other subsystems. This
+// selector is deterministic and does not read the clock or mutate the pet.
+export function emotionLineFor(s,e){
+ if(!s||!e?.strength||!emotionalWords[e.kind])return null;
  const special=speciesEmotionLines[s.species]?.[e.kind],lines=special?[special,...emotionalWords[e.kind]]:emotionalWords[e.kind],seed=stableHash((s.id||s.species)+':'+e.kind+':'+(e.at||s.born));
  return lines[seed%lines.length];
+}
+export function emotionLine(s,now=Date.now()){
+ return emotionLineFor(s,emotionOf(s,now));
 }
