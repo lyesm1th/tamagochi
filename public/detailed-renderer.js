@@ -1,5 +1,6 @@
 import {loadWardrobeAssets,repairedOriginal,dressedBody,wearHeadwear,wearNeckwear} from './authored-wardrobe.js';
 import {getRecent,storeRecent} from './wardrobe-cache.js';
+import {cachedExpressionFrame} from './wardrobe-expression-cache.js';
 import {emotionalAppearance,expressionFrame,withEmotionalPose} from './pet-expression.js';
 import {petAnatomy} from './pet-anatomy.js';
 import {enrichmentPose,enrichPose,drawEnrichment,transformEnriched} from './room-enrichment.js';
@@ -53,7 +54,7 @@ export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expr
  if(!expressive||sleep||id==='dino')return result;
  const appearance=sharedAppearance??emotionalAppearance(pet,now,reduced);if(!appearance.strength)return result;
  // Expression transforms sample only the already dressed actor's original pixels.
- return {...result,image:expressionFrame(result.image,id,sheet,appearance,result.pad)};
+ return {...result,image:cachedExpressionFrame(result.image,id,sheet,appearance,result.pad,expressionFrame)};
 }
 function sparkles(c,x,y,frame,reduced){for(let i=0;i<3;i++){const yy=y-i*12-(reduced?0:Math.floor(frame/300+i)%3*3);shade(c,x+i*13,yy,2,7,'#dfbb66');shade(c,x+i*13-2,yy+2,6,2,'#dfbb66');}}
 function dreamCloud(c,x,y,frame,reduced){c.save();c.fillStyle='#f5f0db';c.strokeStyle='#b7bea4';c.lineWidth=1;const bob=reduced?0:Math.sin(frame/700);for(const [dx,dy,r]of [[10,39,2],[16,33,3]]){c.beginPath();c.arc(x+dx,y+dy+bob,r,0,Math.PI*2);c.fill();}c.beginPath();c.moveTo(x+11,y+30);c.bezierCurveTo(x-4,y+29,x-1,y+13,x+10,y+12);c.bezierCurveTo(x+8,y-1,x+29,y-3,x+33,y+7);c.bezierCurveTo(x+47,y-1,x+60,y+9,x+56,y+18);c.bezierCurveTo(x+69,y+30,x+51,y+40,x+42,y+33);c.bezierCurveTo(x+31,y+41,x+18,y+35,x+11,y+30);c.fill();c.stroke();c.restore();}
