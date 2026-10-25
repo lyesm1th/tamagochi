@@ -7,12 +7,17 @@ export function emotionOf(s,now=Date.now()){
  if(!s||s.dead||s.sleeping||s.napping||s.vacation)return {kind:'calm',strength:0};
  if(s.farewellPreview)return {kind:'sad',reason:'Ти відкрив прощання',strength:.9,at:s.born||0};
  const e=s.emotion;if(e&&emotionNames[e.kind]&&e.at<=now&&e.until>now)return {...e,strength:e.strength*Math.min(1,(e.until-now)/20000)};
+ return needEmotion(s,now);
+}
+// Priority of automatic, non-episode emotions. Preserve legacy thresholds and order.
+export function needEmotion(s,now=Date.now()){
  if((s.health??100)<35)return {kind:'anxious',reason:'Погано почуваюся',strength:.55};
  if((s.happy??100)<35)return {kind:'sad',reason:'Мені бракує приємних занять',strength:.5};
  if((s.hunger??100)<25)return {kind:'annoyed',reason:'Хочу їсти',strength:.4};
  const skill=s.world?.skills&&Math.max(0,...Object.values(s.world.skills).filter(Number.isFinite));if(skill>=3&&(s.lastAction||0)>now-60000)return {kind:'proud',reason:'Я навчився нового',strength:.4};
  return {kind:'calm',strength:0};
 }
+
 export function emotionalRefusal(s,action,now){
  const h=s.emotionHistory||[],same=h.filter(e=>e.action===action&&now-e.at<45000),critical=Math.min(s.hunger??100,s.health??100,s.clean??100)<35;
  if(critical||!['pet','play','discipline','treat'].includes(action)||same.length<Math.max(3,Math.round(3+(characterOf(s).affection-characterOf(s).independence)/40))||now-(s.refusalAt||0)<120000)return null;
@@ -24,10 +29,10 @@ export function noteEmotion(s,action,now,context={}){
  const c=characterOf(s),duration=30000+c.sensitivity*700;
  const repeats=s.emotionHistory.filter(e=>e.action===action&&now-e.at<90000).length;
  if(action==='medicine'||action==='clean')feel(s,'grateful','Ти подбав про мене',now,.6,45000);
- else if(action==='discipline')feel(s,characterOf(s).sensitivity>65?'hurt':'annoyed','Мене щойно насварили',now,.6,60000);
+ else if(action==='discipline')feel(s,c.sensitivity>65?'hurt':'annoyed','Мене щойно насварили',now,.6,60000);
  else if(action==='feed')feel(s,context.food===s.favoriteFood?'grateful':'content','Смачно поїв',now,.6,45000);
  else if(action==='pet')feel(s,repeats>=3?'shy':'content',repeats>=3?'Стільки уваги, аж ніяково':'Приємно бути поруч',now,.6,45000);
- else if(action==='play')feel(s,repeats>=(characterOf(s).playfulness>70?4:3)?'bored':'amused',repeats>=3?'Хочеться іншої гри':'Ми гарно пограли',now,.7,60000);
+ else if(action==='play')feel(s,repeats>=(c.playfulness>70?4:3)?'bored':'amused',repeats>=3?'Хочеться іншої гри':'Ми гарно пограли',now,.7,60000);
  else if(action==='treat')feel(s,'grateful','Смаколик від моєї людини',now,.6,duration);
  if(s.emotion?.at===now)s.emotion.until=now+duration;
 }
