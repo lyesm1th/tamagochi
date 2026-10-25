@@ -23,3 +23,12 @@ The production branch is `main`. The immutable recovery point is commit
 To recover stable behavior, create a normal revert commit restoring the tree from
 `backup/stable-before-optimization-2026-10-25`, rather than force-pushing away history.
 For an individual stage, revert only that stage's commit. Retest before merging.
+
+## Existing baseline test failure
+The first CI run against the unchanged production runtime passed 223 out of 224 tests,
+with one existing regression in `tests/authored-actors.test.js`:
+`catbabies tear above lower eyelid`. This is a visual behavior assertion,
+not caused by stage 1 changes. Keep it visible as a failing CI test;
+**do not suppress or silently rewrite it**. Resolve this in a separately
+reviewed change with pixel and wardrobe regression evidence before merging.
+The workflow runs build and baseline checks even after a test failure.

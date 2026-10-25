@@ -22,4 +22,6 @@ jobs:
       - run: npm run check:visual-baseline
       - run: npm test
       - run: npm run build
+        if: always()
       - run: npm run check:visual-baseline
+        if: always()
