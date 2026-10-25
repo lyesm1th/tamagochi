@@ -1,3 +1,4 @@
+import {drawDinoAge} from './dino-age-art.js';
 import {species} from './game.js';
 import {labPet,labAges} from './lab-state.js';
 import {emotionNames,emotionOf} from './emotions.js';
@@ -21,6 +22,7 @@ function render(){if(!ready)return;const now=base+elapsed,originalNow=Date.now;t
  Date.now=()=>now;
  if($('style').value==='detailed')drawDetailedMain(canvas,pet,pet.species,elapsed,$('reduced').checked,{x:100,feet:129,scale:1,quiet:true},null);
  else{canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;c.save();c.scale(2,2);drawExpandedRoom(c,pet,elapsed,$('reduced').checked,now);c.translate(32,43);if(pet.portraitStage==='Яєчко'){c.fillStyle='#304d43';c.fillRect(52,43,24,31);c.fillRect(56,38,16,40);c.fillStyle='#fff0d1';c.fillRect(54,45,20,27);c.fillRect(58,40,12,36);c.fillStyle='#8db7a0';c.fillRect(58,52,4,4);}else drawClassicActor(c,pet.species,pet.portraitStage,species.find(p=>p.id===pet.species).color,elapsed,pet,$('reduced').checked);c.restore();}
+ if($('dinoPreview').checked&&pet.species==='dino'&&$('style').value==='detailed'&&!pet.sleeping){const c=canvas.getContext('2d'),tmp=document.createElement('canvas');tmp.width=128;tmp.height=128;drawDinoAge(tmp.getContext('2d'),pet.portraitStage,$('emotion').value,elapsed);c.fillStyle='#e9e3d7';c.fillRect(100,36,184,210);c.imageSmoothingEnabled=false;c.drawImage(tmp,100,40,184,184);}
  const e=emotionOf(pet,now);$('status').textContent=pet.sleeping?'Сон · головний убір знято':`${emotionNames[e.kind]}${e.reason?' · '+e.reason:''}${emotionLine(pet,now)?'\n'+emotionLine(pet,now):''}`;
  }finally{Date.now=originalNow;}
  $('time').value=String(elapsed);$('clock').textContent=(elapsed/1000).toFixed(1)+' с';}
