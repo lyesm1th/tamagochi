@@ -11,7 +11,7 @@ function files(dir){
   if(['node_modules','.git','assets'].includes(ent.name)&&dir.endsWith('/public'))continue;
   const path=join(dir,ent.name);
   if(ent.isDirectory()){if(!['node_modules','.git','.wrangler'].includes(ent.name))result.push(...files(path));}
-  else if(ent.isFile()&&/\\.(js|mjs|html)$/.test(ent.name))result.push(path);
+  else if(ent.isFile()&&/\.(js|mjs|html)$/.test(ent.name))result.push(path);
  }
  return result;
 }
@@ -20,14 +20,14 @@ const all=new Set(fileset),imports=new Map(),refs=new Map();
 for(const path of fileset){
  const contents=readFileSync(path,'utf8'),dependencies=new Set();
  // Explicit module specifiers, including import() and import...from.
- const pattern=/(?:\\bimport\\s*(?:\\(|[^;\\n]*?\\bfrom\\s*)|\\bexport\\s+[^;\\n]*?\\bfrom\\s*)['"]([^'"]+)['"]/g;
+ const pattern=/(?:\bimport\s*(?:\(|[^;\n]*?\bfrom\s*)|\bexport\s+[^;\n]*?\bfrom\s*)['"]([^'"]+)['"]/g;
  for(const match of contents.matchAll(pattern)){
   const spec=match[1];if(!spec.startsWith('.')&&!spec.startsWith('/'))continue;
   const target=resolve(spec.startsWith('/')?join(root,'public'):dirname(path),spec.startsWith('/')?spec.slice(1):spec);
   dependencies.add(target);
  }
  // Additional literal URL references in browser page scripts (src=...).
- if(extname(path)==='.html')for(const m of contents.matchAll(/\\bsrc=['"]([^'"]+\\.js)['"]/g)){
+ if(extname(path)==='.html')for(const m of contents.matchAll(/\bsrc=['"]([^'"]+\.js)['"]/g)){
   const spec=m[1],target=resolve(spec.startsWith('/')?join(root,'public'):dirname(path),spec.startsWith('/')?spec.slice(1):spec);
   dependencies.add(target);
  }
@@ -35,7 +35,7 @@ for(const path of fileset){
  for(const dep of dependencies){if(!refs.has(dep))refs.set(dep,[]);refs.get(dep).push(path);}
 }
 function crawl(entries){const visited=new Set(),stack=[...entries];while(stack.length){const key=stack.pop();if(visited.has(key)||!all.has(key))continue;visited.add(key);for(const dep of imports.get(key)||[])stack.push(dep);}return visited;}
-const publicFiles=fileset.filter(x=>x.startsWith(join(root,'public')+'/')&&/\\.js$/.test(x)&&!x.includes('/assets/'));
+const publicFiles=fileset.filter(x=>x.startsWith(join(root,'public')+'/')&&/\.js$/.test(x)&&!x.includes('/assets/'));
 const entryPoints=[join(root,'public/app.js'),join(root,'public/lab.js'),join(root,'public/game.js'),join(root,'public/detailed-renderer.js'),join(root,'public/pixel-art.js')];
 const runtime=crawl(entryPoints),qa=crawl(fileset.filter(x=>x.startsWith(join(root,'tests')+'/')||x.startsWith(join(root,'scripts')+'/')||x.startsWith(join(root,'docs')+'/')));
 const candidates=publicFiles.filter(x=>!runtime.has(x)).map(x=>({
