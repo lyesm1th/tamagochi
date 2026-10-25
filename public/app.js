@@ -1,4 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
+import {companionChoiceContent} from './companion-choice-content.js';
 import {playroomChoiceContent} from './playroom-choice-content.js';
 import {journalChoiceContent} from './journal-choice-content.js';
 import {sandboxControlModel} from './sandbox-control-model.js';
@@ -189,13 +190,17 @@ async function toggleReminders(){
  }catch(e){fail(e.message);}finally{busy=false;render();}
 }
 
-function renderCompanionChoice(portrait){portrait.hidden=true;const title=$('#choice-title'),detail=$('#choice-detail');
- if(mode==='food'){const list=foodsFor(state,stage(state)),food=list[choice];title.textContent=(choice+1)+'/'+list.length+' · '+foodNames[food];detail.textContent=(state.memory?.discoveries.includes(food)?'♡ Уже знаємо: це улюблена їжа!':'Який смак оберемо сьогодні?')+'\nОК — погодувати';return;}
- if(mode==='memory'){title.textContent=state.name+' пам’ятає';detail.textContent=memorySummary(state)+(state.memory.lastAdventure?'\nПригода: '+state.memory.lastAdventure.title:'')+(state.heirloom?'\nСпадок: '+state.heirloom.name:'');return;}
- if(mode==='room'){const item=furnishings[choice],owned=state.room?.[item.id];title.textContent=item.name+(owned?' · Є В КІМНАТІ':' · '+item.price+' монет');detail.textContent=item.benefit+'\n'+(owned?'ОК — скористатися':'ОК — придбати');portrait.hidden=false;if(detailedReady()){drawDetailedMain(portrait,state,state.species,0,true,{x:96,feet:128,scale:1},null);}else{const c=portrait.getContext('2d');c.clearRect(0,0,128,100);drawHome(c,state,0);}return;}
- if(mode==='routine'){const [field,name]=routineFields[choice];title.textContent=name;detail.textContent=(field==='enabled'?(state.routine.enabled?'УВІМКНЕНО':'ВИМКНЕНО'):String(state.routine[field]).padStart(2,'0')+':00')+'\nОК — '+(field==='enabled'?'увімкнути / вимкнути':'додати 1 годину')+'\n← → інший пункт · ↶ назад';return;}
- if(mode==='adventure'){const event=adventureOf(state);title.textContent=event?.title||'Зараз спокійно';detail.textContent=event?event.question+'\n▶ '+event.choices[choice].label+'\nОК — відповісти':'Пригоди часом трапляються самі. А поки можна обійнятися.';return;}
- if(mode==='tree'){const row=treeRecords[treeIndex];title.textContent=row?row.name+' · покоління '+row.generation:'Родинне дерево';detail.textContent=row?((row.parents?.length?'Батьки: '+row.parents.map(p=>p.name).join(' + '):'Початок цієї гілки родини')+(row.heirloom?'\nСпадок: '+row.heirloom.name+' від '+row.heirloom.from:'')+'\n'+(treeIndex+1)+'/'+treeRecords.length+' · ← → родичі'):'У нас ще все попереду.';return;}
+function renderCompanionChoice(portrait){
+ portrait.hidden=true;
+ const content=companionChoiceContent(mode,state,choice,treeRecords,treeIndex,{foodsFor,stage,foodNames,memorySummary,furnishings,routineFields,adventureOf});
+ if(!content)return;
+ $('#choice-title').textContent=content.title;
+ $('#choice-detail').textContent=content.detail;
+ if(content.showPortrait){
+  portrait.hidden=false;
+  if(detailedReady())drawDetailedMain(portrait,state,state.species,0,true,{x:96,feet:128,scale:1},null);
+  else{const c=portrait.getContext('2d');c.clearRect(0,0,128,100);drawHome(c,state,0);}
+ }
 }
 async function companion(command,body={},stay=false){if(busy||!state)return;busy=true;generation++;$('#error').hidden=true;render();try{const r=online?await api('companion',{command,...body}):performCompanion(state,command,body);if(r.error)throw Error(r.error);state=r.state;if(!online)save();if(!['toyTurn','activityStep','cookStep'].includes(command)||!state.playroom?.session&&!state.world?.activity&&!state.cozy?.cooking)speak(r.text);if(r.effect){effect={kind:r.effect,started:Date.now(),until:Date.now()+2000};void audio.react('play',state.species);}if(!stay)mode='normal';}catch(e){fail(e.message);}finally{busy=false;render();}}
 async function useRoom(){const item=furnishings[choice];if(!state.room[item.id]){await companion('roomBuy',{item:item.id},false);return;}if(item.id==='bed'){mode='normal';await action('sleep');}else if(item.id==='bowl'){mode='food';choice=0;render();}else if(item.id==='toy'){if(state.vacation||state.sleeping||state.napping||stage(state)==='Яєчко'){speak('Пограємо, коли друг буде вдома й прокинеться.');return;}mode='toys';choice=0;render();}else await companion('roomUse',{item:item.id});}
