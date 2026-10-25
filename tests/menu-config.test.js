@@ -21,7 +21,7 @@ test('root navigation and routine field ordering retain original labels',()=>{
 });
 test('menu configuration is independent of DOM and persistent game state',()=>{
  const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
- assert.ok(app.includes("import {allMenu,routineFields,groupEntries,groupItems} from './menu-config.js'"));
+ assert.match(app,/import \{allMenu,routineFields,groupEntries,groupItems(?:,[^}]*)?\} from '\.\/menu-config\.js'/);
  assert.ok(app.includes('menu=groupItems(id,groups,journalPages,worldPages)'));
  assert.ok(app.includes('menu=groupEntries(groups)'));
  const source=readFileSync(new URL('../public/menu-config.js',import.meta.url),'utf8');
