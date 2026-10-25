@@ -1,5 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
-import {allMenu,routineFields,groupEntries,groupItems} from './menu-config.js';
+import {allMenu,routineFields,groupEntries,groupItems,createMenuModes,groomName} from './menu-config.js';
 import {characterLabel,emotionOf,emotionNames} from './emotions.js';
 import {farewellPlea} from './farewell.js';
 import {createApiClient} from './api-client.js';
@@ -46,9 +46,7 @@ import {createSound} from './sound.js';
 const $=s=>document.querySelector(s),tg=window.Telegram?.WebApp,online=!!tg?.initData;
 try{tg?.ready();tg?.expand();tg?.setHeaderColor('#e9e3d7');tg?.setBackgroundColor('#e9e3d7');}catch{}
 let effect=null,familyScene=null,smoothScene=null;let belongingItem=null;const allowSpeech=speechFilter();
-const journalModes=journalPages.map(([id])=>id);
-const worldModes=['roomStyle','wallet',...journalModes,'secrets','world','stories','sandbox',...worldPages.map(([id])=>id)];let momentRecords=[];
-const panelModes=['roomStyle','wallet',...journalModes,'secrets','stories','sandbox','games','album','family','food','memory','room','routine','adventure','tree','world','ritual','weather','walk','activity','dreams','forms',...dailyPages.map(([id])=>id),...playroomPages.map(([id])=>id),...cozyPages.map(([id])=>id)];
+const {journalModes,worldModes,panelModes}=createMenuModes({journalPages,worldPages,dailyPages,playroomPages,cozyPages});let momentRecords=[];
 let treeRecords=[],treeIndex=0;
 let farewellChoice=0,farewellStep=0,farewellTimer=null;
 function startFarewell(){clearInterval(farewellTimer);farewellChoice=0;farewellStep=0;confirmKind='endLife';confirmYes=false;mode='confirm';speak(farewellPlea(state)[0],true);render();farewellTimer=setInterval(()=>{if(mode!=='confirm'||confirmKind!=='endLife'){clearInterval(farewellTimer);return;}const lines=farewellPlea(state);farewellStep=Math.min(lines.length-1,farewellStep+1);speak(lines[farewellStep],true);render();if(farewellStep===lines.length-1)clearInterval(farewellTimer);},6500);}
@@ -204,7 +202,7 @@ function renderWorldChoice(portrait){if(mode==='wallet'){portrait.hidden=true;$(
  if(mode==='dreams'){title.textContent=w.dream?'ЗАРАЗ СНІТЬСЯ':w.lastDream?'ОСТАННІЙ СОН':'СНИ ДРУГА';detail.textContent=w.dream?w.dream.title:w.lastDream?w.lastDream.title+'\n«'+w.lastDream.text+'»':'Засни хоча б на дві хвилини — і побачиш піксельний сон. Після пробудження друг розповість його.';return;}
  if(mode==='forms'){title.textContent=formNames[careForm(state)];detail.textContent='Вигляд підлітка залежить від догляду. Доросла форма закріплюється при дорослішанні.\nВисокий догляд — блиск і охайність; середній — округлість і сонні очі; низький — чубчик та скуйовджені боки.';}
 }
-function groomName(s){return {chicken:'Пригладити пір’ячко',frog:'Зволожити спинку',dino:'Почистити луску',dog:'Почистити шерстку'}[s.species]||'Розчесати шерстку';}
+
 async function worldAction(command,body={}){if(busy||!state)return;busy=true;generation++;$('#error').hidden=true;render();try{const r=online?await api('world',{command,...body}):performWorld(state,command,body);if(r.error)throw Error(r.error);state=r.state;if(!online)save();if(!['toyTurn','activityStep','cookStep'].includes(command)||!state.playroom?.session&&!state.world?.activity&&!state.cozy?.cooking)speak(r.text);if(r.effect){effect={kind:r.effect,started:Date.now(),until:Date.now()+3500};void audio.react(r.effect,state.species);}if(command==='walkStart'||command==='activityStart'||command==='walkChoice'||command==='activityStep'&&!state.world.activity)choice=0;if(command==='activityStep'&&!state.world.activity)mode='normal';}catch(e){fail(e.message);}finally{busy=false;render();}}
 async function worldOK(){if(mode==='wallet'){await walletRequest('status');return;}if(mode==='roomStyle'){const [kind,index]=styleOptions()[choice];await living('roomStyle',{kind,index});return;}if(journalModes.includes(mode)){await journalOK();return;}if(mode==='sandbox'){const pet=sandboxPets[Math.floor(choice/4)];if(pet)await sandboxAction(['hello','play','tease','avoid'][choice%4],pet.id);return;}if(mode==='secrets'){await living('secret',{spot:['window','box','plant'][choice%3]});return;}if(mode==='stories'){await living('story');return;}if(cozyPages.some(([id])=>id===mode)){await cozyOK();return;}if(playroomPages.some(([id])=>id===mode)){await playroomOK();return;}if(dailyPages.some(([id])=>id===mode)){await dailyOK();return;}if(mode==='world'){mode=worldPages[choice][0];choice=0;render();if(mode==='photos')await openMoments();if(mode==='weather'&&state.world.weatherSound!==false)void audio.react(weatherAt().id,state.species);return;}if(mode==='ritual'){await worldAction('ritual',{choice});return;}if(mode==='weather'){await worldAction('weatherSound');if(state.world.weatherSound)void audio.react(weatherAt().id,state.species);return;}if(mode==='walk'){const trip=state.world.walk;if(trip&&trip.expires>Date.now())await worldAction('walkChoice',{eventId:trip.id,choice:choice%2});else await worldAction('walkStart',{place:walks[choice%walks.length].id});return;}if(mode==='activity'){const run=state.world.activity;if(run&&run.expires>Date.now())await worldAction('activityStep',{eventId:run.id});else await worldAction('activityStart',{activity:activities[choice%activities.length].id});return;}mode='world';choice=0;render();}
 

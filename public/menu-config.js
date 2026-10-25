@@ -10,3 +10,11 @@ export function groupItems(id,groups,journalPages,worldPages){
  const items=group[3].filter(x=>!['ritual','peace','pet','kitchen','decorate'].includes(x)).map(key=>allMenu.find(m=>m[0]===key)||[key,{sandbox:'♧',stories:'✿'}[key]||'·',names[key]||key]);
  return items.map(row=>row[0]==='activity'?[row[0],row[1],'Догляд і обійми']:row[0]==='roomStyle'?[row[0],row[1],'Вигляд і облаштування']:row);
 }
+
+export function createMenuModes({journalPages,worldPages,dailyPages,playroomPages,cozyPages}){
+ const journalModes=journalPages.map(([id])=>id);
+ const worldModes=['roomStyle','wallet',...journalModes,'secrets','world','stories','sandbox',...worldPages.map(([id])=>id)];
+ const panelModes=['roomStyle','wallet',...journalModes,'secrets','stories','sandbox','games','album','family','food','memory','room','routine','adventure','tree','world','ritual','weather','walk','activity','dreams','forms',...dailyPages.map(([id])=>id),...playroomPages.map(([id])=>id),...cozyPages.map(([id])=>id)];
+ return {journalModes,worldModes,panelModes};
+}
+export function groomName(s){return {chicken:'Пригладити пір’ячко',frog:'Зволожити спинку',dino:'Почистити луску',dog:'Почистити шерстку'}[s.species]||'Розчесати шерстку';}
