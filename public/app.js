@@ -1,4 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
+import {roomStyleOptions,sceneActionOrigin} from './ui-scene-data.js';
 import {advanceSmoothPose} from './smooth-pose.js';
 import {countDailyOptions,mealOptions,belongingOptions,countCozyOptions} from './ui-choices.js';
 import {readLocalAlbum,writeLocalAlbum} from './local-album.js';
@@ -271,7 +272,7 @@ function renderRoomGames(){const root=$('#room-game-controls');root.replaceChild
 }
 setInterval(()=>{if(pendingRoomPlay&&!busy&&!loading&&mode==='normal'){const body=pendingRoomPlay;pendingRoomPlay=null;void roomGameRequest(body);}},150);
 function uiBelongingChoices(s){return belongingOptions(s,belongingItem,belongingChoices,ownedThings);}
-function roomOrigin(){return {fromX:smoothScene?.x??96,fromY:smoothScene?.feet??130};}
+function roomOrigin(){return sceneActionOrigin(smoothScene);}
 async function roomTap(x,y,long=false){
  if(!state||busy||loading||mode!=='normal')return;void audio.unlock();const run=state.living?.enrichment?.session;if(run?.until>Date.now()){await roomGameRequest({event:'tap',session:run.id,x,y});return;}
  if(state.cozy?.hide||state.lively?.secret?.kind==='box'){await living('leaveBox');return;}
@@ -308,7 +309,7 @@ $('#pet').addEventListener('pointerup',e=>{const start=roomPointer;roomPointer=n
  if(onPet&&dist<8&&Math.hypot(x-pose.x,y-(pose.feet-h*.38))<9){void roomGameRequest({event:'touch',kind:'nose'});return;}
  if(Math.abs(x-start.x)>14&&start.y>=66){dispatchRoomGesture({gesture:'ball',x:Math.max(0,Math.min(1,x/192)),from:Math.max(0,Math.min(1,start.x/192))});return;}if(dist<8)void roomTap(x,y,Date.now()-start.at>=450);});
 
-function styleOptions(){return Object.entries(roomStyles).flatMap(([kind,items])=>items.map((_,i)=>[kind,i]));}
+function styleOptions(){return roomStyleOptions(roomStyles);}
 let walletInfo=null,lastGiftOp=null;
 async function walletRequest(command,details={}){if(busy)return;if(!online){speak('Гаманець працює через Telegram.');return;}busy=true;generation++;render();try{const r=await api('wallet',{command,...details});walletInfo=r.wallet;if(r.state)state=r.state;if(r.text)speak(r.text);if(command==='gift')lastGiftOp=null;}catch(e){if(command==='gift'&&e.message.includes('анульовано'))lastGiftOp=null;fail(e.message);}finally{busy=false;render();}}
 function renderWallet(){const c=$('#wallet-controls');c.replaceChildren();const input=document.createElement('input');input.type='number';input.min='1';input.max='1000000000000';input.value='100';input.id='wallet-amount';input.setAttribute('aria-label','Сума монет');c.append(input);const add=(label,fn,disabled=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.disabled=busy||disabled;b.onclick=fn;c.append(b);};const amount=()=>Number(input.value);add('У гаманець',()=>void walletRequest('move',{direction:'deposit',amount:amount()}));add('У кишеню пета',()=>void walletRequest('move',{direction:'withdraw',amount:amount()}));add('Створити подарунок',()=>{const n=amount();if(!lastGiftOp||lastGiftOp.amount!==n)lastGiftOp={op:walletOperationId(),amount:n};void walletRequest('gift',lastGiftOp);});if(walletInfo?.balance>0)add('Усі монети — для покупок',()=>void walletRequest('move',{direction:'withdraw',amount:walletInfo.balance}));if(walletInfo?.owner)add('+ 1 000 000 монет',()=>void walletRequest('refill'));const code=document.createElement('input');code.type='text';code.placeholder='ABCD-EFGH-JK';code.id='gift-code';code.setAttribute('aria-label','Код подарунка');c.append(code);add('Забрати подарунок',()=>void walletRequest('redeem',{code:code.value}));for(const gift of (walletInfo?.gifts||[]).filter(g=>g.status!=='redeemed')){const row=document.createElement('p');row.textContent=gift.amount+' монет · '+({issued:'Одноразовий код: ',redeemed:'Використано: ',revoked:'Анульовано: ',reserved:'Готується: '}[gift.status]||'Код: ')+gift.code;c.append(row);add('Поділитися кодом',async()=>{try{if(navigator.share)await navigator.share({text:'Тобі '+gift.amount+' монет у РААААРРРРРРАГОЧІ! У грі: Дім → Гаманець → Забрати подарунок. Код: '+gift.code});else if(navigator.clipboard){await navigator.clipboard.writeText(gift.code);speak('Код скопійовано. Надішли його другу.');}else{code.value=gift.code;code.select();speak('Виділив код. Скопіюй і надішли другу.');}}catch(e){if(e.name!=='AbortError')fail(e.message);}},gift.status!=='issued');}}
