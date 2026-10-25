@@ -29,6 +29,14 @@ export async function validate(raw,token,now=Date.now()){
 }
 export default {async fetch(req,env){
  const url=new URL(req.url);
+ // Private visual lab: verify the signed Telegram session on every request.
+ let assetPath;try{assetPath=decodeURIComponent(url.pathname);}catch{return json({error:'Bad path'},400);}
+ if(/^\/lab/i.test(assetPath)){
+ const raw=req.headers.get('Cookie')?.split(';').map(v=>v.trim()).find(v=>v.startsWith('__Host-pet-lab='))?.slice('__Host-pet-lab='.length);
+ let user;try{user=await validate(raw?decodeURIComponent(raw):'',env.BOT_TOKEN);}catch{}
+ if(!user||!String(env.OWNER_TELEGRAM_ID||'').trim()||String(user.id)!==String(env.OWNER_TELEGRAM_ID).trim())return json({error:'Тестова кімната доступна лише овнеру через Telegram.'},403);
+ const asset=await env.ASSETS.fetch(req),headers=new Headers(asset.headers);headers.set('Cache-Control','private, no-store');headers.set('Vary','Cookie');return new Response(asset.body,{status:asset.status,headers});
+ }
  if(url.pathname==='/api/health')return json({ok:true});
  if(url.pathname.startsWith('/api/')){
  if(req.method!=='POST')return json({error:'Method not allowed'},405);
@@ -37,6 +45,10 @@ export default {async fetch(req,env){
  if(!env.BOT_TOKEN)return json({permanent:true,error:'У Cloudflare не задано BOT_TOKEN. Додай токен цього бота в Settings → Variables and Secrets як Secret, потім застосуй зміни.'},503);
  const user=await validate(req.headers.get('X-Telegram-Init-Data'),env.BOT_TOKEN);
  if(!user)return json({error:'Відкрий гру через Telegram. Сесія могла закінчитись.'},401);
+ if(url.pathname==='/api/owner/access'){
+ if(!String(env.OWNER_TELEGRAM_ID||'').trim()||String(user.id)!==String(env.OWNER_TELEGRAM_ID).trim())return json({error:'Доступ лише для овнера.'},403);
+ return Response.json({owner:true},{headers:{'Cache-Control':'no-store','Set-Cookie':`__Host-pet-lab=${encodeURIComponent(req.headers.get('X-Telegram-Init-Data'))}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=900`}});
+ }
  const id=env.PETS.idFromName(String(user.id));
  return env.PETS.get(id).fetch(new Request('https://pet'+url.pathname,{method:'POST',headers:{'X-Pet-Owner':String(user.id),'X-Pet-App':url.origin,'X-Request-ID':req.headers.get('X-Request-ID')||''},body:await req.text()}));
  }
