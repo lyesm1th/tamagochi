@@ -19,8 +19,24 @@ import {sceneFurniture} from './cozy-effects.js';
 import {careForm,weatherAt} from './little-world.js';
 const sprites=new Map(),dressedSprites=new Map();
 const images=new Map();let loaded=false,loading=null;
+// Optional authored dinosaur ages: loaded separately, never replacing original teen.
+let authoredDino=null;
+export function authoredDinoReady(){return !!authoredDino;}
+async function loadAuthoredDino(){
+ if(typeof Image==='undefined')return false;
+ return new Promise(resolve=>{const img=new Image();img.onload=()=>{
+  try{const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;cv.getContext('2d').drawImage(img,0,0);
+   if(img.width!==576||img.height!==192)return resolve(false);
+   authoredDino={};for(const [i,age]of ['Підліток','Дорослий','Старенький'].entries()){
+    const tile=document.createElement('canvas');tile.width=192;tile.height=192;
+    tile.getContext('2d').drawImage(cv,i*192,0,192,192,0,0,192,192);authoredDino[age]=tile;
+   }resolve(true);
+  }catch{resolve(false);}
+ };img.onerror=()=>resolve(false);img.src='/art/detailed/dino-age-authored.webp';});
+}
+
 export const detailedReady=()=>loaded;
-export function loadDetailedAssets(){if(typeof Image==='undefined')return Promise.resolve(false);if(loading)return loading;loading=Promise.all(Object.entries(detailedArt).map(([name,asset])=>new Promise((resolve,reject)=>{const image=new Image(),timer=setTimeout(()=>reject(Error('art timeout '+name)),20000);image.onload=()=>{clearTimeout(timer);try{images.set(name,image);const grid=name==='props'?[128,128]:name==='furniture'?[192,asset.height/4]:[192,192];if(!['walks'].includes(name))for(const [key,rect]of Object.entries(asset.cells)){const sprite=isolateSprite(image,rect,name==='furniture'?null:grid,name.startsWith('new_'));if(key==='monkey')sprite.getContext('2d').clearRect(0,Math.floor(sprite.height*.62),Math.ceil(sprite.width*.12),sprite.height);if(name==='sleep'&&key==='cat')sprite.getContext('2d').clearRect(0,0,12,sprite.height);sprites.set(name.replace(/^new_/,'')+':'+key,sprite);};resolve();}catch(error){reject(error);}};image.onerror=()=>{clearTimeout(timer);reject(Error('art missing '+name));};image.src=asset.src;}))).then(()=>loadWardrobeAssets()).then(()=>{for(const id of ['pig','sheep','fox','monkey','duck','penguin']){const base=repairedOriginal(id);if(base)sprites.set('adults:'+id,base);}return loaded=true;}).catch(()=>{loading=null;return false;});return loading;}
+export function loadDetailedAssets(){if(typeof Image==='undefined')return Promise.resolve(false);if(loading)return loading;loading=Promise.all(Object.entries(detailedArt).map(([name,asset])=>new Promise((resolve,reject)=>{const image=new Image(),timer=setTimeout(()=>reject(Error('art timeout '+name)),20000);image.onload=()=>{clearTimeout(timer);try{images.set(name,image);const grid=name==='props'?[128,128]:name==='furniture'?[192,asset.height/4]:[192,192];if(!['walks'].includes(name))for(const [key,rect]of Object.entries(asset.cells)){const sprite=isolateSprite(image,rect,name==='furniture'?null:grid,name.startsWith('new_'));if(key==='monkey')sprite.getContext('2d').clearRect(0,Math.floor(sprite.height*.62),Math.ceil(sprite.width*.12),sprite.height);if(name==='sleep'&&key==='cat')sprite.getContext('2d').clearRect(0,0,12,sprite.height);sprites.set(name.replace(/^new_/,'')+':'+key,sprite);};resolve();}catch(error){reject(error);}};image.onerror=()=>{clearTimeout(timer);reject(Error('art missing '+name));};image.src=asset.src;}))).then(()=>loadWardrobeAssets()).then(()=>{for(const id of ['pig','sheep','fox','monkey','duck','penguin']){const base=repairedOriginal(id);if(base)sprites.set('adults:'+id,base);}return loadAuthoredDino().then(()=>loaded=true);}).catch(()=>{loading=null;return false;});return loading;}
 const active=(effect,now)=>effect&&effect.until>now?effect.kind:null;
 function stamp(c,sheet,key,x,y,w,h,options={}){const image=sprites.get(sheet+':'+key)||images.get(sheet),rect=sprites.has(sheet+':'+key)?[0,0,image.width,image.height]:detailedArt[sheet]?.cells?.[key];if(!image||!rect)return false;c.save();c.imageSmoothingEnabled=false;if(options.alpha!=null)c.globalAlpha=options.alpha;if(options.filter)c.filter=options.filter;if(options.rotate){c.translate(Math.round(x+w/2),Math.round(y+h/2));c.rotate(options.rotate);x=-w/2;y=-h/2;}c.drawImage(image,...rect,Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));c.restore();return true;}
 function background(c,key,w=384,h=288){const image=images.get(key);if(!image)return;c.imageSmoothingEnabled=false;c.drawImage(image,0,0,image.width,image.height,0,0,w,h);}
@@ -38,7 +54,8 @@ const ageScale=age=>age==='Малюк'?.40:age==='Дитина'?.64:age==='Пі�
 export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age);return {eyes:a.eyes,neck:a.neck,torso:a.top+a.height/2,head:a.hat,age};}
 // Compose one complete dressed actor. All scene movement uses this bitmap.
 export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expressive=true){
- const base=sprites.get(sheet+':'+id);if(!base)return null;
+ const original=sprites.get(sheet+':'+id);if(!original)return null;
+ const base=id==='dino'&&!pet.sleeping&&!pet.napping&&authoredDino?.[age]&&['Дорослий','Старенький'].includes(age)?authoredDino[age]:original;
  const wearing=pet.cozy?.wearing||{},sleep=!!(pet.sleeping||pet.napping),key=JSON.stringify([id,age,sheet,sleep,...['body','neck','head','eyes'].map(slot=>wearing[slot])]);
  let result=dressedSprites.get(key);
  if(!result){
@@ -73,7 +90,7 @@ export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=fals
  if(age==='Яєчко'){const wobble=reduced?0:Math.sin(frame/230)*.05;prop(c,'egg',x-height*.23,feet-height*.60,height*.46,height*.60,{rotate:wobble});return;}
  const sheet=sheetOf(pet,effect,Date.now()),rect=detailedArt[sheet]?.cells?.[id]||detailedArt['new_'+sheet]?.cells?.[id];if(!rect)return;const sprite=sprites.get(sheet+':'+id),ratio=sprite?sprite.width/sprite.height:rect[2]/rect[3],w=Math.min(height*1.3,height*ratio)*(age==='Малюк'?1.14:age==='Дитина'?1.08:age==='Підліток'?.88:1),h=height,box={x:x-w/2,y:feet-h,w,h};
  // A single atlas style is used everywhere, including albums and the sandbox.
- const appearance=emotionalAppearance(pet,Date.now(),reduced);withEmotionalPose(c,appearance,x,feet,()=>{const dressed=dressedSprite(pet,id,age,sheet,Date.now(),reduced,!active(effect,Date.now()));if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький')c.filter='grayscale(.72) saturate(.6)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
+ const appearance=emotionalAppearance(pet,Date.now(),reduced);withEmotionalPose(c,appearance,x,feet,()=>{const dressed=dressedSprite(pet,id,age,sheet,Date.now(),reduced,!active(effect,Date.now()));if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький'&&!authoredDino)c.filter='grayscale(.72) saturate(.6)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
  if(pet.appearance){const col=pet.appearance.color||'#bba16b';shade(c,box.x+w*.25,box.y+h*.79,3,3,col);if(pet.appearance.mark==='stripe')shade(c,box.x+w*.25,box.y+h*.83,4,1,col);}
  if(!pet.sleeping&&!pet.napping&&careForm(pet)==='radiant')sparkles(c,box.x-8,box.y+h*.2,frame,reduced);if(careForm(pet)==='scruffy'){shade(c,box.x+w*.72,box.y+h*.82,4,3,'#9a8a70');shade(c,box.x+w*.76,box.y+h*.86,3,2,'#9a8a70');}
  effects(c,pet,box,effect,frame,reduced);},reduced);
