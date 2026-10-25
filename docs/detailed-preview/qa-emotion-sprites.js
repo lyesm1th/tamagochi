@@ -1,6 +1,6 @@
-import {emotionSprites} from './emotion-sprite-manifest.js';
-import {emotionOf} from './emotions.js';
-import {emotionFrame} from './emotion-frames.js';
+import {emotionSprites} from '/emotion-sprite-manifest.js';
+import {emotionOf} from '/emotions.js';
+import {emotionFrame} from '/emotion-frames.js';
 const atlases=new Map(),loading=new Map(),retryAt=new Map();
 export const emotionStage=age=>age==='Малюк'?'babies':age==='Дитина'?'children':age==='Підліток'?'teens':'adults';
 export function loadEmotionSprite(id){

@@ -2,10 +2,10 @@ import fs from 'node:fs';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTABLE_PATH,headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']});
 const page=await browser.newPage({viewport:{width:430,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.route('**/*',r=>{const u=new URL(r.request().url());return u.hostname==='preview.local'?r.fulfill({path:new URL('../../public'+(u.pathname==='/'?'/index.html':u.pathname),import.meta.url).pathname}):r.abort();});
+await page.route('**/*',r=>{const u=new URL(r.request().url());if(u.hostname!=='preview.local')return r.abort();if(u.pathname==='/__qa__/emotion-sprites.js')return r.fulfill({path:new URL('./qa-emotion-sprites.js',import.meta.url).pathname});return r.fulfill({path:new URL('../../public'+(u.pathname==='/'?'/index.html':u.pathname),import.meta.url).pathname});});
 const out=new URL('./sprite-qa/',import.meta.url);fs.mkdirSync(out,{recursive:true});await page.goto('https://preview.local/');
 const report=await page.evaluate(async()=>{
- const r=await import('/detailed-renderer.js'),em=await import('/emotion-sprites.js'),g=await import('/game.js');await r.loadDetailedAssets();
+ const r=await import('/detailed-renderer.js'),em=await import('/__qa__/emotion-sprites.js'),g=await import('/game.js');await r.loadDetailedAssets();
  const ids=g.species.map(s=>s.id),kinds=['sad','angry','annoyed','amused','bored','curious','surprised','shy','anxious','hurt','proud','grateful','content'],ages=['Малюк','Дитина','Підліток','Дорослий'],sheets=['babies','children','teens','adults'];
  let combinations=0,frames=0,partialAlpha=0,wornSprites=0;const output={};
  for(const [row,age]of ages.entries()){
