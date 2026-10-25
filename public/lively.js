@@ -28,7 +28,7 @@ export function ambient(s,now=Date.now()){
  if(s.cozy?.peace?.tension>0)return {kind:'turned',item:'corner',text:'Я поки спиною. Але ти далеко не йди.'};
  const secret=s.lively?.secret;if(secret?.until>now&&now>=secret.at&&now-secret.at<12000)return {...secret,progress:(now-secret.at)/10000};
  const slot=ambientSlot(s,now);const littleMoment=chatter(s,now,slot);if(littleMoment)return littleMoment;
- const journal=slot?.lane==='weather'?journalAmbient(s,now):null;if(journal)return journal;
+ const journal=slot?.lane==='weather'?journalAmbient(s,now,slot):null;if(journal)return journal;
  if(slot?.lane!=='habit')return null;const block=slot.block,phase=now-slot.at;const h=habits[s.species]||habits.cat,seed=stableHash(s.id+':'+block)>>>12,owned=id=>id==='box'&&s.room?.box!==false||s.room?.[id]||s.cozy?.owned?.[id]||id==='toy'&&s.playroom?.toys?.ball;
  const choices=[{...h,item:owned(h.item)?h.item:'rug'},{kind:'window',item:'window',text:'Дивлюся у вікно. Там теж хтось дивний.'},{kind:'carry',item:s.room?.bed?'bed':'rug',text:'Тягну іграшку у своє гніздечко. Не забирай.'},{kind:'doze',item:s.room?.bed?'bed':'rug',text:'Грався-грався… очі самі закрилися.'}];
  const result=choices[(seed+(s.trait==='playful'?1:s.trait==='sleepy'?3:0))%choices.length];return {...result,progress:slot.progress};

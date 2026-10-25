@@ -49,11 +49,12 @@ export function journalAction(state,command,body={},now=Date.now()){
  }
  return {error:'Невідома дія.'};
 }
-export function journalAmbient(s,now=Date.now()){
+export function journalAmbient(s,now=Date.now(),precomputedSlot=undefined){
  const j=s?.journal;if(!j||s.dead||s.vacation)return null;if(s.sleeping||s.napping)return null;
  if(j.together)return {kind:'together',item:'front',text:'Посидимо. Я тихенько тут.'};
  if(j.gesture?.until>now){const k=j.gesture.kind;if(k==='ball'){const point=ballMotion(j.gesture,now);return {kind:'ball',item:'toy',x:point.x,ball:point,text:'Лови! Я за м’ячиком.'};}return {kind:k,item:k==='lamp'?'lamp':k==='ball'?'toy':k==='towel'?'bowl':'front',x:j.gesture.x,progress:(now-(j.gesture.until-5000))/5000,text:k==='towel'?'Сам приніс рушничок!':null};}
- if(ambientSlot(s,now)?.lane!=='weather')return null;const weather=weatherAt(now).id;if(weather==='storm')return {kind:(j.courage?.storm||0)>=3?'rain':'blanket',item:(j.courage?.storm||0)>=3?'window':'bed',text:(j.courage?.storm||0)>=3?'Грім бурчить, а ми тут у безпеці.':'Гримить… Можна я ближче до тебе, людино?'};
+ const slot=precomputedSlot===undefined?ambientSlot(s,now):precomputedSlot;
+ if(slot?.lane!=='weather')return null;const weather=weatherAt(now).id;if(weather==='storm')return {kind:(j.courage?.storm||0)>=3?'rain':'blanket',item:(j.courage?.storm||0)>=3?'window':'bed',text:(j.courage?.storm||0)>=3?'Грім бурчить, а ми тут у безпеці.':'Гримить… Можна я ближче до тебе, людино?'};
  if(weather==='rain')return {kind:'rain',item:'window',text:s.species==='frog'?'Ква! Моя улюблена водичка.':'Ловлю крапельки. Вони самі прийшли!'};
  if(weather==='sun'&&s.routine?.timezone&&Math.floor(now/HOUR)%4===0)return {kind:'warm',item:'rug',text:'Тепло… Розпластався пузом догори. Не кантувати.'};
  if(j.quirk.id==='hiccup'&&Math.floor(now/12000)%6===0)return {kind:'hiccup',item:'front',text:'Гик! Хто це був? А. Це я.'};return null;
