@@ -1,4 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
+import {composePhotoScene} from './photo-scene.js';
 import {roomGameControls} from './room-game-controls.js';
 import {createWalletOperationId} from './wallet-operation-id.js';
 import {roomStyleOptions,sceneActionOrigin} from './ui-scene-data.js';
@@ -261,7 +262,7 @@ function renderInteractionControls(){const wrapper=$('#sandbox-controls');wrappe
 async function toggleGraphics(){if(graphicsMode==='detailed'){setGraphicsMode('classic');smoothScene=null;speak('Оригінальна піксельна графіка.');render();return;}busy=true;speak('Готую сучасну графіку…');render();const ok=await loadDetailedAssets();busy=false;if(ok){setGraphicsMode('detailed');smoothScene=null;speak('Сучасна графіка.');}else fail('Зображення не завантажились. Спробуй ще раз.');document.querySelectorAll('.species-card canvas').forEach((canvas,i)=>draw(canvas,species[i].id,1000,null,true));render();}
 if(graphicsMode==='detailed')void loadDetailedAssets().then(ok=>{if(!ok){if(typeof Image!=='undefined')fail('Не вдалося завантажити зображення. Перевідкрий гру, будь ласка.');return;}document.querySelectorAll('.species-card canvas').forEach((canvas,i)=>draw(canvas,species[i].id,1000,null,true));render();});
 
-function paintPhotoScene(cv,p){if(detailedReady()){drawDetailedMain(cv,p,p.species,1000,true,{x:96,feet:128,scale:.9},null);return;}cv.width=192;cv.height=144;const c=cv.getContext('2d');drawExpandedRoom(c,p,1000,true);const layer=document.createElement('canvas');layer.width=128;layer.height=100;drawClassic(layer,p.species,1000,p,false,true);c.drawImage(layer,39,43,115,90);drawLighting(c,p);}
+function paintPhotoScene(cv,p){return composePhotoScene(cv,p,{detailedReady,drawDetailedMain,drawExpandedRoom,drawClassic,drawLighting,createCanvas:()=>document.createElement('canvas')});}
 const capturedFrames=new Map();
 $('#take-photo').onclick=async()=>{if(busy||!state)return;const frame=document.createElement('canvas');const source=$('#pet');frame.width=source.width;frame.height=source.height;frame.getContext('2d').drawImage(source,0,0);if(!await living('capture'))return;const row=momentRecords[0];if(row?.kind==='frame'){capturedFrames.set(row.id,frame);if(capturedFrames.size>12)capturedFrames.delete(capturedFrames.keys().next().value);}render();};
 $('#share-photo').onclick=async()=>{const row=momentRecords[choice%Math.max(1,momentRecords.length)];if(!row||busy)return;try{const source=capturedFrames.get(row.id)||document.createElement('canvas');if(!capturedFrames.has(row.id))paintPhotoScene(source,row.pet);const result=await sharePostcard(postcard(source,row.comment,row.pet.name));if(result==='downloaded')speak('Фото збережене. Можна надіслати його в Telegram.');}catch(e){if(e.name!=='AbortError')fail(e.message);}};
