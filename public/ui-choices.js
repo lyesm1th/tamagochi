@@ -12,7 +12,7 @@ export function belongingOptions(state,selectedItem,belongingChoices,ownedThings
 }
 
 // Count options without reading the clock or touching browser globals.
-// The wrapper passes one snapshot of Date.now() for the same legacy checks.
+// The wrapper supplies a clock snapshot for the same legacy checks.
 export function countCozyOptions(mode,state,now,homeGoods,clothes,uiBelongingChoices,hideSpots,kitchenOptions){
  if(mode==='shop')return homeGoods.length;
  if(mode==='wardrobe')return clothes.length;
