@@ -37,7 +37,7 @@ const ageScale=age=>age==='Малюк'?.40:age==='Дитина'?.64:age==='Пі�
 // Clothing positions are normalized to each atlas sprite, not the old rectangular body.
 export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age);return {eyes:a.eyes,neck:a.neck,torso:a.top+a.height/2,head:a.hat,age};}
 // Compose one complete dressed actor. All scene movement uses this bitmap.
-export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expressive=true){
+export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expressive=true,sharedAppearance=null){
  const base=sprites.get(sheet+':'+id);if(!base)return null;
  const wearing=pet.cozy?.wearing||{},sleep=!!(pet.sleeping||pet.napping),key=JSON.stringify([id,age,sheet,sleep,...['body','neck','head','eyes'].map(slot=>wearing[slot])]);
  let result=dressedSprites.get(key);
@@ -50,7 +50,7 @@ export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expr
   result={image:cv,pad,width:base.width,height:base.height};dressedSprites.set(key,result);if(dressedSprites.size>128)dressedSprites.delete(dressedSprites.keys().next().value);
  }
  if(!expressive||sleep||id==='dino')return result;
- const appearance=emotionalAppearance(pet,now,reduced);if(!appearance.strength)return result;
+ const appearance=sharedAppearance??emotionalAppearance(pet,now,reduced);if(!appearance.strength)return result;
  // Expression transforms sample only the already dressed actor's original pixels.
  return {...result,image:expressionFrame(result.image,id,sheet,appearance,result.pad)};
 }
@@ -71,9 +71,9 @@ function effects(c,s,box,effect,frame,reduced){const now=Date.now(),kind=active(
 }
 export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=false){const pet=s||{species:id,portraitStage:'Дорослий'},age=ageOf(pet);if(pet.dead){prop(c,'tombstone',x-height*.32,feet-height*.65,height*.64,height*.65);prop(c,'angel',x-height*.20,feet-height*.95,height*.40,height*.33);return;}
  if(age==='Яєчко'){const wobble=reduced?0:Math.sin(frame/230)*.05;prop(c,'egg',x-height*.23,feet-height*.60,height*.46,height*.60,{rotate:wobble});return;}
- const sheet=sheetOf(pet,effect,Date.now()),rect=detailedArt[sheet]?.cells?.[id]||detailedArt['new_'+sheet]?.cells?.[id];if(!rect)return;const sprite=sprites.get(sheet+':'+id),ratio=sprite?sprite.width/sprite.height:rect[2]/rect[3],w=Math.min(height*1.3,height*ratio)*(age==='Малюк'?1.14:age==='Дитина'?1.08:age==='Підліток'?.88:1),h=height,box={x:x-w/2,y:feet-h,w,h};
+ const now=Date.now(),sheet=sheetOf(pet,effect,now),rect=detailedArt[sheet]?.cells?.[id]||detailedArt['new_'+sheet]?.cells?.[id];if(!rect)return;const sprite=sprites.get(sheet+':'+id),ratio=sprite?sprite.width/sprite.height:rect[2]/rect[3],w=Math.min(height*1.3,height*ratio)*(age==='Малюк'?1.14:age==='Дитина'?1.08:age==='Підліток'?.88:1),h=height,box={x:x-w/2,y:feet-h,w,h};
  // A single atlas style is used everywhere, including albums and the sandbox.
- const appearance=emotionalAppearance(pet,Date.now(),reduced);withEmotionalPose(c,id==='dino'?{...appearance,strength:0}:appearance,x,feet,()=>{const dressed=dressedSprite(pet,id,age,sheet,Date.now(),reduced,!active(effect,Date.now()));if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький'&&id!=='dino')c.filter='grayscale(.72) saturate(.6)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
+ const appearance=emotionalAppearance(pet,now,reduced);withEmotionalPose(c,id==='dino'?{...appearance,strength:0}:appearance,x,feet,()=>{const dressed=dressedSprite(pet,id,age,sheet,now,reduced,!active(effect,now),appearance);if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький'&&id!=='dino')c.filter='grayscale(.72) saturate(.6)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
  if(pet.appearance){const col=pet.appearance.color||'#bba16b';shade(c,box.x+w*.25,box.y+h*.79,3,3,col);if(pet.appearance.mark==='stripe')shade(c,box.x+w*.25,box.y+h*.83,4,1,col);}
  if(!pet.sleeping&&!pet.napping&&careForm(pet)==='radiant')sparkles(c,box.x-8,box.y+h*.2,frame,reduced);if(careForm(pet)==='scruffy'){shade(c,box.x+w*.72,box.y+h*.82,4,3,'#9a8a70');shade(c,box.x+w*.76,box.y+h*.86,3,2,'#9a8a70');}
  effects(c,pet,box,effect,frame,reduced);},reduced);
