@@ -19,7 +19,8 @@ test('both visual modes share the emotion selector and keep existing coordinates
  assert.equal(emotionalAppearance({...s,sleeping:true},now,false).strength,0);
  const detailed=readFileSync(new URL('../public/detailed-renderer.js',import.meta.url),'utf8');
  assert.ok(detailed.includes('emotionalAppearance(pet,now,reduced)'));
- assert.ok(detailed.includes('emotionalAppearance(pet,Date.now(),reduced)'));
+ assert.ok(detailed.includes('const appearance=emotionalAppearance(pet,now,reduced)'));
+ assert.ok(detailed.includes('dressedSprite(pet,id,age,sheet,now,reduced,!active(effect,now),appearance)'));
 });
 
 test('classic canvas renders with and without clothing and never mutates pet state',()=>{
