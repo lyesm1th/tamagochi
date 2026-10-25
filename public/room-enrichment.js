@@ -19,7 +19,7 @@ export function updateEnrichment(s,now=Date.now()){
  const e=s.living?.enrichment;if(!e)return;e.traces=e.traces.filter(t=>t.until>now);if(s.dead||s.vacation)return;
  if(e.session&&e.session.until<=now)e.session=null;
  if(e.touch?.until<=now)e.touch=null;if(e.home?.until<=now)e.home=null;
- if(e.traces.length&&e.tidyAt<=now&&ambientSlot(s,now)?.lane==='room'&&roomAvailable(s,now)&&!(e.session?.until>now)&&!(e.home?.until>now)&&!(e.touch?.until>now)&&!(s.living.motion?.until>now)){
+ if(e.traces.length&&e.tidyAt<=now&&roomAvailable(s,now)&&!(e.session?.until>now)&&!(e.home?.until>now)&&!(e.touch?.until>now)&&!(s.living.motion?.until>now)&&ambientSlot(s,now)?.lane==='room'){
  const first=e.traces[0];e.tidying={...first,at:now,until:now+6500};e.traces.shift();e.tidyAt=now+90000;
  }
 }
