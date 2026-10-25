@@ -1,11 +1,12 @@
 import {weatherAt} from './weather.js';
+import {MINUTE} from './pet-life.js';
 export {weatherAt};
 import {cozyPages,noteCozy} from './cozy-life.js';
 import {playroomPages} from './playroom.js';
 import {dailyPages,noteDaily} from './daily-life.js';
 import {stableHash} from './traits.js';
 import {personality} from './pet-personality.js';
-const MIN=60000,HOUR=60*MIN,clamp=n=>Math.max(0,Math.min(100,n));
+const MIN=MINUTE,clamp=n=>Math.max(0,Math.min(100,n));
 export const worldPages=[['ritual','Наші ритуали'],['weather','Погода за вікном'],['walk','Прогулянки'],['activity','Спільні заняття'],['dreams','Сни друга'],['forms','Як я виріс'],...dailyPages,...playroomPages,...cozyPages];
 export const activities=[{id:'bath',name:'Купання',hint:'ОК — намочити, намилити, змити',steps:['Набираємо теплу водичку','Пінимо й пускаємо бульбашки','Змиваємо піну й витираємо']},{id:'groom',name:'Догляд за собою',hint:'ОК — три ніжні рухи',steps:['Приготували м’яку щіточку','Обережно пригладжуємо','Останній ніжний рух']},{id:'blanket',name:'Загорнути в ковдру',hint:'ОК — вмостити, загорнути, обійняти',steps:['Стелимо м’яку ковдру','Загортаємо друга','Обіймаємо теплий згорток']},{id:'trick',name:'Вивчити трюк',hint:'ОК — показати, повторити, похвалити',steps:['Показуємо новий рух','Друг пробує повторити','Хвалимо за старання']}];
 const rituals={chicken:['Дзьобик до пальця','Почухати пір’ячко','Подарувати пір’їнку'],cat:['Привітатися носиком','Почухати за вушком','Принести ґудзик'],corgi:['Привітатися носиком','Почухати за вушком','Принести м’ячик'],frog:['Торкнутися лапкою','Погладити спинку','Принести листочок'],bear:['Обійняти лапами','Почухати за вушком','Поділитися ягідкою'],dog:['Привітатися носиком','Почухати за ріжками','Принести квіточку'],dino:['Торкнутися мордочкою','Погладити між шипами','Принести камінчик'],bunny:['Привітатися носиком','Погладити довгі вушка','Принести стеблинку']};
