@@ -4,9 +4,17 @@ import {petAnatomy} from './pet-anatomy.js';
 const stages=['babies','children','teens','adults','sleep'],atlases=new Map();let repairedAtlas=null;
 export function repairedOriginal(id){if(!repairedAtlas||!repairedSources[id])return null;const rect=repairedSources[id],cv=canvas(rect[2],rect[3]);cv.getContext('2d').drawImage(repairedAtlas,...rect,0,0,rect[2],rect[3]);return cv;}
 function loadRaster(src){return new Promise((resolve,reject)=>{const image=new Image(),timer=setTimeout(()=>reject(Error('wardrobe timeout '+src)),20000);image.onload=()=>{clearTimeout(timer);resolve(image);};image.onerror=()=>{clearTimeout(timer);reject(Error('wardrobe '+src));};image.src=src;});}
-export async function loadWardrobeAssets(load=loadRaster){
- const [originals,...sheets]=await Promise.all([load(repairedSourceAsset),...stages.filter(stage=>wardrobeSprites[stage]).flatMap(stage=>['pajamas','sweater','raincoat'].map(async body=>[stage+':'+body,await load(wardrobeAssets[stage][body])]))]);
- repairedAtlas=originals;for(const [stage,image]of sheets)atlases.set(stage,image);
+let loadingWardrobe=null;
+export function loadWardrobeAssets(load=loadRaster){
+ // Share only the real browser loader's in-flight work. Injected loaders used
+ // by QA remain independent, and a failed load can always be retried.
+ if(load===loadRaster&&loadingWardrobe)return loadingWardrobe;
+ const request=Promise.all([load(repairedSourceAsset),...stages.filter(stage=>wardrobeSprites[stage]).flatMap(stage=>['pajamas','sweater','raincoat'].map(async body=>[stage+':'+body,await load(wardrobeAssets[stage][body])]))]).then(([originals,...sheets])=>{
+  repairedAtlas=originals;for(const [stage,image]of sheets)atlases.set(stage,image);
+ });
+ if(load!==loadRaster)return request;
+ loadingWardrobe=request.finally(()=>{loadingWardrobe=null;});
+ return loadingWardrobe;
 }
 const canvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
 export function dressedBody(base,id,stage,body){
