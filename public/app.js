@@ -1,4 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
+import {allMenu,routineFields,groupEntries,groupItems} from './menu-config.js';
 import {characterLabel,emotionOf,emotionNames} from './emotions.js';
 import {farewellPlea} from './farewell.js';
 import {createApiClient} from './api-client.js';
@@ -48,7 +49,6 @@ let effect=null,familyScene=null,smoothScene=null;let belongingItem=null;const a
 const journalModes=journalPages.map(([id])=>id);
 const worldModes=['roomStyle','wallet',...journalModes,'secrets','world','stories','sandbox',...worldPages.map(([id])=>id)];let momentRecords=[];
 const panelModes=['roomStyle','wallet',...journalModes,'secrets','stories','sandbox','games','album','family','food','memory','room','routine','adventure','tree','world','ritual','weather','walk','activity','dreams','forms',...dailyPages.map(([id])=>id),...playroomPages.map(([id])=>id),...cozyPages.map(([id])=>id)];
-const routineFields=[['enabled','Автоматичний сон'],['bed','Лягати спати'],['wake','Прокидатися'],['meal1','Перший перекус'],['meal2','Другий перекус'],['play','Вечірня гра']];
 let treeRecords=[],treeIndex=0;
 let farewellChoice=0,farewellStep=0,farewellTimer=null;
 function startFarewell(){clearInterval(farewellTimer);farewellChoice=0;farewellStep=0;confirmKind='endLife';confirmYes=false;mode='confirm';speak(farewellPlea(state)[0],true);render();farewellTimer=setInterval(()=>{if(mode!=='confirm'||confirmKind!=='endLife'){clearInterval(farewellTimer);return;}const lines=farewellPlea(state);farewellStep=Math.min(lines.length-1,farewellStep+1);speak(lines[farewellStep],true);render();if(farewellStep===lines.length-1)clearInterval(farewellTimer);},6500);}
@@ -59,10 +59,9 @@ let state=null,selected='cat',busy=false,bounce=0,game=null,lastSpeech=0,mode='n
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let savedSound=true;try{savedSound=localStorage.getItem('hamagochi-sound')!=='off';}catch{}
 const audio=createSound(()=>new (window.AudioContext||window.webkitAudioContext)(),savedSound);
-const allMenu=[['feed','♨','Годувати'],['sleep','☾','Сон / підйом'],['play','✥','Грати'],['medicine','✚','Ліки · 10'],['clean','≈','Прибрати'],['pet','♡','Погладити'],['discipline','!','Виховати'],['treat','✦','Смаколик · 5'],['status','▦','Мій друг'],['album','▤','Альбом поколінь'],['memory','⌘','Пам’ять і прив’язаність'],['adventure','◇','Маленька пригода'],['room','⌂','Кімнатка'],['vacation','⏸','Відпустка'],['routine','◷','Розпорядок дня'],['tree','⋈','Родинне дерево'],['family','♥','Пара й нове яйце'],['sound','♪','Звук'],['reminders','♧','Нагадування'],['graphics','▧','Графіка'],['rules','?','Правила'],['world','☀','Маленький світ'],['endLife','☠','Завершити життя']];
-let menu=groups.map(([id,icon,name])=>['group:'+id,icon,name]),menuGroup=null;let sandboxPets=[],sandboxScenes=[],sandboxSelfId=null,sandboxTimer=null;
-function groupMenu(id){menuGroup=id;const group=groups.find(g=>g[0]===id);const names={roomStyle:'Настрій кімнати',wallet:'Гаманець і подарунки',...Object.fromEntries(journalPages),...Object.fromEntries(worldPages),sandbox:'Спільна пісочниця',stories:'Наші маленькі історії',secrets:'Секрети кімнати'};menu=group[3].filter(x=>!['ritual','peace','pet','kitchen','decorate'].includes(x)).map(key=>allMenu.find(m=>m[0]===key)||[key,{sandbox:'♧',stories:'✿'}[key]||'·',names[key]||key]);menu=menu.map(row=>row[0]==='activity'?[row[0],row[1],'Догляд і обійми']:row[0]==='roomStyle'?[row[0],row[1],'Вигляд і облаштування']:row);picked=0;}
-function rootMenu(){menuGroup=null;menu=groups.map(([id,icon,name])=>['group:'+id,icon,name]);picked=0;}
+let menu=groupEntries(groups),menuGroup=null;let sandboxPets=[],sandboxScenes=[],sandboxSelfId=null,sandboxTimer=null;
+function groupMenu(id){menuGroup=id;menu=groupItems(id,groups,journalPages,worldPages);picked=0;}
+function rootMenu(){menuGroup=null;menu=groupEntries(groups);picked=0;}
 
 function speak(t,important=false){if(!t||t===$('#bubble').textContent||!allowSpeech(t,Date.now(),important))return;$('#bubble').textContent=t;lastSpeech=Date.now();return true;}
 function fail(t){if(!networkError)speak(t);$('#error').textContent=t;$('#error').hidden=false;}
