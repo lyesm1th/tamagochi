@@ -6,9 +6,10 @@ import {petAnatomy} from './pet-anatomy.js';
 export function emotionalAppearance(pet,now=Date.now(),reduced=false){
  const e=emotionOf(pet,now),elapsed=Math.max(0,now-(e.at??pet?.born??now)),phase=elapsed%14000;
  const strength=Math.max(0,Math.min(1,e.strength||0))*(e.at==null?1:Math.min(1,elapsed/700));
- const gesture=!reduced&&phase<1800?Math.sin(phase/1800*Math.PI):0;
+ const gesture=!reduced&&phase<2600?Math.sin(phase/2600*Math.PI):0;
+ const breath=reduced?0:Math.sin(phase/1900*Math.PI)*.5+.5;
  const blinkAt=e.kind==='bored'?5100:5800,blinkLength=e.kind==='bored'?850:300,blink=!reduced&&phase>=blinkAt&&phase<blinkAt+blinkLength?Math.sin((phase-blinkAt)/blinkLength*Math.PI):0;
- return {kind:e.kind,strength,gesture,blink,tear:!reduced&&['sad','hurt'].includes(e.kind)&&phase>=1800&&phase<4200?(phase-1800)/2400:-1};
+ return {kind:e.kind,strength,gesture,breath,blink,tear:!reduced&&['sad','hurt'].includes(e.kind)&&phase>=1800&&phase<4200?(phase-1800)/2400:-1};
 }
 function mappedAxis(y,center,radius,scale){
  const d=y-center,inner=radius*.62,abs=Math.abs(d),outer=radius*1.8;
@@ -18,7 +19,10 @@ function mappedAxis(y,center,radius,scale){
 }
 export function expressionFrame(base,id,stage,appearance,pad=0){
  const a=petAnatomy[id]?.[stage];if(!a||!appearance.strength)return base;
- const lid={angry:-.08,annoyed:-.06,bored:-.10,shy:-.04,surprised:.05}[appearance.kind]||0,eyeScale=Math.max(.12,1-appearance.blink*.86)*(1+lid*appearance.strength)*(appearance.kind==='amused'?1-.13*appearance.gesture*appearance.strength:1),open=appearance.kind==='amused'?1+.14*appearance.gesture*appearance.strength:1;
+ const lid={angry:-.28,annoyed:-.18,bored:-.35,shy:-.25,surprised:.22,sad:-.22,hurt:-.30,anxious:.12,content:-.12,grateful:-.10,proud:-.08,amused:-.38}[appearance.kind]||0;
+ const eyeScale=Math.max(.12,1-appearance.blink*.86)*(1+lid*appearance.strength);
+ const mouthMotion={amused:.9,surprised:.65,content:.22,grateful:.18,proud:.14,shy:-.18,sad:-.22,hurt:-.28,angry:-.24,annoyed:-.14,bored:-.16,anxious:-.12,curious:.12}[appearance.kind]||0;
+ const open=Math.max(.55,1+mouthMotion*appearance.strength*(appearance.kind==='amused'?.65+.35*appearance.gesture:1));
  if(eyeScale===1&&open===1&&appearance.tear<0)return base;
  const cv=document.createElement('canvas');cv.width=base.width;cv.height=base.height;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
  const e=appearance;
@@ -58,7 +62,7 @@ export function withEmotionalPose(c,appearance,x,feet,paint,reduced=false){
  if(e.kind==='angry'){c.rotate(.025*k);c.translate(Math.sin(g*Math.PI*4)*g*1.1*k,0);}
  if(e.kind==='annoyed')c.rotate(.045*k);
  if(e.kind==='bored'){c.rotate(-.025*k);c.scale(1,1-.018*k);}
- if(e.kind==='amused'){c.translate(0,-Math.abs(Math.sin(g*Math.PI*3))*g*1.8*k);c.scale(1,1-Math.abs(Math.sin(g*Math.PI*3))*g*.022*k);}
+ if(e.kind==='amused'){c.translate(0,-Math.abs(Math.sin(g*Math.PI*3))*g*3*k);c.scale(1,1-Math.abs(Math.sin(g*Math.PI*3))*g*.035*k);}
  if(e.kind==='curious')c.rotate(.055*k);
  if(e.kind==='surprised'){c.translate(0,-g*2*k);c.scale(1,1+.018*g*k);}
  if(e.kind==='anxious'){c.scale(.99,1.012);c.rotate(Math.sin(g*Math.PI*2)*g*.015*k);}
