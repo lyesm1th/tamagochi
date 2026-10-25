@@ -44,9 +44,9 @@ const thoughts=[
  'Тиша — це коли я ще не придумав нову витівку.',
  'Я маленький. А любові в мене під зав’язку.'
 ];
-export function chatter(s,now=Date.now()){
+export function chatter(s,now=Date.now(),precomputedSlot=undefined){
  if(!s||s.dead||s.sleeping||s.napping||s.vacation||now-s.born<180000||s.journal?.together||s.cozy?.hide?.expires>now||s.world?.walk?.expires>now||Math.min(s.hunger??0,s.health??0,s.energy??0)<50||(s.happy??0)<40||weatherAt(now).id==='storm')return null;
- const slot=ambientSlot(s,now);if(slot?.lane!=='chatter')return null;const block=slot.block,phase=now-slot.at;
+ const slot=precomputedSlot===undefined?ambientSlot(s,now):precomputedSlot;if(slot?.lane!=='chatter')return null;const block=slot.block,phase=now-slot.at;
  const seed=stableHash((s.id||s.species)+':chatter:'+block),wordSeed=mix(stableHash((s.id||s.species)+':words:'+block)),kind=['hum','dance','thought'][seed%3],voice=voices[s.species]||voices.cat;
  const key=(s.id||s.species)+':'+slot.id;if(kind==='thought'&&!thoughtCache.has(key)){thoughtCache.set(key,wordSeed%2?chooseDialogue(s,slot.at):thoughts[wordSeed%thoughts.length]);if(thoughtCache.size>128)thoughtCache.delete(thoughtCache.keys().next().value);}let text=kind==='thought'?thoughtCache.get(key):voice[wordSeed%voice.length];
  if(kind==='thought'&&seed%5===0&&s.social?.friends?.[0])text='Цікаво, що зараз робить '+s.social.friends[0].name+'? Потім зустрінемось на майданчику.';
