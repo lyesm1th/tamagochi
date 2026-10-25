@@ -1,4 +1,5 @@
 import {loadWardrobeAssets,repairedOriginal,dressedBody,wearHeadwear,wearNeckwear} from './authored-wardrobe.js';
+import {getRecent,storeRecent} from './wardrobe-cache.js';
 import {emotionalAppearance,expressionFrame,withEmotionalPose} from './pet-expression.js';
 import {petAnatomy} from './pet-anatomy.js';
 import {enrichmentPose,enrichPose,drawEnrichment,transformEnriched} from './room-enrichment.js';
@@ -40,14 +41,14 @@ export function detailedAnchors(species,age){const a=wardrobeAnatomy(species,age
 export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expressive=true,sharedAppearance=null){
  const base=sprites.get(sheet+':'+id);if(!base)return null;
  const wearing=pet.cozy?.wearing||{},sleep=!!(pet.sleeping||pet.napping),key=JSON.stringify([id,age,sheet,sleep,...['body','neck','head','eyes'].map(slot=>wearing[slot])]);
- let result=dressedSprites.get(key);
+ let result=getRecent(dressedSprites,key);
  if(!result){
   const pad=Math.ceil(base.height*.40),cv=document.createElement('canvas');cv.width=base.width+pad*2;cv.height=base.height+pad*2;const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
   ctx.drawImage(dressedBody(base,id,sheet,wearing.body),pad,pad);
   if(!sleep){wearNeckwear(ctx,id,sheet,wearing.neck,pad,base);wearHeadwear(ctx,base,sprites.get('clothing:'+wearing.head),id,sheet,wearing.head,pad);
    if(wearing.eyes==='glasses'){const a=petAnatomy[id]?.[sheet];if(a){const eyes=a.eyes.map(b=>[(b[0]+b[2])/2,(b[1]+b[3])/2]),gap=eyes[1][0]-eyes[0][0],art=sprites.get('clothing:glasses'),ww=gap*2.1,hh=ww*art.height/art.width;ctx.drawImage(art,Math.round(pad+(eyes[0][0]+eyes[1][0])/2-ww/2),Math.round(pad+(eyes[0][1]+eyes[1][1])/2-hh*.43),Math.round(ww),Math.round(hh));}}
   }
-  result={image:cv,pad,width:base.width,height:base.height};dressedSprites.set(key,result);if(dressedSprites.size>128)dressedSprites.delete(dressedSprites.keys().next().value);
+  result={image:cv,pad,width:base.width,height:base.height};storeRecent(dressedSprites,key,result,128);
  }
  if(!expressive||sleep||id==='dino')return result;
  const appearance=sharedAppearance??emotionalAppearance(pet,now,reduced);if(!appearance.strength)return result;
