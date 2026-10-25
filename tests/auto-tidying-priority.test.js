@@ -17,10 +17,10 @@ test('automatic tidy requires room lane and respects other lanes',()=>{
 test('tidy never interrupts manual activity, critical needs, vacation or sleep',()=>{
  const patches=[
   {sleeping:true},{napping:true},{dead:true},{vacation:{}},{health:10},
-  {living:{motion:{until:now+60000},enrichment:build('x').living.enrichment}},
-  {living:{enrichment:{...build('x').living.enrichment,session:{until:now+60000}}}},
-  {living:{enrichment:{...build('x').living.enrichment,touch:{until:now+60000}}}},
-  {living:{enrichment:{...build('x').living.enrichment,home:{until:now+60000}}}}
+  {living:{motion:{until:now+3600000},enrichment:build('x').living.enrichment}},
+  {living:{enrichment:{...build('x').living.enrichment,session:{until:now+3600000}}}},
+  {living:{enrichment:{...build('x').living.enrichment,touch:{until:now+3600000}}}},
+  {living:{enrichment:{...build('x').living.enrichment,home:{until:now+3600000}}}}
  ];
  for(let i=0;i<patches.length;i++)for(let t=now;t<now+300000;t+=30000){
   const s={...build('tidy-'+i),...structuredClone(patches[i])};
