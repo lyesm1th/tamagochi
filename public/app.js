@@ -1,4 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
+import {readLocalAlbum,writeLocalAlbum} from './local-album.js';
 import {allMenu,routineFields,groupEntries,groupItems,createMenuModes,groomName} from './menu-config.js';
 import {characterLabel,emotionOf,emotionNames} from './emotions.js';
 import {farewellPlea} from './farewell.js';
@@ -51,8 +52,8 @@ let treeRecords=[],treeIndex=0;
 let farewellChoice=0,farewellStep=0,farewellTimer=null;
 function startFarewell(){clearInterval(farewellTimer);farewellChoice=0;farewellStep=0;confirmKind='endLife';confirmYes=false;mode='confirm';speak(farewellPlea(state)[0],true);render();farewellTimer=setInterval(()=>{if(mode!=='confirm'||confirmKind!=='endLife'){clearInterval(farewellTimer);return;}const lines=farewellPlea(state);farewellStep=Math.min(lines.length-1,farewellStep+1);speak(lines[farewellStep],true);render();if(farewellStep===lines.length-1)clearInterval(farewellTimer);},6500);}
 let confirmKind='endLife',choice=0,deadChoice=0,albumRecords=[],albumIndex=0,albumCursor=null,albumMore=false;
-function localAlbum(){try{const rows=JSON.parse(localStorage.getItem('hamagochi-album')||'[]');return Array.isArray(rows)?rows.filter(r=>r&&typeof r.id==='string'&&species.some(s=>s.id===r.species)&&Number.isFinite(r.ageMs)):[];}catch{return [];}}
-function rememberLocal(p,outcome,record=null){const rows=remember(localAlbum(),record||snapshot(p,outcome));try{localStorage.setItem('hamagochi-album',JSON.stringify(rows));}catch{fail('На пристрої закінчилося місце для альбому.');}}
+function localAlbum(){return readLocalAlbum(localStorage,species);}
+function rememberLocal(p,outcome,record=null){writeLocalAlbum(localStorage,species,remember,snapshot,p,outcome,record,fail);}
 let state=null,selected='cat',busy=false,bounce=0,game=null,lastSpeech=0,mode='normal',confirmYes=false,picked=0,loading=false,generation=0,choosingNew=false,remindersEnabled=false;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let savedSound=true;try{savedSound=localStorage.getItem('hamagochi-sound')!=='off';}catch{}
