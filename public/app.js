@@ -1,4 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
+import {createWalletOperationId} from './wallet-operation-id.js';
 import {roomStyleOptions,sceneActionOrigin} from './ui-scene-data.js';
 import {advanceSmoothPose} from './smooth-pose.js';
 import {countDailyOptions,mealOptions,belongingOptions,countCozyOptions} from './ui-choices.js';
@@ -316,6 +317,6 @@ function renderWallet(){const c=$('#wallet-controls');c.replaceChildren();const 
 
 let pendingRoomGesture=null;function dispatchRoomGesture(payload){if(busy||loading){pendingRoomGesture=payload;return;}void living('gesture',payload);}setInterval(()=>{if(pendingRoomGesture&&!busy&&!loading&&mode==='normal'){const payload=pendingRoomGesture;pendingRoomGesture=null;dispatchRoomGesture(payload);}},150);
 
-function walletOperationId(){if(crypto.randomUUID)return crypto.randomUUID();const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=[...bytes].map(n=>n.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);}
+function walletOperationId(){return createWalletOperationId(crypto);}
 
 let lastChatterId=null,lastChatterSound=0;setInterval(()=>{if(!state||mode!=='normal'||busy||loading||document.hidden||effectActive())return;const bit=chatter(state);if(!bit||bit.id===lastChatterId||!idleSpeechDue(state,lastSpeech))return;lastChatterId=bit.id;const spoken=speak(bit.text);if(spoken&&bit.kind==='hum'&&Date.now()-lastChatterSound>300000){lastChatterSound=Date.now();void audio.react('music'+bit.tune,state.species);}},2000);
