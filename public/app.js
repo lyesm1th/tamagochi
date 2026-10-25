@@ -1,5 +1,6 @@
 import {drawClassicActor} from './classic-actor.js';
 import {sandboxControlModel} from './sandbox-control-model.js';
+import {renderSandboxControls} from './sandbox-controls-view.js';
 import {composePhotoScene} from './photo-scene.js';
 import {roomGameControls} from './room-game-controls.js';
 import {createWalletOperationId} from './wallet-operation-id.js';
@@ -259,23 +260,13 @@ function drawSandbox(cv){if(detailedReady()){drawDetailedSandbox(cv,state,sandbo
 function smoothPose(target,frame,s){const next=advanceSmoothPose(smoothScene,target,frame,s?.id,reduced);smoothScene=next.scene;return next.pose;}
 
 function renderInteractionControls(){
- const wrapper=$('#sandbox-controls');wrapper.hidden=mode!=='sandbox';if(mode!=='sandbox')return;
- const peers=$('#sandbox-peers'),actions=$('#sandbox-actions');peers.replaceChildren();actions.replaceChildren();
- const controls=sandboxControlModel(sandboxPets,choice,busy,online,socialGames);
- for(const {pet,index,chosen} of controls.peers){
-  const button=document.createElement('button');button.type='button';button.className='sandbox-peer'+(chosen?' selected':'');button.textContent=pet.name;button.disabled=busy;button.setAttribute('aria-pressed',String(chosen));
-  button.onclick=()=>{if(busy)return;choice=index*4;render();};peers.append(button);
- }
- const selected=controls.selected;
- for(const {index,command,label,chosen,ariaLabel,disabled} of controls.actions){
-  const button=document.createElement('button');button.type='button';button.className='sandbox-action'+(chosen?' selected':'');button.setAttribute('aria-label',ariaLabel);button.disabled=disabled;
-  const text=document.createElement('span');text.textContent=label;button.append(actionIcon(command),text);
-  button.onclick=()=>{if(busy||!selected)return;choice=Math.floor(choice/4)*4+index;void audio.unlock();void sandboxAction(command,selected.id);};actions.append(button);
- }
- for(const {game,label,disabled} of controls.games){
-  const button=document.createElement('button');button.type='button';button.className='sandbox-action';button.textContent=label;button.disabled=disabled;
-  button.onclick=()=>{if(!busy&&selected)void sandboxAction('play',selected.id,game);};actions.append(button);
- }
+ const controls=mode==='sandbox'?sandboxControlModel(sandboxPets,choice,busy,online,socialGames):null;
+ renderSandboxControls(controls,{
+  query:$,createElement:tag=>document.createElement(tag),busy,actionIcon,
+  onChoosePeer:index=>{if(busy)return;choice=index*4;render();},
+  onChooseAction:(index,command,selected)=>{if(busy||!selected)return;choice=Math.floor(choice/4)*4+index;void audio.unlock();void sandboxAction(command,selected.id);},
+  onChooseGame:(game,selected)=>{if(!busy&&selected)void sandboxAction('play',selected.id,game);}
+ });
 }
 
 async function toggleGraphics(){if(graphicsMode==='detailed'){setGraphicsMode('classic');smoothScene=null;speak('Оригінальна піксельна графіка.');render();return;}busy=true;speak('Готую сучасну графіку…');render();const ok=await loadDetailedAssets();busy=false;if(ok){setGraphicsMode('detailed');smoothScene=null;speak('Сучасна графіка.');}else fail('Зображення не завантажились. Спробуй ще раз.');document.querySelectorAll('.species-card canvas').forEach((canvas,i)=>draw(canvas,species[i].id,1000,null,true));render();}
