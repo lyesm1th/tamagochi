@@ -33,8 +33,9 @@ test('laughter and blinking use only the existing actor palette; tears start bel
  for(const [id,stages]of Object.entries(petAnatomy))for(const [stage,a]of Object.entries(stages)){
   const base=await source(id,stage),sd=pixels(base),palette=new Set();for(let q=0;q<sd.length;q+=4)palette.add(sd.slice(q,q+4).join(','));
   for(const kind of ['amused','bored']){const cv=expressionFrame(base,id,stage,{kind,strength:.8,gesture:1,blink:kind==='bored'?.7:0,tear:-1}),d=pixels(cv);for(let q=0;q<d.length;q+=4)assert.ok(palette.has(d.slice(q,q+4).join(',')),id+stage+' invented face colour');}
-  const cry=expressionFrame(base,id,stage,{kind:'sad',strength:.8,gesture:0,blink:0,tear:.15}),d=pixels(cry),ey=Math.min(...a.eyes.map(b=>b[3]));let changed=0;
-  for(let y=0;y<base.height;y++)for(let x=0;x<base.width;x++){const q=(y*base.width+x)*4;if(d[q]!==sd[q]||d[q+1]!==sd[q+1]||d[q+2]!==sd[q+2]){assert.ok(y>=ey,id+stage+' tear above lower eyelid');changed++;}}
+  const sadWithoutTears=expressionFrame(base,id,stage,{kind:'sad',strength:.8,gesture:0,blink:0,tear:-1});
+  const cry=expressionFrame(base,id,stage,{kind:'sad',strength:.8,gesture:0,blink:0,tear:.15}),d=pixels(cry),sdWithoutTears=pixels(sadWithoutTears),ey=Math.min(...a.eyes.map(b=>b[3]));let changed=0;
+  for(let y=0;y<base.height;y++)for(let x=0;x<base.width;x++){const q=(y*base.width+x)*4;if(d[q]!==sdWithoutTears[q]||d[q+1]!==sdWithoutTears[q+1]||d[q+2]!==sdWithoutTears[q+2]){assert.ok(y>=ey,id+stage+' tear above lower eyelid');changed++;}}
   assert.ok(changed>0,id+stage+' missing tears');
  }
  }finally{globalThis.document=documentBefore;}
