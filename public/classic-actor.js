@@ -40,7 +40,7 @@ export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
   if(protrudes)for(let k=0;k<4;k++)after.data[q+k]=source.data[q+k];
  }c.putImageData(after,0,0);
  }
- const a=faceAnchors(id,age),e=emotionalAppearance(s,Date.now(),reduced);
+ const a=faceAnchors(id,age),e=expression;
  if(!asleep&&wear.eyes==='glasses'){const [left,right]=a.eyes;for(const [x,y]of [left,right]){c.strokeStyle='#3e5a50';c.lineWidth=1;c.strokeRect(Math.round(x-5*sx),Math.round(y-4*sy),Math.max(4,Math.round(11*sx)),Math.max(3,Math.round(9*sy)));}c.fillStyle='#3e5a50';c.fillRect(Math.round(left[0]+5*sx),Math.round(left[1]),Math.max(1,Math.round(right[0]-left[0]-10*sx)),1);}
  if(e.tear>=0){c.globalAlpha=Math.min(1,(1-e.tear)*4)*e.strength;for(const [x,y]of a.eyes){c.fillStyle='#70b5c9';c.fillRect(Math.round(x),Math.round(y+4*sy+e.tear*7*sy),1,Math.max(1,Math.round(3*sy)));}c.globalAlpha=1;}
  withEmotionalPose(ctx,e,64,oy+84*sy,()=>ctx.drawImage(cv,0,0),reduced);
