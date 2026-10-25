@@ -7,7 +7,7 @@ import {emotionalAppearance} from '../public/pet-expression.js';
 const source=readFileSync(new URL('../public/classic-actor.js',import.meta.url),'utf8');
 
 test('classic actor resolves one emotional snapshot per rendered frame',()=>{
- assert.equal((source.match(/emotionalAppearance\\(s,Date\\.now\\(\\),reduced\\)/g)||[]).length,1);
+ assert.equal((source.match(/emotionalAppearance\(s,Date\.now\(\),reduced\)/g)||[]).length,1);
  assert.ok(source.includes('const a=faceAnchors(id,age),e=expression;'));
 });
 
