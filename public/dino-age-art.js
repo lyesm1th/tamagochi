@@ -20,8 +20,7 @@ export function drawDinoAge(c,age,emotion='calm',time=0){
  const [sx,sy,sw,sh]=f.snout;ellipse(c,sx+sw/2,sy+sh/2,sw/2,sh/2,colors.light);
  // The face is authored for each age. Eyes retain their original glossy identity.
  const amused=emotion==='amused',sad=emotion==='sad',angry=emotion==='angry',surprised=emotion==='surprised';
- for(const x of f.eyes){const y=f.eyes[2]===x?f.eyes[3]:f.eyes[1];}
- const ey=f.eyes[2],ey2=f.eyes[3];for(const [x,y] of [[f.eyes[0],ey],[f.eyes[1],ey2]]){
+ for(const [x,y] of [[f.eyes[0],f.eyes[1]],[f.eyes[2],f.eyes[3]]]){
    ellipse(c,x,y,4.5,amused?2:angry?3:surprised?5.5:4.5,colors.eye);
    c.fillStyle=colors.shine;c.fillRect(x-2,y-3,2,2);
  }
