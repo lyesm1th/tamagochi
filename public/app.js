@@ -1,3 +1,4 @@
+import {drawClassicActor} from './classic-actor.js';
 import {characterLabel,emotionOf,emotionNames} from './emotions.js';
 import {farewellPlea} from './farewell.js';
 import {createApiClient} from './api-client.js';
@@ -22,10 +23,9 @@ import {detailedReady as detailedAssetsReady,loadDetailedAssets,drawDetailedMain
 import {graphicsMode,setGraphicsMode} from './graphics-mode.js';
 const detailedReady=()=>graphicsMode==='detailed'&&detailedAssetsReady();
 import {actionIcon,paintIcon} from './action-icons.js';
-import {drawPetArt} from './pixel-art.js';
 import {groups,needs,introHint,storyView,livingAction,objectActions,belongingChoices,variants,bedBonus} from './living.js';
 import {cozyPages,performCozy,updateCozy,homeGoods,clothes,ownedThings,itemStatus,opinion,opinionNames,dishes,ingredients,additionsFor,isFavoriteMeal,hideSpots,isNight,nightPhase} from './cozy-life.js';
-import {drawExpandedRoom,sceneFurniture,scenePose,drawHideClue,drawClothes,drawCozyEvent} from './cozy-effects.js';
+import {drawExpandedRoom,sceneFurniture,scenePose,drawHideClue,drawCozyEvent} from './cozy-effects.js';
 import {playroomPages,toys,recipes,layouts,bedding,decorFields,performPlayroom,furniturePositions,favoriteCorner} from './playroom.js';
 import {drawPlayroom} from './playroom-effects.js';
 import {dailyPages,performDaily,wishText,wishAnswers,messNames,messAnswers,treasures,celebrations,dailyHint} from './daily-life.js';
@@ -40,7 +40,6 @@ import {candidates,familyEligibility,nextGeneration,snapshot,remember,portraitSt
 import {gameTypes,makeGame,gameMove,advanceGame,pressGame,gameView,drawGame} from './minigames.js';
 import {foodFor} from './pet-personality.js';
 import {drawEffects} from './pet-effects.js';
-import {drawYoungPet} from './young-pets.js';
 import {species,fresh,act,tick,stage,line,life,temperament,care} from './game.js';
 import {createSound} from './sound.js';
 const $=s=>document.querySelector(s),tg=window.Telegram?.WebApp,online=!!tg?.initData;
@@ -85,8 +84,7 @@ function drawBase(canvas,id,frame=0,s=null,preview=false,spriteOnly=false){if(de
  box(52,43,24,31,light);r(56,37,16,8,ink);r(57,39,14,7,light);r(49,53,3,15,ink);r(76,53,3,15,ink);
  r(55,51,5,5,spec.color);r(66,59,6,5,spec.color);r(56,67,4,4,spec.color);r(65+(index%3)*2,46,3,3,ink);r(57+(index%4)*3,61,3,3,spec.color);
  if((Date.now()-s.born)>life.egg-60000){r(62,48,3,7);r(59,55,3,4);r(62,59,3,5);r(65,64,3,5);}c.restore();return;}
- if(!preview&&(age==='Малюк'||age==='Дитина'||age==='Підліток')){drawYoungPet(c,id,age,spec.color,frame,s?.sleeping,reduced,s);drawClothes(c,s,age,frame);c.restore();return;}
- drawPetArt(c,id,frame,s,reduced||preview);drawClothes(c,s,age,frame);
+ drawClassicActor(c,id,age,spec.color,frame,s,reduced||preview);
  c.restore();
 }
 function drawClassic(canvas,id,frame=0,s=null,preview=false,spriteOnly=false){if(detailedReady()&&!(canvas===$('#pet')&&familyScene&&Date.now()<familyScene.until)){drawDetailedPortrait(canvas,id,s,frame,preview,effect,reduced);return;}

@@ -1,3 +1,4 @@
+import {speciesEmotionLines} from './species-emotion-lines.js';
 import {emotionOf} from './emotions.js';
 import {stableHash} from './traits.js';
 // Choose once per emotional episode, never once per animation frame.
@@ -19,6 +20,6 @@ export const emotionalWords={
 };
 export function emotionLine(s,now=Date.now()){
  const e=emotionOf(s,now);if(!e.strength||!emotionalWords[e.kind])return null;
- const lines=emotionalWords[e.kind],seed=stableHash((s.id||s.species)+':'+e.kind+':'+(e.at||s.born));
+ const special=speciesEmotionLines[s.species]?.[e.kind],lines=special?[special,...emotionalWords[e.kind]]:emotionalWords[e.kind],seed=stableHash((s.id||s.species)+':'+e.kind+':'+(e.at||s.born));
  return lines[seed%lines.length];
 }

@@ -1,3 +1,5 @@
+> Current visual implementation: [GRAPHICS-IDENTITY.md](GRAPHICS-IDENTITY.md). Original face pixels are animated without replacement expression atlases.
+
 # Current visual policy
 
 Replacement eyes and mouths are disabled following in-game review. See [FIT-REPAIR.md](FIT-REPAIR.md) for the original-face and tailored-outfit implementation. The expression-atlas section below documents the superseded prototype; its images are not loaded or drawn by the live renderer.

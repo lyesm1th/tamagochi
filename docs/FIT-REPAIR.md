@@ -1,3 +1,5 @@
+> Historical repair attempt, superseded by [GRAPHICS-IDENTITY.md](GRAPHICS-IDENTITY.md). Its procedural fabric and fixed expression policy are no longer the live implementation.
+
 # Original face and fitted wardrobe repair
 
 The replacement expression atlases changed the identity of the eyes/mouth, and fading them over the base produced ghost features. They are now disabled in both graphics modes. Emotion causes, text and whole-body gestures remain; the original illustrated face is used unchanged. Care effects animate props and the complete pet rather than switching the adult body to a differently proportioned happy/eating sheet.

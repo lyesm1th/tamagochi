@@ -1,0 +1,8 @@
+import fs from 'node:fs';
+const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
+const browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTABLE_PATH,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});const page=await browser.newPage();
+await page.route('**/*',r=>{const u=new URL(r.request().url());if(u.pathname==='/qa')return r.fulfill({contentType:'text/html',body:'<!doctype html><html><body></body></html>'});return u.hostname==='preview.local'?r.fulfill({path:new URL('../../public'+u.pathname,import.meta.url).pathname}):r.abort();});await page.goto('https://preview.local/qa');
+const url=await page.evaluate(async()=>{const {drawClassicActor}=await import('/classic-actor.js'),{species,fresh}=await import('/game.js'),cv=document.createElement('canvas');cv.width=species.length*140;cv.height=4*140;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
+for(const [i,p]of species.entries())for(const [j,age]of ['Малюк','Дитина','Підліток','Дорослий'].entries()){
+const s={...fresh(p.id),portraitStage:age,happy:80,hunger:80,health:80,cozy:{wearing:{body:'sweater',head:'panama'}}};c.fillStyle='#ddd7c9';c.fillRect(i*140,j*140,140,140);c.save();c.translate(i*140+6,j*140+10);drawClassicActor(c,p.id,age,p.color,1200,s,true);c.restore();c.fillStyle='#304d43';c.font='12px sans-serif';c.fillText(p.id+' '+age,i*140+4,j*140+130);
+}return cv.toDataURL();});fs.mkdirSync(new URL('./identity-check/',import.meta.url),{recursive:true});fs.writeFileSync(new URL('./identity-check/classic.png',import.meta.url),Buffer.from(url.split(',')[1],'base64'));await browser.close();console.log('Classic room actors rendered');
