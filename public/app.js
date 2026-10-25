@@ -1,5 +1,5 @@
 import {drawClassicActor} from './classic-actor.js';
-import {countDailyOptions,mealOptions,belongingOptions} from './ui-choices.js';
+import {countDailyOptions,mealOptions,belongingOptions,countCozyOptions} from './ui-choices.js';
 import {readLocalAlbum,writeLocalAlbum} from './local-album.js';
 import {allMenu,routineFields,groupEntries,groupItems,createMenuModes,groomName} from './menu-config.js';
 import {characterLabel,emotionOf,emotionNames} from './emotions.js';
@@ -232,7 +232,7 @@ async function toyInput(input){const run=state.playroom.session;if(!run)return;a
 async function playroomOK(){const p=state.playroom;if(mode==='toys'){if(p.session?.expires>Date.now()){await toyInput('ok');return;}const toy=toys[choice%toys.length];await playroomAction(p.toys[toy.id]?'toyStart':'toyBuy',{toy:toy.id});return;}if(mode==='craft'){await playroomAction('craft',{recipe:recipes[choice%recipes.length].id});return;}if(mode==='decorate'){const field=decorFields[choice%decorFields.length][0];if(field==='corner'){speak('Сидітиму, де зручно моїм лапкам. '+favoriteCorner(state).name+'.');return;}await playroomAction('decorate',{field});}}
 
 function kitchenOptions(){return mealOptions(state,dishes,additionsFor);}
-function cozyCount(){if(mode==='shop')return homeGoods.length;if(mode==='wardrobe')return clothes.length;if(mode==='belongings')return Math.max(1,uiBelongingChoices(state).length);if(mode==='hide')return state.cozy.hide?.expires>Date.now()?hideSpots(state).length:1;if(mode==='kitchen')return state.cozy.cooking?.expires>Date.now()?1:kitchenOptions().length+1;if(mode==='peace')return 4;return 1;}
+function cozyCount(){return countCozyOptions(mode,state,Date.now(),homeGoods,clothes,uiBelongingChoices,hideSpots,kitchenOptions);}
 function renderCozyChoice(portrait){const c=state.cozy,title=$('#choice-title'),detail=$('#choice-detail');portrait.hidden=false;draw(portrait,state.species,Date.now(),state);
  if(mode==='shop'){const item=homeGoods[choice%homeGoods.length];title.textContent=item.name+(c.stored?.[item.id]?' · У СХОВИЩІ':c.owned[item.id]?' · ВДОМА':' · '+item.price+' монет');detail.textContent=c.stored?.[item.id]?'ОК — відкрити сховище й повернути в кімнату.':c.owned[item.id]?'Власна річ із характером. ОК — скористатися.':'Показано в кімнаті й крупним планом.\nОК — придбати · ← → інші предмети';return;}
  if(mode==='wardrobe'){const item=clothes[choice%clothes.length],owned=c.outfits[item.id],worn=c.wearing[item.slot]===item.id;title.textContent=item.name+(worn?' · НА МЕНІ':owned?' · У ГАРДЕРОБІ':' · '+item.price+' монет');detail.textContent=(itemStatus(state,item.id).known?opinionNames[opinion(state,item.id)]:'Це попередня примірка. Вподобання дізнаємось після носіння.')+'\n'+(owned?'ОК — '+(worn?'зняти':'вдягнути'):'ОК — придбати')+'\nНезручний одяг можу зняти сам. Ремонт — у «Мої речі».';return;}
