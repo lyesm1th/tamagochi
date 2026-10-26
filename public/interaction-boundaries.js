@@ -1,3 +1,4 @@
+import {petWhim,whimRefusalChance} from './pet-whims.js';
 import {noteInteractionMemory,emotionalAffinity} from './interaction-memory.js';
 import {disciplineScore} from './manners.js';
 import {traitOf,stableHash} from './traits.js';
@@ -24,11 +25,12 @@ export function directInteraction(s,action,now=Date.now()){
  const hungerBias=action==='play'&&hungry?.56:action==='feed'&&s.hunger>65?.20:hungry?.19:0;
  const moodBias=upset?.25:mood<55?.12:0;
  const whim=.07+(100-education)*.0017+(stubborn?.07:0)+(energy<35?.14:0);
- const chance=clamp(whim+hungerBias+moodBias-emotionalAffinity(s)*.25,.055,.67);
+ const chance=clamp(whim+hungerBias+moodBias+whimRefusalChance(s,action,now)-emotionalAffinity(s)*.25,.055,.67);
  if(stableHash(seed)%1000/1000>=chance)return null;
- b.refusedAt=now;b.until=now+45000;b.kind=hungry?'hungry':upset?'upset':'stubborn';b.times=Math.min(30,(b.times||0)+1);
+ b.refusedAt=now;b.until=now+45000;b.kind=action==='feed'?'treat':action==='play'&&hungry?'hungry':upset?'upset':'stubborn';b.times=Math.min(30,(b.times||0)+1);
  s.bodyLanguage={kind:hungry?'disgust':upset?'turned':'look',until:now+6000};noteInteractionMemory(s,'boundary',now);
- const text=action==='feed'?'Сьогодні вередую: звичайну їжу не хочу, краще б щось смачненьке! Але можеш запропонувати ще пізніше.':action==='play'&&hungry?'Спершу б поїсти, а вже потім гратися. Живіт бурчить голосніше за мене.':upset?'Я сьогодні не в настрої. Можемо просто посидіти поруч?':'Люблю тебе, але зараз хочу по-своєму. Дай мені хвилинку, добре?';
+ const episode=petWhim(s,now);
+ const text=action==='play'&&episode?.kind==='snack'?'А спочатку щось поїмо? Тоді вже побігаємо разом.':action==='play'&&episode?.kind==='quiet'?'Зараз хочу тиші, не гри. Давай трохи пізніше.':action==='feed'?'Сьогодні вередую: звичайну їжу не хочу, краще б щось смачненьке! Але можеш запропонувати ще пізніше.':action==='play'&&hungry?'Спершу б поїсти, а вже потім гратися. Живіт бурчить голосніше за мене.':upset?'Я сьогодні не в настрої. Можемо просто посидіти поруч?':'Люблю тебе, але зараз хочу по-своєму. Дай мені хвилинку, добре?';
  return {text,refused:true};
 }
 export function reconcileInteraction(s,now=Date.now()){
