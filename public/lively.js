@@ -1,5 +1,5 @@
 import {petWhim,whimLine} from './pet-whims.js';
-import {ambientSlot} from './calm-behavior.js';
+import {ambientSlot,manualActivity,calmUntil} from './calm-behavior.js';
 import {noteHomeScene} from './room-enrichment.js';
 import {newPets} from './new-pets.js';
 import {drawToyVariant} from './item-designs.js';
@@ -30,7 +30,7 @@ export function ambient(s,now=Date.now()){
  const secret=s.lively?.secret;if(secret?.until>now&&now>=secret.at&&now-secret.at<12000)return {...secret,progress:(now-secret.at)/10000};
  const slot=ambientSlot(s,now);const littleMoment=chatter(s,now,slot);if(littleMoment)return littleMoment;
  const journal=slot?.lane==='weather'?journalAmbient(s,now,slot):null;if(journal)return journal;
- const episode=petWhim(s,now);
+ const episode=!manualActivity(s,now)&&now>=calmUntil(s)?petWhim(s,now):null;
  // Give each mood an 8-second physical beat every 55 seconds, leaving room
  // for ordinary habits and interactions rather than a nonstop forced pose.
  if(episode&&now%55000<8000&&slot?.lane!=='habit'){
