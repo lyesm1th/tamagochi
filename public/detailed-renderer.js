@@ -213,7 +213,12 @@ function outdoor(c,s){if(s.world?.walk?.expires>Date.now()){const key=s.world.wa
 // their authored bodies or integrated wardrobe.
 export function drawDetailedInteractionFeedback(c,s,pose,now=Date.now(),reduced=false){
  const action=pose?.interaction,step=reduced?0:Math.floor(now/250)%3;
- const ambient=pose?.ambient;if(ambient&&['scratch','dig','stomp','slide','waddle','swing','prowl'].includes(ambient.kind)){prop(c,'leaf',Math.round(pose.x*2+15),Math.round(pose.feet*2-55),14,14);}
+ const ambient=pose?.ambient;
+ if(ambient?.whim){const x=Math.round(pose.x*2),y=Math.round(pose.feet*2),wobble=reduced?0:Math.round(Math.sin(now/350)*5);
+  const key={playful:'ball',contrary:'leaf',snack:'cookie',quiet:'blanket',affectionate:'heart'}[ambient.whim];
+  if(key)prop(c,key,Math.max(8,Math.min(350,x+25+wobble)),Math.max(8,y-90),24,24);
+ }
+ if(ambient&&['scratch','dig','stomp','slide','waddle','swing','prowl'].includes(ambient.kind)){prop(c,'leaf',Math.round(pose.x*2+15),Math.round(pose.feet*2-55),14,14);}
  if(action?.acting){
   const x=Math.round(pose.x*2),y=Math.round(pose.feet*2);
   const symbol={faces:'heart',drink:'water',splash:'water',gentle:'water',sniff:'leaf',
