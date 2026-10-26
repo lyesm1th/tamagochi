@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {ensureManners,disciplineScore,trainManners,practiceManners,mannersDialogue} from '../public/manners.js';
+const hour=3600000,now=1800000000000;
+const pet=(discipline=0)=>({id:'pet-one',species:'dino',born:0,trait:'stubborn',discipline,hunger:80,energy:90,happy:80,calm:80});
+test('legacy discipline is retained during lazy initialization',()=>{const s=pet(82);ensureManners(s);assert.equal(disciplineScore(s),82);assert.equal(s.manners.skills.food.practice,82);});
+test('training is rate-limited, capped per day and gains only partial skill',()=>{const s=pet();const first=trainManners(s,now);assert.equal(first.ok,true);assert.ok(s.discipline<1);assert.equal(trainManners(s,now+1000).ok,false);for(let i=1;i<4;i++)assert.equal(trainManners(s,now+i*2*hour).ok,true);assert.equal(trainManners(s,now+8*hour).ok,false);assert.ok(s.discipline<10);});
+test('care practice is throttled and cannot boost every click',()=>{const s=pet(20);assert.equal(practiceManners(s,'food',now),true);const after=s.discipline;assert.equal(practiceManners(s,'food',now+1000),false);assert.equal(s.discipline,after);});
+test('low education can produce rude responses; high education can ask about swearing',()=>{const low=pet(0),high=pet(99);const l=Array.from({length:100},(_,i)=>mannersDialogue(low,now+i*90000)).filter(Boolean);const h=Array.from({length:200},(_,i)=>mannersDialogue(high,now+i*90000)).filter(Boolean);assert.ok(l.some(x=>/не чіпай|не хочу|блять|пиздець|сука|командувати/i.test(x)));assert.ok(h.some(x=>x.includes('що означає слово')));});
+test('existing character traits survive training',()=>{const s=pet(10);trainManners(s,now);assert.equal(s.trait,'stubborn');});
