@@ -31,7 +31,7 @@ function prop(c,key,x,y,size=36,h=size,options){if(key==='banana'){drawBanana(c,
 function shade(c,x,y,w,h,col){c.fillStyle=col;c.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 
 const treasureMasks={cap:['0011111100','0112222110','1123333211','1232222321','1232222321','1123333211','0112222110','0011111100'],stone:['0001110000','0012221100','0122333210','1223333321','1222333321','0122222210','0011111100','0000000000'],feather:['0000011100','0000122210','0001233210','0012332100','0123321000','0123210000','0012100000','0001000000'],button:['0011111100','0122222210','1223323321','1221121121','1223323321','1221121121','0122222210','0011111100'],shell:['0011111100','0122222210','1232323231','1232323231','0123232310','0012323100','0001111000','0000000000']};
-function treasure(c,id,x,y,size=22){if(id==='leaf'){prop(c,'leaf',x,y,size);return;}const mask=treasureMasks[id]||treasureMasks.stone,pal={cap:['#67596d','#aa94b6','#d3bfdc'],stone:['#65716b','#9eafa4','#cdd5c7'],feather:['#8c795a','#c5b17e','#eee2b5'],button:['#856373','#bf94a7','#edd0d5'],shell:['#987966','#d7b29b','#f2ddbf']}[id]||['#65716b','#9eafa4','#cdd5c7'],unit=size/10;for(let yy=0;yy<mask.length;yy++)for(let xx=0;xx<10;xx++){const bit=Number(mask[yy][xx]);if(bit){const bx=x+xx*unit,by=y+yy*unit;shade(c,bx-1,by-1,Math.ceil(unit)+2,Math.ceil(unit)+2,'#445347');shade(c,bx,by,Math.ceil(unit),Math.ceil(unit),pal[bit-1]);if(bit===3)shade(c,bx,by,Math.max(1,Math.ceil(unit*.35)),Math.max(1,Math.ceil(unit*.35)),'#eee1bf');}}}
+function treasure(c,id,x,y,size=22){if(id==='leaf'){prop(c,'leaf',x,y,size);return;}const mask=treasureMasks[id]||treasureMasks.stone,pal={cap:['#67596d','#aa94b6','#d3bfdc'],stone:['#65716b','#9eafa4','#cdd5c7'],feather:['#8c795a','#c5b17e','#eee2b5'],button:['#856373','#bf94a7','#edd0d5'],shell:['#987966','#d7b29b','#f2ddbf']}[id]||['#65716b','#9eafa4','#cdd5c7'],unit=size/10;for(let yy=0;yy<mask.length;yy++)for(let xx=0;xx<10;xx++){const bit=Number(mask[yy][xx]);if(bit)shade(c,x+xx*unit,y+yy*unit,Math.ceil(unit),Math.ceil(unit),pal[bit-1]);}}
 
 function ageOf(s){return s?.portraitStage||s&&stage(s)||'Дорослий';}
 function sheetOf(s,effect,now){const age=ageOf(s);if(s?.sleeping||s?.napping)return 'sleep';if(age==='Малюк')return 'babies';if(age==='Дитина')return 'children';if(age==='Підліток')return 'teens';if(s?.sleeping||s?.napping)return 'sleep';return 'adults';} // Keep the original face and fitted silhouette during care actions.
@@ -94,7 +94,11 @@ function drawDetailedPlantVariant(c,s,x,y,w,h){
   c.fillStyle='#5b8d68';c.fillRect(Math.round(px),Math.round(py),Math.round(ww),Math.round(hh));
   c.fillStyle='#add19a';c.fillRect(Math.round(px+ww*.24),Math.round(py+2),Math.max(1,Math.round(ww*.20)),Math.max(1,Math.round(hh-4)));
  };
- c.save();c.beginPath();c.rect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h*.75));c.clip();
+ c.save();c.beginPath();c.rect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h));c.clip();
+ // One freshly drawn pot; do not retain the incompatible plant from the atlas.
+ c.fillStyle='#51493a';c.fillRect(Math.round(x+w*.23),Math.round(y+h*.68),Math.round(w*.54),Math.round(h*.29));
+ c.fillStyle='#aa8966';c.fillRect(Math.round(x+w*.26),Math.round(y+h*.71),Math.round(w*.48),Math.round(h*.23));
+ c.fillStyle='#d6b68c';c.fillRect(Math.round(x+w*.22),Math.round(y+h*.66),Math.round(w*.56),Math.max(3,Math.round(h*.07)));
  if(variant===1){
   drawStem(cx-thick*.6,top,thick,base-top);
   drawStem(cx-thick*1.8,top+(base-top)*.37,thick*.76,(base-top)*.32);
@@ -121,10 +125,11 @@ function furniture(c,s,id,rect,frame,reduced){if(!rect||rect.length!==4||!rect.e
  c.save();if(wear<=0){c.translate(x+w*.5,y+h);c.rotate((id==='shelf'||id==='mirror'?.16:-.12));stamp(c,'furniture',key,-w*.5,-h*.72,w,h*.72,{filter:'saturate(.65) brightness(.85)'});}else {
  // Detailed mode must NEVER replace a textured atlas sprite with the
  // 32x32 procedural classic variant (especially plant/cactus and bowl).
- stamp(c,'furniture',key,x,y,w,h,{filter:wear<35?'saturate(.75) brightness(.9)':id==='bed'?undefined:designFilter(s,id)});
+ // Each item owns exactly one body. Plant variants replace the canopy, not overlay it.
+ if(id==='plant'&&designIndex(s,'plant'))drawDetailedPlantVariant(c,s,x,y,w,h);
+ else stamp(c,'furniture',key,x,y,w,h,{filter:wear<35?'saturate(.75) brightness(.9)':id==='bed'?undefined:designFilter(s,id)});
  if(id==='bowl')drawBowlBadge(c,s,x+w*.31,y+h*.42,w*.39,h*.48);
- if(id==='plant')drawDetailedPlantVariant(c,s,x,y,w,h);
- drawDesignAccent(c,s,id,x,y,w,h);
+ if(id!=='shelf'&&id!=='plant')drawDesignAccent(c,s,id,x,y,w,h);
 }c.restore();
  if(wear<65){shade(c,x+w*.54,y+h*.5,2,8,'#6f5847');shade(c,x+w*.56,y+h*.56,4,2,'#6f5847');}if(wear<30){prop(c,'debris',x+w*.4,y+h-4,w*.4,16);if(['bed','cushion','tent','rug','curtains'].includes(id))prop(c,'cotton',x+w*.12,y+h+4,18,12);}
  if(s.living?.motion?.item===id&&s.living.motion.until>Date.now()&&!reduced){const b=Math.floor(frame/180)%2;if(s.living.motion.kind==='gentle')sparkles(c,x+w*.5,y,frame,reduced);if(id==='fountain'||id==='bowl'){shade(c,x+w*.3,y-3-b*5,2,4,'#bad8d9');shade(c,x+w*.7,y-7+b*4,2,4,'#bad8d9');}if(id==='mirror')prop(c,'heart',x+w*.35,y+h*.35,14);}
