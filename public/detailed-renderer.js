@@ -82,7 +82,7 @@ export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=fals
 }
 function layout(s){return Object.fromEntries(Object.entries(roomRects(s,'detailed')).map(([id,rect])=>[id,rect.map(n=>n*2)]));}
 export function detailedFurnitureKey(id,variant=0){const beds=['bed','bedSoft','bedCloud'];return id==='bed'?beds[Number.isInteger(variant)&&variant>=0&&variant<beds.length?variant:0]:id;}
-export function detailedFurniturePolicy(id){return {base:'detailed-atlas',variant:id==='plant'?'shaded-overlay':id==='bowl'?'atlas-badge':'accent-only'};}
+export function detailedFurniturePolicy(id){return {base:'detailed-atlas',variant:id==='plant'||id==='shelf'?'full-replacement':id==='bowl'?'atlas-badge':'accent-only'};}
 // Detailed plant design variants use volume, ink outlines and shaded facets,
 // rather than substituting the classic 32px block-painted plant sprite.
 function drawDetailedPlantVariant(c,s,x,y,w,h){
@@ -121,12 +121,42 @@ function drawDetailedPlantVariant(c,s,x,y,w,h){
  }
  c.restore();
 }
+// Alternative shelves are complete detailed objects, never classical accents over a shelf.
+export function detailedVariantRenderMode(id,variant){return variant>0&&['plant','shelf'].includes(id)?'replacement':'atlas';}
+function drawDetailedShelfVariant(c,s,x,y,w,h,variant){
+ c.save();
+ const X=v=>Math.round(x+v*w),Y=v=>Math.round(y+v*h);
+ const rect=(a,b,ww,hh,color)=>shade(c,X(a),Y(b),Math.max(1,Math.round(ww*w)),Math.max(1,Math.round(hh*h)),color);
+ // Full shaded wood frame, shelf edge and brackets.
+ rect(.035,.70,.93,.17,'#4c3c39');rect(.045,.70,.91,.10,variant===1?'#9c779c':'#9a7557');
+ rect(.06,.71,.88,.035,'#e6c79a');rect(.08,.81,.14,.13,'#55443a');rect(.77,.81,.14,.13,'#55443a');
+ rect(.09,.83,.11,.065,'#bb9477');rect(.79,.83,.11,.065,'#bb9477');
+ const books=variant===1?['#bd87a3','#7fa3b3','#d2b382','#91ac90','#bf91b9']:['#b88b98','#b5aa80','#88a6a0','#d1b58f','#b19bc1'];
+ const widths=[.105,.085,.116,.09,.103],heights=[.49,.58,.44,.54,.37];let px=.13;
+ for(let i=0;i<books.length;i++){
+  const bh=heights[i],bw=widths[i],top=.70-bh;
+  rect(px-.01,top-.025,bw+.025,bh+.045,'#504a43');
+  rect(px,top,bw,bh,books[i]);rect(px+.014,top+.045,.022,bh-.07,'#e6d7b6');
+  rect(px,top+.10,bw,.025,'#e5cfaa');rect(px,top+bh-.085,bw,.032,'#705f56');
+  px+=bw+.035;
+ }
+ // Variant 2 includes one *separate* tiny flower pot beside the books.
+ if(variant===2){
+  rect(.78,.49,.13,.19,'#514a3d');rect(.80,.52,.09,.13,'#b78d67');
+  rect(.76,.46,.17,.046,'#e0bd8c');
+  rect(.83,.25,.025,.22,'#52795e');
+  for(const [dx,dy]of [[.79,.35],[.87,.30],[.82,.21]]){rect(dx-.025,dy-.022,.072,.08,'#435949');rect(dx-.012,dy-.008,.045,.05,'#85aa7c');}
+  rect(.827,.195,.025,.03,'#d6a0af');
+ }
+ c.restore();
+}
 function furniture(c,s,id,rect,frame,reduced){if(!rect||rect.length!==4||!rect.every(Number.isFinite))return;const [x,y,w,h]=rect,wear=s.cozy?.items?.[id]?.wear??100,variant=s.living?.furniture?.[id]||0,key=detailedFurnitureKey(id,variant);
  c.save();if(wear<=0){c.translate(x+w*.5,y+h);c.rotate((id==='shelf'||id==='mirror'?.16:-.12));stamp(c,'furniture',key,-w*.5,-h*.72,w,h*.72,{filter:'saturate(.65) brightness(.85)'});}else {
  // Detailed mode must NEVER replace a textured atlas sprite with the
  // 32x32 procedural classic variant (especially plant/cactus and bowl).
  // Each item owns exactly one body. Plant variants replace the canopy, not overlay it.
  if(id==='plant'&&designIndex(s,'plant'))drawDetailedPlantVariant(c,s,x,y,w,h);
+ else if(id==='shelf'&&designIndex(s,'shelf'))drawDetailedShelfVariant(c,s,x,y,w,h,designIndex(s,'shelf'));
  else stamp(c,'furniture',key,x,y,w,h,{filter:wear<35?'saturate(.75) brightness(.9)':id==='bed'?undefined:designFilter(s,id)});
  if(id==='bowl')drawBowlBadge(c,s,x+w*.31,y+h*.42,w*.39,h*.48);
  if(id!=='shelf'&&id!=='plant')drawDesignAccent(c,s,id,x,y,w,h);
