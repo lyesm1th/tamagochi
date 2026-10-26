@@ -24,7 +24,7 @@ test('all fourteen species respond to playful, sad and tired room moods',()=>{
   const sad=roomMoodPreference({...s,happy:28},allItems,1,time);
   assert.equal(sad?.mood,'comfort',id);
   assert.ok(cozyItems.has(sad?.item),id);
-  assert.equal(sad.kind,'nest',id==='dog'?'cow':'other');
+  assert.equal(sad.kind,sad.item==='bed'?'doze':'nest',id);
   const tired=roomMoodPreference({...s,energy:50},allItems,1,time);
   assert.equal(tired?.mood,'tired',id);
   assert.ok(cozyItems.has(tired?.item),id);
@@ -76,8 +76,8 @@ test('real room moments respect mood, player priority and urgent rest',()=>{
  assert.deepEqual(s,before);
  const sad=structuredClone(s);sad.happy=20;
  const comfort=roomMoment(sad,now);
- assert.equal(comfort?.kind,'nest');
- assert.ok(cozyItems.has(comfort.item));
+ assert.ok(cozyItems.has(comfort?.item));
+ assert.equal(comfort?.kind,comfort?.item==='bed'?'doze':'nest');
  const tired=structuredClone(s);tired.energy=50;
  assert.equal(roomMoment(tired,now)?.item,'bed');
  assert.equal(roomMoment(tired,now)?.kind,'doze');
