@@ -40,3 +40,17 @@ export function mannersDialogue(s,now=Date.now(),context='idle'){
  if(d<40&&roll<9)return spicy[seed%spicy.length];
  return null;
 }
+
+export function trainingInvitation(s,now=Date.now()){
+ if(!s||s.dead||s.vacation||s.sleeping||s.napping)return null;
+ const m=ensureManners(s),last=s.daily?.lastMess;
+ if(m.lastRequestAt&&now-m.lastRequestAt<12*3600000)return null;
+ const afterMistake=last&&now>=last.at&&now-last.at<2*3600000;
+ const curious=(stableHash((s.id||s.species)+':learn:'+Math.floor(now/(12*3600000)))%7===0);
+ if(!afterMistake&&!curious)return null;
+ const rules={food:'food',pot:'belongings',puddle:'tidy',brush:'belongings'};
+ const rule=afterMistake?(rules[last.kind]||'tidy'):'requests';
+ if(disciplineScore(s)>=97||m.skills[rule]?.training>=100)return null;
+ m.lastRequestAt=now;
+ return afterMistake?'Слухай... я тут знову наплутав. Може, потренуємо '+({food:'охайне харчування',belongings:'бережливість',tidy:'прибирання'}[rule]||'виховання')+'? Я справді хочу навчитися.':'Можна я попрошу урок чемного спілкування? Цікаво, як чемно сказати «ні».';
+}
