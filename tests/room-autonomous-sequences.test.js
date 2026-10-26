@@ -44,7 +44,7 @@ test('real room slots may play two actions, without adding autonomous slots',()=
  const s=pet();let found=false;
  for(let now=slot.at;now<slot.at+40*150000;now+=5000){
   const active=ambientSlot(s,now);
-  if(active?.lane!=='room'||now>active.at+1000)continue;
+  if(active?.lane!=='room')continue;
   const first=roomMoment(s,active.at+1000),second=roomMoment(s,active.at+8000);
   if(first?.item==='toy'&&second?.item==='rug'){
    assert.equal(first.at,active.at);
