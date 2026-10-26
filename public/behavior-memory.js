@@ -1,10 +1,12 @@
 import {disciplineScore} from './manners.js';
-const LIMIT=30;
-export function ensureBehaviorMemory(s){s.behaviorMemory??={events:[],habits:{}};const m=s.behaviorMemory;if(!Array.isArray(m.events))m.events=[];m.habits??={};return m;}
+const LIMIT=30,RECENT_IDS=256;
+export function ensureBehaviorMemory(s){s.behaviorMemory??={events:[],habits:{}};const m=s.behaviorMemory;if(!Array.isArray(m.events))m.events=[];m.habits??={};if(!Array.isArray(m.recentIds))m.recentIds=m.events.map(e=>e.id).filter(Boolean).slice(-RECENT_IDS);return m;}
 export function rememberBehavior(s,event){
- const m=ensureBehaviorMemory(s);if(!event?.id||m.events.some(x=>x.id===event.id))return false;
+ const m=ensureBehaviorMemory(s);if(!event?.id)return false;
+ const id=String(event.id);if(m.recentIds.includes(id)||m.events.some(x=>x.id===id))return false;
+ m.recentIds.push(id);m.recentIds=m.recentIds.slice(-RECENT_IDS);
  const rule=event.rule||'requests',result=event.result||'unknown';
- m.events.push({id:String(event.id),at:Number(event.at)||Date.now(),rule,result,kind:event.kind||'mischief'});
+ m.events.push({id,at:Number(event.at)||Date.now(),rule,result,kind:event.kind||'mischief'});
  m.events=m.events.slice(-LIMIT);
  const h=m.habits[rule]??={resolved:0,repaired:0,defiant:0};h.resolved++;if(result==='repaired')h.repaired++;if(result==='defiant')h.defiant++;
  return true;
