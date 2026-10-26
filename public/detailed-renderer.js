@@ -153,7 +153,7 @@ export function drawDetailedWallKeepsakes(c,s){
 // Render transient marks from the detailed prop atlas instead of scaled classic pixels.
 export function drawDetailedRoomTraces(c,s,now=Date.now()){
  const traces=s?.living?.enrichment?.traces||[],rects=roomRects(s,'detailed');
- for(const trace of traces){if(trace.until<=now)continue;
+ for(const trace of traces){if(trace.until<=now||trace.item==='rug')continue;
   const a=rects[trace.item]||rects.rug||[70,105,40,20];
   const x=Math.round((a[0]+a[2]/2)*2),y=Math.min(270,Math.round((a[1]+a[3])*2));
   const key=trace.kind==='book'?'heart':trace.kind==='wet'?'water':trace.kind==='blanket'||trace.kind==='pillow'?'blanket':'leaf';
@@ -165,7 +165,7 @@ export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){backg
  // Current mechanics remain visible: poop, messes, handmade items, souvenirs, stories.
  if(s?.playroom?.crafted?.stoneArt){c.save();c.fillStyle='#584a3d';c.fillRect(211,11,51,43);c.fillStyle='#d4c3a5';c.fillRect(215,15,43,35);stamp(c,'props','leaf',220,19,20,25);stamp(c,'props','heart',240,24,13,12);c.restore();}
  if(s?.playroom?.crafted?.mobile){shade(c,pos.bed[0]+53,10,1,36,'#997d5b');shade(c,pos.bed[0]+32,44,42,1,'#997d5b');prop(c,'leaf',pos.bed[0]+30,45,12,18);treasure(c,'shell',pos.bed[0]+62,45,16);}
- if(s?.playroom?.decor?.display)treasure(c,s.playroom.decor.display,owned('shelf')?pos.shelf[0]+32:326,owned('shelf')?pos.shelf[1]+23:258,21);
+ if(s?.playroom?.decor?.display)treasure(c,s.playroom.decor.display,326,255,18);
  if(s?.heirloom)prop(c,'gift',259,68,19);
  if(s?.living?.finished?.[0]||s?.living?.story?.step&&!(s.living.story.chapter>0)){stamp(c,'props','pot',280,246,32,28);prop(c,'leaf',283,219,21,32);if(s.living.finished?.[0]||s.living.story.step>=3)prop(c,'heart',288,211,16);}
  const stash=Object.keys(s?.daily?.stash||{}).filter(id=>s.daily.stash[id]>0);for(let i=0;i<Math.min(4,stash.length);i++)treasure(c,stash[i],11+i*15,270-i%2*3,14);if(s?.daily?.kind?.kind==='warm')prop(c,'blanket',258,269,101,22);
@@ -183,6 +183,7 @@ function outdoor(c,s){if(s.world?.walk?.expires>Date.now()){const key=s.world.wa
 // their authored bodies or integrated wardrobe.
 export function drawDetailedInteractionFeedback(c,s,pose,now=Date.now(),reduced=false){
  const action=pose?.interaction,step=reduced?0:Math.floor(now/250)%3;
+ const ambient=pose?.ambient;if(ambient&&['scratch','dig','stomp','slide','waddle','swing','prowl'].includes(ambient.kind)){prop(c,'leaf',Math.round(pose.x*2+15),Math.round(pose.feet*2-55),14,14);}
  if(action?.acting){
   const x=Math.round(pose.x*2),y=Math.round(pose.feet*2);
   const symbol={faces:'heart',drink:'water',splash:'water',gentle:'water',sniff:'leaf',
@@ -206,7 +207,7 @@ export function drawDetailedMain(canvas,s,id,frame=0,reduced=false,pos=null,effe
  const point=pos||{x:96,feet:128,scale:1},age=ageOf(pet),asleep=(pet.sleeping||pet.napping)&&!!pet.room?.bed&&!(pet.world?.walk?.expires>Date.now()),bed=layout(pet).bed,height=asleep?Math.min(142*point.scale*ageScale(age),bed[3]*.85):142*point.scale*ageScale(age),x=asleep?bed[0]+bed[2]/2:point.x*2,feet=asleep?bed[1]+bed[3]-12:point.feet*2;
  if(asleep&&pet.cozy?.wearing?.head)stamp(c,'clothing',pet.cozy.wearing.head,bed[0]+bed[2]+4,bed[1]+bed[3]-25,34,23);
  if(pet.cozy?.hide?.expires>Date.now()){const p=layout(pet),target=p[pet.cozy.hide.spot]||[8,234,52,40];c.save();c.beginPath();c.rect(target[0]-8,target[1]-22,target[2]+16,24);c.clip();drawDetailedPet(c,pet,id,target[0]+target[2]*.6,target[1]+65,78,null,frame,reduced);c.restore();return;}
- c.fillStyle='#635a4226';c.beginPath();c.ellipse(x,feet-2,height*.27,Math.max(3,height*.045),0,0,Math.PI*2);c.fill();if(point.ambient?.kind==='warm'){c.save();c.translate(x,feet-height*.30);c.rotate(-Math.PI/2);drawDetailedPet(c,pet,id,0,height*.4,height*.8,effect,frame,reduced);c.restore();}else if(point.ambient?.kind!=='turned')transformEnriched(c,pet,{...point,x,feet},()=>withRoomGesture(c,{...point,x,feet},()=>drawDetailedPet(c,pet,id,x,feet-(!point.quiet&&!reduced&&!pet.sleeping&&!pet.napping?Math.round(Math.sin(frame/650)*1):0),height,effect,point.quiet?1200:frame,reduced),Date.now(),reduced),Date.now(),reduced);{c.save();c.scale(2,2);drawLively(c,pet,point,Date.now(),reduced,(key,x,y,w,h)=>{if(key!=='ball'||!drawToyVariant(c,pet,x,y,w,h))prop(c,key,x,y,w,h);});c.restore();}{c.save();drawDetailedInteractionFeedback(c,pet,point,Date.now(),reduced);c.restore();}drawLighting(c,pet,384,288);if(pet.cozy?.nightMode&&isNight(pet))shade(c,0,0,384,288,'#253b541a');
+ c.fillStyle='#635a4226';c.beginPath();c.ellipse(x,feet-2,height*.27,Math.max(3,height*.045),0,0,Math.PI*2);c.fill();if(point.ambient?.kind==='warm'){c.save();c.translate(x,feet-height*.30);c.rotate(-Math.PI/2);drawDetailedPet(c,pet,id,0,height*.4,height*.8,effect,frame,reduced);c.restore();}else if(point.ambient?.kind!=='turned')transformEnriched(c,pet,{...point,x,feet},()=>withRoomGesture(c,{...point,x,feet},()=>drawDetailedPet(c,pet,id,x,feet-(!point.quiet&&!reduced&&!pet.sleeping&&!pet.napping?Math.round(Math.sin(frame/650)*1):0),height,effect,point.quiet?1200:frame,reduced),Date.now(),reduced),Date.now(),reduced);// Detailed mode owns its gestures: never scale the classic floor scratches by 2x.{c.save();drawDetailedInteractionFeedback(c,pet,point,Date.now(),reduced);c.restore();}drawLighting(c,pet,384,288);if(pet.cozy?.nightMode&&isNight(pet))shade(c,0,0,384,288,'#253b541a');
 }
 export function drawDetailedPortrait(canvas,id,s,frame=0,preview=false,effect=null,reduced=false){const c=canvas.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);c.imageSmoothingEnabled=false;drawDetailedPet(c,s,id,canvas.width/2,canvas.height*.95,canvas.height*.9*ageScale(ageOf(s)),preview?null:effect,frame,reduced);}
 export function drawDetailedSandbox(canvas,s,pets,selected=0,frame=0,reduced=false,scenes=[],selfId=null){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');background(c,'playground');const scene=socialScene(scenes),roster=[{id:selfId,species:s.species,look:s},...pets];const page=Math.floor(selected/6),shown=pets.slice(page*6,page*6+6);for(const [i,p]of shown.entries()){if(scene?.actors.includes(p.id))continue;const x=56+i%3*135,y=170+Math.floor(i/3)*73;drawDetailedPet(c,{...p.look,species:p.species,portraitStage:p.look?.portraitStage||'Дорослий'},p.species,x,y,72*ageScale(p.look?.portraitStage),null,frame,reduced);if(page*6+i===selected)prop(c,'heart',x-7,y-86,15);}
