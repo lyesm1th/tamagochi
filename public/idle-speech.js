@@ -15,6 +15,7 @@ export function selectIdleSpeech(s,{introHint,wakeStory,save,online,clothes,rela
  const daily=dailyHint(s);if(daily&&random()<.5)return daily;
  const ritual=ritualHint(s);if(ritual&&random()<.3)return ritual;
  const hint=routineHint(s);if(hint)return hint;
+ const pending=s.initiatives?.pending; if(pending&&now()<pending.expires)return pending.text+' Відповісти можна в меню «Запрошення».';
  const initiative=!online?petInitiative(s,now()):null;if(initiative){if(!online)save();return initiative;}
  if(s.adventure)return 'У мене маленька пригода! Заглянь у ◇.';
  const need=needs(s);if(need)return need.text;
