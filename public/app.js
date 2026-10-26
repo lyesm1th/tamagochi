@@ -20,7 +20,7 @@ import {roomStyleOptions,sceneActionOrigin} from './ui-scene-data.js';
 import {advanceSmoothPose} from './smooth-pose.js';
 import {countDailyOptions,mealOptions,belongingOptions,countCozyOptions} from './ui-choices.js';
 import {readLocalAlbum,writeLocalAlbum} from './local-album.js';
-import {allMenu,routineFields,groupEntries,groupItems,createMenuModes,groomName,menuHint} from './menu-config.js';
+import {allMenu,routineFields,groupEntries,groupItems,createMenuModes,groomName,menuHint,prioritizeCareItems} from './menu-config.js';
 import {characterLabel,emotionOf,emotionNames} from './emotions.js';
 import {farewellPlea} from './farewell.js';
 import {createApiClient} from './api-client.js';
@@ -79,7 +79,7 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let savedSound=true;try{savedSound=localStorage.getItem('hamagochi-sound')!=='off';}catch{}
 const audio=createSound(()=>new (window.AudioContext||window.webkitAudioContext)(),savedSound);
 let menu=groupEntries(groups),menuGroup=null,rootPicked=0;let sandboxPets=[],sandboxScenes=[],sandboxSelfId=null,sandboxTimer=null;
-function groupMenu(id){rootPicked=picked;menuGroup=id;menu=groupItems(id,groups,journalPages,worldPages);picked=0;}
+function groupMenu(id){rootPicked=picked;menuGroup=id;menu=id==='care'?prioritizeCareItems(groupItems(id,groups,journalPages,worldPages),state):groupItems(id,groups,journalPages,worldPages);picked=0;}
 function rootMenu(){menuGroup=null;menu=groupEntries(groups);picked=Math.max(0,Math.min(rootPicked,menu.length-1));}
 
 function speak(t,important=false){if(!t||t===$('#bubble').textContent||!allowSpeech(t,Date.now(),important))return;$('#bubble').textContent=t;lastSpeech=Date.now();return true;}
