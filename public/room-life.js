@@ -30,7 +30,9 @@ export function roomSequenceStep(s,items,first,slot,now){
  const candidates=roomFollowUps[first]||[];
  const {playfulness,curiosity}=characterOf(s);
  const order=playfulness>=curiosity?candidates:[...candidates].reverse();
- const next=order.find(id=>id!==first&&items.includes(id)&&roomTaste(s,id)!=='annoy');
+ // A favorite activity should not be cut short for a neutral one.
+ const favorite=roomTaste(s,first)==='love';
+ const next=order.find(id=>id!==first&&items.includes(id)&&roomTaste(s,id)!=='annoy'&&(!favorite||roomTaste(s,id)==='love'));
  return next?{item:next,at:halfway,originItem:first}:null;
 }
 export function roomMoment(s,now=Date.now()){
