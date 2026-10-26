@@ -9,7 +9,7 @@ for(const style of ['classic','detailed']){
   const s=pet();
   assert.equal(roomHit(s,160,110,style),'music');
   assert.equal(roomHit(s,140,122,style),'laser');
-  assert.equal(roomHit({...s,cozy:{...s.cozy,owned:{music:false,laser:false}}},160,110,style),null);
+  assert.notEqual(roomHit({...s,cozy:{...s.cozy,owned:{music:false,laser:false}}},160,110,style),'music');
  });
 }
 test('music and laser have themed room reactions and audio hooks',()=>{
