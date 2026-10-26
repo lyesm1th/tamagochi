@@ -4,7 +4,7 @@ const HOUR=3600000;
 // At most one proactive invitation per 8 hours; no push messages or rewards.
 // Uses a persisted time-window ID to avoid repetitions across reloads.
 export function petInitiative(s,now=Date.now()){
- if(!s||s.dead||s.sleeping||s.napping||s.vacation||(s.hunger??100)<40||(s.energy??100)<35||(s.health??100)<40)return null;
+ if(!s||!Number.isFinite(s.born)||!s.id||s.dead||s.sleeping||s.napping||s.vacation||(s.hunger??100)<40||(s.energy??100)<35||(s.health??100)<40)return null;
  const m=s.initiatives??={lastAt:0,lastWindow:'',count:0};
  const window=Math.floor(now/(8*HOUR));
  if(m.lastAt&&now-m.lastAt<8*HOUR||m.lastWindow===String(window))return null;
