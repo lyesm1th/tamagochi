@@ -1,3 +1,4 @@
+import {neglectSkills} from './behavior-development.js';
 import {patienceTraining} from './patience-training.js';
 import {trainManners,practiceManners,ensureManners,disciplineScore} from './manners.js';
 import {emotionLine} from './emotion-dialogue.js';
@@ -59,7 +60,7 @@ export function tick(s,now=Date.now()) {
  s.poopClock+=end-cursor;const droppings=Math.floor(s.poopClock/r.poop);if(droppings){s.poop=Math.min(4,s.poop+droppings);s.poopClock%=r.poop;}
  const neglected=st==='Малюк'?(s.hunger<50||s.happy<50||s.clean<50):(s.hunger<25||s.happy<20||s.clean<25||s.energy<5);
  if(neglected)s.careScore=clamp(s.careScore-h*(st==='Малюк'?20:3));
- if(st==='Дитина'||st==='Підліток')s.discipline=clamp(s.discipline-h*.35);
+ if(!['Яєчко','Малюк'].includes(st))neglectSkills(s,cursor,end);
  const ill=s.hunger<15||s.clean<15||s.energy<5;
  if(st==='Малюк')s.health=Math.max(1,s.health);else s.health=clamp(s.health+h*(ill?-(st==='Старенький'?12:8):2));
  s.dead=s.health<=0;if(s.dead)s.diedAt??=end;
