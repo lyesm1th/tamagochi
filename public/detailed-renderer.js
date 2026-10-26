@@ -82,8 +82,50 @@ export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=fals
 }
 function layout(s){return Object.fromEntries(Object.entries(roomRects(s,'detailed')).map(([id,rect])=>[id,rect.map(n=>n*2)]));}
 export function detailedFurnitureKey(id,variant=0){const beds=['bed','bedSoft','bedCloud'];return id==='bed'?beds[Number.isInteger(variant)&&variant>=0&&variant<beds.length?variant:0]:id;}
+export function detailedFurniturePolicy(id){return {base:'detailed-atlas',variant:id==='plant'?'shaded-overlay':id==='bowl'?'atlas-badge':'accent-only'};}
+// Detailed plant design variants use volume, ink outlines and shaded facets,
+// rather than substituting the classic 32px block-painted plant sprite.
+function drawDetailedPlantVariant(c,s,x,y,w,h){
+ const variant=designIndex(s,'plant');if(!variant)return;
+ // Preserve the atlas pot and soil under the variant canopy.
+ const cx=x+w*.51,top=y+h*.07,base=y+h*.72,thick=Math.max(5,w*.115);
+ const drawStem=(px,py,ww,hh)=>{
+  c.fillStyle='#344f43';c.fillRect(Math.round(px-2),Math.round(py-2),Math.round(ww+4),Math.round(hh+4));
+  c.fillStyle='#5b8d68';c.fillRect(Math.round(px),Math.round(py),Math.round(ww),Math.round(hh));
+  c.fillStyle='#add19a';c.fillRect(Math.round(px+ww*.24),Math.round(py+2),Math.max(1,Math.round(ww*.20)),Math.max(1,Math.round(hh-4)));
+ };
+ c.save();c.beginPath();c.rect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h*.75));c.clip();
+ if(variant===1){
+  drawStem(cx-thick*.6,top,thick,base-top);
+  drawStem(cx-thick*1.8,top+(base-top)*.37,thick*.76,(base-top)*.32);
+  drawStem(cx+thick*.6,top+(base-top)*.48,thick*.76,(base-top)*.30);
+  c.fillStyle='#e3a7af';c.fillRect(Math.round(cx-thick*.2),Math.round(top-3),Math.round(thick*.8),4);
+ }else if(variant===2){
+  for(const [dx,dy,r] of [[-.20,.30,.18],[.12,.23,.19],[0,.10,.16]]){
+   c.fillStyle='#344f43';c.beginPath();c.arc(cx+dx*w,top+dy*h,r*w+2,0,Math.PI*2);c.fill();
+   c.fillStyle='#74a17a';c.beginPath();c.arc(cx+dx*w,top+dy*h,r*w,0,Math.PI*2);c.fill();
+   c.fillStyle='#b2cd93';c.beginPath();c.arc(cx+dx*w-r*w*.26,top+dy*h-r*w*.22,r*w*.46,0,Math.PI*2);c.fill();
+  }
+ }else if(variant===3){
+  drawStem(cx-thick*.5,top+(base-top)*.20,thick,base-top);
+  for(const [dx,dy,rad] of [[-.14,.24,.16],[.14,.13,.19],[.06,.34,.15]]){
+   c.fillStyle='#344f43';c.beginPath();c.arc(cx+dx*w,top+dy*h,rad*w+2,0,Math.PI*2);c.fill();
+   c.fillStyle='#7aa673';c.beginPath();c.arc(cx+dx*w,top+dy*h,rad*w,0,Math.PI*2);c.fill();
+  }
+ }else{
+  for(const dx of [-.25,-.08,.1,.25])drawStem(cx+dx*w,top+(Math.abs(dx)*h*.2),thick*.65,base-top-h*.10);
+ }
+ c.restore();
+}
 function furniture(c,s,id,rect,frame,reduced){if(!rect||rect.length!==4||!rect.every(Number.isFinite))return;const [x,y,w,h]=rect,wear=s.cozy?.items?.[id]?.wear??100,variant=s.living?.furniture?.[id]||0,key=detailedFurnitureKey(id,variant);
- c.save();if(wear<=0){c.translate(x+w*.5,y+h);c.rotate((id==='shelf'||id==='mirror'?.16:-.12));stamp(c,'furniture',key,-w*.5,-h*.72,w,h*.72,{filter:'saturate(.65) brightness(.85)'});}else {if(id==='bowl'&&variant){stamp(c,'furniture',key,x,y,w,h,{filter:designFilter(s,id)});drawBowlBadge(c,s,x+w*.31,y+h*.42,w*.39,h*.48);}else if(!drawItemVariant(c,s,id,x,y,w,h))stamp(c,'furniture',key,x,y,w,h,{filter:wear<35?'saturate(.75) brightness(.9)':id==='bed'?undefined:designFilter(s,id)});else if(id==='plant'){const pot=sprites.get('furniture:plant');if(pot)c.drawImage(pot,0,pot.height*.64,pot.width,pot.height*.36,x,y+h*.64,w,h*.36);}drawDesignAccent(c,s,id,x,y,w,h);}c.restore();
+ c.save();if(wear<=0){c.translate(x+w*.5,y+h);c.rotate((id==='shelf'||id==='mirror'?.16:-.12));stamp(c,'furniture',key,-w*.5,-h*.72,w,h*.72,{filter:'saturate(.65) brightness(.85)'});}else {
+ // Detailed mode must NEVER replace a textured atlas sprite with the
+ // 32x32 procedural classic variant (especially plant/cactus and bowl).
+ stamp(c,'furniture',key,x,y,w,h,{filter:wear<35?'saturate(.75) brightness(.9)':id==='bed'?undefined:designFilter(s,id)});
+ if(id==='bowl')drawBowlBadge(c,s,x+w*.31,y+h*.42,w*.39,h*.48);
+ if(id==='plant')drawDetailedPlantVariant(c,s,x,y,w,h);
+ drawDesignAccent(c,s,id,x,y,w,h);
+}c.restore();
  if(wear<65){shade(c,x+w*.54,y+h*.5,2,8,'#6f5847');shade(c,x+w*.56,y+h*.56,4,2,'#6f5847');}if(wear<30){prop(c,'debris',x+w*.4,y+h-4,w*.4,16);if(['bed','cushion','tent','rug','curtains'].includes(id))prop(c,'cotton',x+w*.12,y+h+4,18,12);}
  if(s.living?.motion?.item===id&&s.living.motion.until>Date.now()&&!reduced){const b=Math.floor(frame/180)%2;if(s.living.motion.kind==='gentle')sparkles(c,x+w*.5,y,frame,reduced);if(id==='fountain'||id==='bowl'){shade(c,x+w*.3,y-3-b*5,2,4,'#bad8d9');shade(c,x+w*.7,y-7+b*4,2,4,'#bad8d9');}if(id==='mirror')prop(c,'heart',x+w*.35,y+h*.35,14);}
 }
