@@ -14,7 +14,7 @@ for(const style of ['classic','detailed']){
 }
 test('music and laser have themed room reactions and audio hooks',()=>{
  const s=pet();
- assert.match(roomLine(s,'music','use',1800000000000),/музик|лапки|пісню|рухи|Музика/i);
+ assert.ok(Array.from({length:20},(_,i)=>roomLine(s,'music','use',1800000000000+i*2300)).some(line=>/Музика!|Ще одну пісню/.test(line)));
  assert.equal(roomSounds.music,'play');
  assert.equal(roomSounds.laser,'play');
 });
