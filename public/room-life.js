@@ -23,7 +23,8 @@ export function roomMoment(s,now=Date.now()){
  if(Math.min(s.hunger??100,s.health??100,s.energy??100)<35||s.cozy?.peace?.tension>0)return null;
  const slot=ambientSlot(s,now);if(slot?.lane!=='room')return null;if(bedtimeInvitation(s,now)&&roomOwned(s,'bed'))return {item:'bed',kind:'ask',at:slot.at,until:slot.until,auto:true,origin:{x:96,feet:130}};const phase=now-slot.at,clock=slot.block*37000;
  const items=Object.keys(itemMoves).filter(id=>id!=='window'&&id!=='box'&&roomOwned(s,id)&&(s.cozy?.items?.[id]?.wear??100)>0);if(!items.length)return null;
- const loved=items.filter(id=>roomTaste(s,id)==='love'),pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:items,id=pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
+ const priority=s.energy<65&&items.includes('bed')?'bed':s.hunger<65&&items.includes('bowl')?'bowl':s.hunger<65&&items.includes('fountain')?'fountain':null;
+ const loved=items.filter(id=>roomTaste(s,id)==='love'),pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:items,id=priority||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
  return {item:id,kind:id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id],at:slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130}};
 }
 export function roomMomentPose(s,m,style='classic',now=Date.now(),reduced=false){if(!m)return null;const rect=roomRects(s,style)[m.item],isOutfit=m.kind==='outfit';if(!rect&&!isOutfit)return null;const [rx,ry,rw,rh]=rect||[76,105,40,25];let x=rx+rw/2,feet=Math.min(136,Math.max(88,ry+rh+10));if(m.item==='bed')feet=ry+rh-5;if(m.item==='plant'||m.item==='shelf'||m.item==='mirror')feet=Math.max(98,feet);if(isOutfit){x=96;feet=133;}
