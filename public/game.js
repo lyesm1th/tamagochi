@@ -1,3 +1,4 @@
+import {interactionDialogue} from './interaction-dialogue.js';
 import {neglectSkills} from './behavior-development.js';
 import {patienceTraining} from './patience-training.js';
 import {trainManners,practiceManners,ensureManners,disciplineScore} from './manners.js';
@@ -101,11 +102,11 @@ export function act(state,action,now=Date.now(),context={}) {
  case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);practiceManners(s,'food',now);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?babyMeal(s.species):line('feed',s.species);break;
  case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);s.treatStreak++;if(s.treatStreak>2){s.health=clamp(s.health-4);s.careScore=clamp(s.careScore-5);s.discipline=clamp(s.discipline-3);}text=stage(s,now)==='Малюк'?babyMeal(s.species):line('treat',s.species);break;
  case 'clean':if(s.poop>0)practiceManners(s,'tidy',now);if(s.living?.enrichment)s.living.enrichment.traces=[];s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean',s.species);break;
- case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+(traitOf(s)==='affectionate'?14:9));text=line('pet',s.species,Math.random,stage(s,now));break;
+ case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+(traitOf(s)==='affectionate'?14:9));text=interactionDialogue(s,'pet',now)||line('pet',s.species,Math.random,stage(s,now));break;
  case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Я в люлю. Посидь поруч, тільки не шаруди.':'Я прокинувся! Де моя людина й мій сніданок?';break;
  case 'discipline':{const lesson=patienceTraining(s,context.choice??null,now,context.kind??'patience');if(!lesson.ok)return {state:s,error:lesson.text};text=lesson.text;break;}
  case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine',s.species);break;
- case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15+(s.room.toy?3:0));s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':line('play',s.species);break;
+ case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15+(s.room.toy?3:0));s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':(interactionDialogue(s,'play',now,context.game||'game')||line('play',s.species));break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
  syncDream(s,now);if(action==='sleep'&&!s.sleeping){const story=wakeStory(s);if(story)text+=' '+story;}
