@@ -1,3 +1,4 @@
+import {interactionPreferences} from './interaction-preferences.js';
 import {disciplineScore} from './manners.js';
 import {traitOf,stableHash} from './traits.js';
 
@@ -44,14 +45,16 @@ export function interactionMood(s){
 export function interactionDialogue(s,action,now=Date.now(),detail=''){
  if(!s||s.dead||s.sleeping||s.napping||s.vacation)return null;
  const kind=action==='pet'?'pet':action==='play'?'play':'room';
- const pool=pools[kind],m=interactionMood(s);
+ const pool=pools[kind],m=interactionMood(s),preferences=interactionPreferences(s);
  const slot=Math.floor(now/13000);
  const seed=stableHash((s.id||s.species)+':interaction:'+kind+':'+detail+':'+slot);
  const roll=stableHash(seed+':mood')%1000/1000;
  let tone='warm';
- if(m.hungry&&roll<.72)tone='hungry';
- else if(m.uneasy&&roll<.68)tone='upset';
- else if(m.education<35&&roll<.68)tone='rude';
+ const affinity=kind==='pet'?preferences.touch:kind==='play'?preferences.play:preferences.quiet;
+ const resistance=(50-affinity)/500;
+ if(m.hungry&&roll<Math.max(.45,.72+resistance))tone='hungry';
+ else if(m.uneasy&&roll<Math.max(.43,.68+resistance))tone='upset';
+ else if(m.education<35&&roll<Math.max(.30,.68+resistance))tone='rude';
  else if(m.education<65&&roll<.30)tone='rude';
  else if(m.trait==='stubborn'&&roll<.19)tone='rude';
  else if(m.trait==='playful'&&roll<.25)tone='playful';
