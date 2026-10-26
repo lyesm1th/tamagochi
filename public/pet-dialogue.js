@@ -1,3 +1,4 @@
+import {mannersDialogue} from './manners.js';
 import {stableHash} from './traits.js';
 export const dialogue={
  warm:[
@@ -133,6 +134,7 @@ const speciesLines={
 export const dialogueCount=Object.values(dialogue).reduce((n,a)=>n+a.length,0)+Object.values(speciesLines).reduce((n,a)=>n+a.length,0);
 export function makeDialogueChooser(){const history=new Map();return (s,now=Date.now(),context='idle')=>{
  const key=s.id||s.species,old=history.get(key)||[],seed=stableHash(key+':words:'+Math.floor(now/1000)+':'+context),roll=seed%100;
+ const special=mannersDialogue(s,now,context);if(special&&!old.includes(special)){history.set(key,[...old.slice(-23),special]);return special;}
  const pool=context==='room'?dialogue.room:roll<5?dialogue.spicy:roll<32?dialogue.cheeky:roll<48?(speciesLines[s.species]||dialogue.warm):dialogue.warm;
  const available=pool.filter(t=>!old.includes(t)),list=available.length?available:pool.filter(t=>t!==old.at(-1)),text=list[stableHash(seed+':pick')%list.length];history.set(key,[...old.slice(-23),text]);return text;
  };}
