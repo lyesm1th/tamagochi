@@ -18,12 +18,14 @@ export function mischiefDecision(s,now=Date.now()){
  const calm=s.calm??Math.min(s.happy??100,s.energy??100),hunger=s.hunger??100;
  const trait=traitOf(s);
  const badMood=clamp((55-calm)/55,0,1),hungry=clamp((45-hunger)/45,0,1);
- const base=clamp(.11+(100-education)*.005,0,.68);
- const traitBonus=trait==='stubborn'?.10:trait==='playful'?.07:0;
+ const base=clamp(.08+(100-education)*.0042,.08,.50);
+ const traitBonus=trait==='stubborn'?.07:trait==='playful'?.05:0;
  const experience=behaviorMemoryEffect(s,rule);
- const impulse=clamp(base+badMood*.12+hungry*.09+traitBonus-experience,.025,.85);
- const interval=clamp(education<20?40:education<40?65:education<60?100:education<80?145:210,35,240)*MINUTE;
+ const impulse=clamp(base+badMood*.10+hungry*.07+traitBonus-experience,.02,.72);
+ const interval=(education<20?45:education<40?75:education<60?110:education<80?150:220)*MINUTE;
  const roll=stableHash(key+':roll')%10000/10000;
+ // Education must reduce both impulse and the frequency of opportunities.
+ // Stress and personality still matter, but cannot overwhelm well-learned habits.
  // Needs remain actionable even if the pet is too ill/tired to make a mess.
  const allowed=!s.dead&&!s.vacation&&!s.sleeping&&!s.napping&&(s.health??100)>=35&&(s.energy??100)>=20;
  return {happens:allowed&&roll<impulse,kind,rule,nextAt:now+interval,impulse};
