@@ -13,7 +13,7 @@ export function patienceTraining(s,choice=null,now=Date.now(),kind='patience'){
  if(run.phase===0){if(choice!==0){m.patienceSession=null;return {ok:true,text:'Хрум! Я не встиг навіть потренувати терпіння.'};}run.phase=1;return {ok:true,text:'Р-р-р... Добре, я спробую почекати.'};}
  m.patienceSession=null;
  if(choice!==0)return {ok:true,text:'Ще чекати? Я втомився від цієї гри. Давай потім.'};
- const key=run.kind||'patience';m.skills[key].training=Math.min(100,m.skills[key].training+10);s.discipline=disciplineScore(s);
+ const key=run.kind||'patience';m.skills[key].training=Math.min(100,m.skills[key].training+10*(1+Math.min(.08,Math.max(0,m.inheritedBonus||0))));s.discipline=disciplineScore(s);
  return {ok:true,text:key==='requests'?'Я можу бути чемним і все одно мати свою думку. Бляха, це навіть приємно!':key==='food'?'Тепер їжа лишилася в мисці! Я молодець.':key==='belongings'?'Вазон живий, і я погрався. Усім добре!':key==='tidy'?'Я сам допоміг навести лад. Оце так!':key==='friends'?'Можна домовлятися й не сваритися. Запам’ятаю!':'Я дочекався! Бачиш, можу, коли хочу. І тепер їжа, будь ласка!'};
  }
  if(choice!==null)return {ok:false,text:'Спершу розпочни заняття.'};
