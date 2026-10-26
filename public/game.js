@@ -1,3 +1,4 @@
+import {experiencePreference} from './interaction-preferences.js';
 import {noteInteractionMemory} from './interaction-memory.js';
 import {directInteraction,reconcileInteraction} from './interaction-boundaries.js';
 import {interactionDialogue} from './interaction-dialogue.js';
@@ -112,7 +113,7 @@ export function act(state,action,now=Date.now(),context={}) {
  case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15+(s.room.toy?3:0));s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':(interactionDialogue(s,'play',now,context.game||'game')||line('play',s.species));break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
- if(action==='play')noteInteractionMemory(s,'play',now);if(action==='feed'||action==='pet'&&s.hunger>=40)noteInteractionMemory(s,'care',now);
+ if(action==='play'){noteInteractionMemory(s,'play',now);experiencePreference(s,'play',now);}if(action==='pet')experiencePreference(s,'touch',now);if(action==='sleep'&&s.sleeping)experiencePreference(s,'quiet',now);if(action==='feed'||action==='pet'&&s.hunger>=40)noteInteractionMemory(s,'care',now);
  const reunion=['feed','pet','play'].includes(action)?reconcileInteraction(s,now):null;if(reunion)text+=' '+reunion;
  syncDream(s,now);if(action==='sleep'&&!s.sleeping){const story=wakeStory(s);if(story)text+=' '+story;}
  noteCozy(s,action,now);noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);noteEmotion(s,action,now,context);const emotionalText=emotionLine(s,now);if(emotionalText)text+=' '+emotionalText;noteCalm(s,now,true);s.xp+=1;s.lastAction=now;return {state:s,text};
