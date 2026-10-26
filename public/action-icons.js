@@ -39,6 +39,16 @@ const glyphs={
  cake:['0001000','0001000','0111110','0101010','0111110','1111111','1111111'],
  swap:['0000100','1111110','0000100','0000000','0010000','0111111','0010000']};
 Object.assign(glyphs,{
+sand:["0000000","0010100","0111110","1100011","1111111","1111111","0011100"],
+exercise:["0011100","0010100","1111111","0010100","0111110","1100011","1000001"],
+ceremony:["0101010","0011100","0001000","0011100","0111110","0011100","0001000"],
+nightSky:["1000001","0001000","0011100","0001000","0000000","0100010","0011100"],
+handshake:["1000001","1100011","1110111","0111110","0011100","0110110","1100011"],
+companion:["0011100","0111110","0011100","0111110","1011101","0010100","0100010"],
+growth:["0011100","0111110","1100011","1100011","1111111","0011100","0101010"],
+paintbrush:["0000110","0001110","0011100","0111000","1110000","0011000","0010000"],
+wish:["0001000","0101010","0011100","1111111","0011100","0010100","0100010"],
+dreamStars:["0100001","0001000","0011100","0111110","0011100","1000100","0010000"],
  careRoot:["0100010","1110111","1111111","0111110","0011100","0011100","0001000"],
  homeRoot:["0001000","0011100","0111110","1111111","1100011","1101011","1111111"],
  funRoot:["0000000","1100011","1111111","1011101","1001001","1100011","0111110"],
@@ -81,7 +91,7 @@ Object.assign(glyphs,{
  lanternNight:["0001000","0011100","0111110","0101010","0111110","0011100","1111111"],
  lock:["0011100","0100010","0100010","1111111","1101011","1111111","1111111"]
 });
-const names={feed:'food',sleep:'moon',clean:'broom',medicine:'cross',pet:'heart',discipline:'diploma',treat:'star',status:'chart',album:'book',memory:'diary',adventure:'kite',room:'house',vacation:'pause',routine:'clock',family:'egg',world:'window',endLife:'end',games:'ball',play:'puzzle',ritual:'candle',weather:'cloud',walk:'walk',activity:'people',dreams:'cloud',forms:'egg',wishes:'spark',photos:'camera',stash:'box',mischief:'lightning',celebrations:'cake',human:'hands',toys:'basket',craft:'hammer',decorate:'wallpaper',hide:'hide',kitchen:'pan',belongings:'toolbox',wardrobe:'shirt',peace:'hands',night:'candle',shop:'gift','group:care':'careRoot','group:home':'homeRoot','group:fun':'funRoot','group:memories':'diary',hello:'hand',tease:'lightning',avoid:'exit',repair:'hammer',replace:'swap',gentle:'hand',jump:'lightning',rest:'moon',use:'paw',putOn:'shirt',bed:'bed',bowl:'basket',lamp:'lantern',rug:'frame',shelf:'book',cushion:'moon',fountain:'food',mirror:'palette',post:'paw',curtains:'window',toybox:'box',tent:'hide',toy:'ball',ball:'ball',laser:'lightning',music:'sound',food:'food' ,initiative:"invitation",together:"hands",roomStyle:"wallpaper",wallet:"wallet",sandbox:"people",stories:"theater",drawings:"paint",keepsakes:"ticket",quirks:"feather",courage:"medal",secrets:"key",dreamgame:"spark",graphics:"palette",rules:"help",reminders:"bell",sound:"sound",'group:bond':"speech",'group:settings':"settings",tree:"tree"};
+const names={feed:'food',sleep:'moon',clean:'broom',medicine:'cross',pet:'heart',discipline:'diploma',treat:'star',status:'chart',album:'book',memory:'diary',adventure:'kite',room:'house',vacation:'pause',routine:'clock',family:'egg',world:'window',endLife:'end',games:'ball',play:'puzzle',ritual:'ceremony',weather:'cloud',walk:'walk',activity:'exercise',dreams:'dreamStars',forms:'growth',wishes:'wish',photos:'camera',stash:'box',mischief:'lightning',celebrations:'cake',human:'companion',toys:'basket',craft:'hammer',decorate:'paintbrush',hide:'hide',kitchen:'pan',belongings:'toolbox',wardrobe:'shirt',peace:'handshake',night:'candle',shop:'gift','group:care':'careRoot','group:home':'homeRoot','group:fun':'funRoot','group:memories':'diary',hello:'hand',tease:'lightning',avoid:'exit',repair:'hammer',replace:'swap',gentle:'hand',jump:'lightning',rest:'moon',use:'paw',putOn:'shirt',bed:'bed',bowl:'basket',lamp:'lantern',rug:'frame',shelf:'book',cushion:'moon',fountain:'food',mirror:'palette',post:'paw',curtains:'window',toybox:'box',tent:'hide',toy:'ball',ball:'ball',laser:'lightning',music:'sound',food:'food' ,initiative:"invitation",together:"hands",roomStyle:"wallpaper",wallet:"wallet",sandbox:"sand",stories:"theater",drawings:"paint",keepsakes:"ticket",quirks:"feather",courage:"medal",secrets:"key",dreamgame:"dreamStars",graphics:"palette",rules:"help",reminders:"bell",sound:"sound",'group:bond':"speech",'group:settings':"settings",tree:"tree"};
 export function iconGlyph(key){return glyphs[names[key]||key]||glyphs.star;}
 export function paintIcon(ctx,key,scale=1){ctx.clearRect(0,0,7*scale,7*scale);ctx.fillStyle='#354f43';iconGlyph(key).forEach((row,y)=>[...row].forEach((p,x)=>{if(p==='1')ctx.fillRect(x*scale,y*scale,scale,scale);}));}
 export function actionIcon(key){const canvas=document.createElement('canvas');canvas.width=14;canvas.height=14;canvas.className='action-icon';canvas.setAttribute('aria-hidden','true');paintIcon(canvas.getContext('2d'),key,2);return canvas;}
