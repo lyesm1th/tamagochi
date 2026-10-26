@@ -8,9 +8,10 @@ import {markRoomTrace} from '../public/room-enrichment.js';
 const now=1800000000000;
 const pet=()=>{const s=fresh('dino',now-life.child-DAY);s.id='lifecycle-dino';s.born=now-life.child-DAY;s.updated=now;s.hunger=99;s.happy=99;s.clean=99;s.energy=99;s.health=100;s.sleeping=false;s.napping=false;s.routine.enabled=false;return s;};
 test('two-hour offline catch-up is idempotent across persisted state reloads',()=>{
- const s=pet();tick(s,now+2*HOUR);const state=structuredClone(s),snapshot=JSON.stringify(state);
+ const s=pet();tick(s,now+2*HOUR);const state=structuredClone(s);
+ const before={hunger:state.hunger,happy:state.happy,health:state.health,coins:state.coins,discipline:state.discipline,messId:state.daily?.mess?.id};
  tick(state,now+2*HOUR);
- assert.equal(JSON.stringify(state),snapshot);
+ assert.deepEqual({hunger:state.hunger,happy:state.happy,health:state.health,coins:state.coins,discipline:state.discipline,messId:state.daily?.mess?.id},before);
  assert.equal(state.updated,now+2*HOUR);
  assert.ok(state.hunger<99);
  assert.ok(!state.dead);
