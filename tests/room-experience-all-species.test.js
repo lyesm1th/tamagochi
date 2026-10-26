@@ -74,7 +74,7 @@ test('experience does not bypass existing explicit liked or disliked items',()=>
 test('a live tick records the room finale only once, including after a save reload',()=>{
  const s=fresh('penguin',start-life.teen-3600000);
  s.updated=start;s.born=start-life.teen-3600000;s.room={laser:true};
- s.cozy.owned={};s.cozy.stored={};s.hunger=s.energy=s.health=s.happy=95;
+ s.playroom.toys={};s.cozy.owned={};s.cozy.stored={};s.hunger=s.energy=s.health=s.happy=95;
  s.routine.enabled=false;s.lastAction=0;
  let slot=null;
  for(let i=0;i<1500;i++){
