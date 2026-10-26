@@ -1,3 +1,4 @@
+import {relationshipReflection} from './interaction-memory.js';
 import {behaviorMemoryHint} from './behavior-memory.js';
 import {mannersDialogue} from './manners.js';
 import {stableHash} from './traits.js';
@@ -135,6 +136,7 @@ const speciesLines={
 export const dialogueCount=Object.values(dialogue).reduce((n,a)=>n+a.length,0)+Object.values(speciesLines).reduce((n,a)=>n+a.length,0);
 export function makeDialogueChooser(){const history=new Map();return (s,now=Date.now(),context='idle')=>{
  const key=s.id||s.species,old=history.get(key)||[],seed=stableHash(key+':words:'+Math.floor(now/1000)+':'+context),roll=seed%100;
+ const reflection=stableHash(key+':bond-reflection:'+Math.floor(now/3600000))%100<7?relationshipReflection(s):null;if(reflection&&!old.includes(reflection)){history.set(key,[...old.slice(-23),reflection]);return reflection;}
  const remembered=stableHash(key+':remember:'+Math.floor(now/3600000))%100<9?behaviorMemoryHint(s):null;if(remembered&&!old.includes(remembered)){history.set(key,[...old.slice(-23),remembered]);return remembered;}
  const special=mannersDialogue(s,now,context);if(special&&!old.includes(special)){history.set(key,[...old.slice(-23),special]);return special;}
  // Profanity now has one centrally balanced gate in mannersDialogue.
