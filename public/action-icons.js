@@ -38,7 +38,47 @@ const glyphs={
  end:['0011100','0111110','1101011','1111111','0011100','0010100','0010100'],
  cake:['0001000','0001000','0111110','0101010','0111110','1111111','1111111'],
  swap:['0000100','1111110','0000100','0000000','0010000','0111111','0010000']};
-const names={feed:'food',sleep:'moon',clean:'broom',medicine:'cross',pet:'heart',discipline:'flag',treat:'star',status:'chart',album:'book',memory:'paw',adventure:'flag',room:'house',vacation:'pause',routine:'clock',family:'friends',world:'flower',endLife:'end',games:'ball',play:'ball',ritual:'paw',weather:'cloud',walk:'walk',activity:'hand',dreams:'moon',forms:'plant',wishes:'speech',photos:'camera',stash:'bag',mischief:'lightning',celebrations:'cake',human:'heart',toys:'ball',craft:'hammer',decorate:'frame',hide:'hide',kitchen:'pan',belongings:'bag',wardrobe:'shirt',peace:'heart',night:'candle',shop:'bag','group:care':'heart','group:home':'house','group:fun':'ball','group:memories':'book',hello:'hand',tease:'lightning',avoid:'exit',repair:'hammer',replace:'swap',gentle:'hand',jump:'lightning',rest:'moon',use:'paw',putOn:'shirt',bed:'moon',bowl:'food',lamp:'candle',rug:'frame',shelf:'book',cushion:'moon',fountain:'food',mirror:'frame',post:'paw',curtains:'hide',toybox:'bag',tent:'hide',toy:'ball',ball:'ball',laser:'star',music:'sound',food:'food'};
+Object.assign(glyphs,{
+ invitation:["0011100","0111110","1111111","1101011","1111111","0011100","0001000"],
+ diploma:["0011100","0111110","1100011","1111111","0001000","0011100","0011100"],
+ notebook:["1111110","1010010","1110110","1010010","1110110","1000010","1111110"],
+ people:["0101010","1111111","0101010","0000000","1101011","1101011","1111111"],
+ ribbon:["0011100","0111110","0011100","0010100","0101010","1000001","0000000"],
+ bed:["0000000","0000000","1100000","1111111","1111111","1000001","1000001"],
+ gift:["0101010","1111111","1101011","1101011","1101011","1101011","1111111"],
+ wallpaper:["1111111","1010101","1111111","1010101","1111111","1010101","1111111"],
+ wallet:["0000000","0111110","1111111","1000111","1011111","1111111","0111110"],
+ needle:["0000010","0000110","0001100","0011000","0110000","1100000","1000000"],
+ toolbox:["0011100","0100010","1111111","1011101","1010101","1111111","1111111"],
+ basket:["0000000","0011100","0100010","1111111","1010101","1111111","0111110"],
+ theater:["1100011","1110111","1011101","1001001","0111110","0001000","0011100"],
+ boat:["0001000","0011100","0011100","1111111","0111110","0011100","0001000"],
+ puzzle:["0011100","0110110","1111111","1110111","1111111","0011100","0011100"],
+ kite:["0001000","0011100","0111110","1111111","0111110","0010100","0100010"],
+ shield:["0011100","0111110","1101011","1000001","1100011","0110110","0011100"],
+ magnify:["0011100","0110110","0100010","0110110","0011100","0001100","0000110"],
+ box:["0111110","1100011","1010101","1001001","1000001","1111111","0000000"],
+ calendar:["0110110","1111111","1000001","1011101","1010101","1011101","1111111"],
+ settings:["1001001","0111110","1111111","1100011","1111111","0111110","1001001"],
+ palette:["0011100","0111110","1101011","1010111","1101111","0111110","0011100"],
+ feather:["0011110","0111010","1100100","1001000","0010000","0100000","1000000"],
+ spark:["0001000","0101010","0011100","1111111","0011100","0101010","0001000"],
+ diary:["0111110","0100010","0101010","0100010","0101010","0100010","0111110"],
+ medal:["0101010","0101010","0011100","0111110","0101010","0111110","0011100"],
+ key:["0011100","0110110","0110110","0011100","0001000","0011100","0010100"],
+ paint:["0001110","0010010","0101010","1111110","0010000","0010000","0111000"],
+ egg:["0011100","0111110","1100011","1000001","1000001","0111110","0011100"],
+ fork:["1010101","1010101","1111101","0010101","0010101","0010111","0010100"],
+ hands:["0100010","1100011","1110111","0111110","0011100","0001000","0000000"],
+ window:["1111111","1001001","1001001","1111111","1001001","1001001","1111111"],
+ ticket:["1111111","1001001","1011101","1010101","1011101","1001001","1111111"],
+ lantern:["0011100","0010100","0111110","0101010","0111110","0010100","0011100"],
+ arrows:["0001000","0011100","1111111","0001000","1111111","0011100","0001000"],
+ feathercap:["0101010","1111111","1000001","1111111","0011100","0111110","0010100"],
+ lanternNight:["0001000","0011100","0111110","0101010","0111110","0011100","1111111"],
+ lock:["0011100","0100010","0100010","1111111","1101011","1111111","1111111"]
+});
+const names={feed:'food',sleep:'moon',clean:'broom',medicine:'cross',pet:'heart',discipline:'diploma',treat:'star',status:'chart',album:'book',memory:'diary',adventure:'kite',room:'house',vacation:'pause',routine:'clock',family:'egg',world:'window',endLife:'end',games:'ball',play:'puzzle',ritual:'candle',weather:'cloud',walk:'walk',activity:'people',dreams:'cloud',forms:'egg',wishes:'spark',photos:'camera',stash:'box',mischief:'lightning',celebrations:'cake',human:'hands',toys:'basket',craft:'hammer',decorate:'wallpaper',hide:'hide',kitchen:'pan',belongings:'toolbox',wardrobe:'shirt',peace:'hands',night:'candle',shop:'gift','group:care':'cross','group:home':'house','group:fun':'puzzle','group:memories':'diary',hello:'hand',tease:'lightning',avoid:'exit',repair:'hammer',replace:'swap',gentle:'hand',jump:'lightning',rest:'moon',use:'paw',putOn:'shirt',bed:'bed',bowl:'basket',lamp:'lantern',rug:'frame',shelf:'book',cushion:'moon',fountain:'food',mirror:'palette',post:'paw',curtains:'window',toybox:'box',tent:'hide',toy:'ball',ball:'ball',laser:'lightning',music:'sound',food:'food' ,initiative:"invitation",together:"hands",roomStyle:"wallpaper",wallet:"wallet",sandbox:"people",stories:"theater",drawings:"paint",keepsakes:"ticket",quirks:"feather",courage:"medal",secrets:"key",celebrations:"cake",dreamgame:"spark",weather:"cloud",graphics:"palette",rules:"help",reminders:"bell",sound:"sound",'group:bond':"speech",'group:settings':"settings",night:"lanternNight",photos:"camera",tree:"tree",walk:"walk"};
 export function iconGlyph(key){return glyphs[names[key]||key]||glyphs.star;}
 export function paintIcon(ctx,key,scale=1){ctx.clearRect(0,0,7*scale,7*scale);ctx.fillStyle='#354f43';iconGlyph(key).forEach((row,y)=>[...row].forEach((p,x)=>{if(p==='1')ctx.fillRect(x*scale,y*scale,scale,scale);}));}
 export function actionIcon(key){const canvas=document.createElement('canvas');canvas.width=14;canvas.height=14;canvas.className='action-icon';canvas.setAttribute('aria-hidden','true');paintIcon(canvas.getContext('2d'),key,2);return canvas;}
