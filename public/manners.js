@@ -75,7 +75,7 @@ export function speechBalance(s){
  // Swearing is deliberately rare, even in a rebellious pet. Rudeness is not
  // necessarily swearing. A very educated pet can still ask about rude words.
  const spicy=d<20?(stressed?.065:.045):d<40?.035:d<65?.023:d<80?.018:.012;
- const rude=d<20?(stressed?.67:stubborn?.57:.51):d<40?(stressed?.46:.36):d<60?(stressed?.24:.16):d<80?(stressed?.07:.035):0;
+ const rude=d<20?(stressed?.67:stubborn?.57:.51):d<40?(stressed?.46:.36):d<60?(stressed?.24:.16):d<80?(stressed?.07:.035):.045;
  return {spicy,rude,curiosity:d>=80?.035:0,polite:d>=80?.54:d>=65?.42:d>=40?.14:0};
 }
 export function mannersDialogue(s,now=Date.now(),context='idle'){
