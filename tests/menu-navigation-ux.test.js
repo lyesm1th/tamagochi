@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {groups} from '../public/living.js';import {groupItems,menuHint,groupEntries} from '../public/menu-config.js';
+test('petting remains available as a direct care action',()=>{const menu=groupItems('care',groups,[],[]);assert.ok(menu.some(x=>x[0]==='pet'));assert.equal(menu.filter(x=>x[0]==='pet').length,1);});
+test('short help covers the most used and risky actions',()=>{for(const id of ['feed','sleep','pet','play','room','initiative','wardrobe','endLife'])assert.ok(menuHint(id).length>=10,id);assert.match(menuHint('endLife'),/підтвердження/);});
+test('six menu categories retain predictable hierarchy and unique actions',()=>{const root=groupEntries(groups);assert.equal(root.length,6);const ids=groups.flatMap(g=>g[3]);assert.equal(ids.length,new Set(ids).size);assert.ok(root.some(x=>x[0]==='group:care'));});
