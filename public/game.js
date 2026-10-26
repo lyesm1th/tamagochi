@@ -10,7 +10,8 @@ import {emotionLine} from './emotion-dialogue.js';
 import {emotionalRefusal,noteEmotion} from './emotions.js';
 import {noteCalm} from './calm-behavior.js';
 import {updateEnrichment,markRoomTrace} from './room-enrichment.js';
-import {roomMoment} from './room-life.js';
+import {roomMoment,roomActivityFinale} from './room-life.js';
+import {recordRoomExperience} from './room-experience.js';
 import {newSpecies,newPets} from './new-pets.js';
 import {MINUTE,HOUR,DAY,life,care,seniorAt,stage} from './pet-life.js';
 export {MINUTE,HOUR,DAY,life,care,seniorAt,stage};
@@ -75,7 +76,7 @@ export function tick(s,now=Date.now()) {
  if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
  const elapsedSinceUpdate=now>s.updated,offlineCatchUp=now-s.updated>=30*MINUTE;s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
- if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);if(elapsedSinceUpdate||!s.daily)updateDaily(s,now,{offline:offlineCatchUp});updateCozy(s,now);updateLively(s,now);updateJournal(s,now);const moment=roomMoment(s,now);if(!offlineCatchUp&&moment?.auto&&now-moment.at>5000)markRoomTrace(s,moment.item,now);updateEnrichment(s,now);return s;
+ if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);if(elapsedSinceUpdate||!s.daily)updateDaily(s,now,{offline:offlineCatchUp});updateCozy(s,now);updateLively(s,now);updateJournal(s,now);const moment=roomMoment(s,now);if(!offlineCatchUp){if(moment?.auto&&now-moment.at>5000)markRoomTrace(s,moment.item,now);recordRoomExperience(s,moment,roomActivityFinale(s,moment,now),now);}updateEnrichment(s,now);return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
