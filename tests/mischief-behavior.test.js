@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mischiefDecision} from '../public/mischief-behavior.js';
+import {updateDaily} from '../public/daily-life.js';
+const now=1780000000000;
+const pet=(discipline,extra={})=>({id:'dino-example',species:'dino',born:now-7*86400000,updated:now,trait:'stubborn',discipline,hunger:80,happy:80,energy:80,health:100,calm:80,dead:false,sleeping:false,napping:false,room:{},...extra});
+test('uneducated pets have stronger impulses and shorter intervals',()=>{const low=mischiefDecision(pet(5),now),high=mischiefDecision(pet(95),now);assert.ok(low.impulse>high.impulse);assert.ok(low.nextAt<high.nextAt);});
+test('hunger and unrest increase impulsiveness without changing inherent trait',()=>{const safe=mischiefDecision(pet(30),now),frustrated=mischiefDecision(pet(30,{hunger:10,calm:10}),now);assert.ok(frustrated.impulse>safe.impulse);});
+test('exhaustion, illness and sleep prevent physical trouble',()=>{for(const extra of [{energy:2},{health:10},{sleeping:true},{vacation:{started:now}},{dead:true}])assert.equal(mischiefDecision(pet(0,extra),now).happens,false);});
+test('decision is deterministic and daily events do not duplicate on repeated ticks',()=>{const s=pet(0);s.daily={wishAt:now+86400000,mischiefAt:now,findAt:now+86400000,kindAt:now+86400000,photos:[],photoKeys:{},stash:{},habits:{tidy:0,cheeky:0},counts:{walks:0,wishes:0},celebrated:{}};assert.deepEqual(mischiefDecision(s,now),mischiefDecision(s,now));updateDaily(s,now);const first=s.daily.mess?.id;updateDaily(s,now);assert.equal(s.daily.mess?.id,first);assert.ok(s.daily.mischiefAt>now);});
