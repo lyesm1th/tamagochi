@@ -1,18 +1,30 @@
 import {behaviorMemoryEffect} from './behavior-memory.js';
 import {disciplineScore} from './manners.js';
 import {traitOf,stableHash} from './traits.js';
-const HOUR=3600000;
+const MINUTE=60000;
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
 export const mischiefRule={food:'food',pot:'belongings',puddle:'tidy',brush:'belongings'};
+
+// A pet's understanding of this particular rule matters as well as general manners.
+// The fixed time slots keep decisions repeatable across reloads and server retries.
 export function mischiefDecision(s,now=Date.now()){
- const d=disciplineScore(s),calm=s.calm??Math.min(s.happy??100,s.energy??100),hunger=s.hunger??100;
- const trait=traitOf(s),badMood=clamp((55-calm)/55,0,1),hungry=clamp((45-hunger)/45,0,1);
- const impulse=clamp(0.16+(100-d)*.005+badMood*.16+hungry*.08+(trait==='stubborn'?.12:trait==='playful'?.09:0),.04,.89);
- const key=(s.id||s.species)+':mess:'+Math.floor(now/(15*60000));const roll=stableHash(key)%1000/1000;
- const kinds=['food','pot','puddle','brush'];const kind=kinds[stableHash(key+':kind')%kinds.length];
- const experience=behaviorMemoryEffect(s,mischiefRule[kind]);
- const interval=clamp((d<20?35:d<40?55:d<60?90:d<80?150:230)+(trait==='stubborn'?-10:0),25,300)*60000;
- // Physical mischief pauses at critically low energy/health. Need-care speech remains active.
+ const general=disciplineScore(s);
+ const key=(s.id||s.species)+':mess:'+Math.floor(now/(15*MINUTE));
+ const kinds=['food','pot','puddle','brush'];
+ const kind=kinds[stableHash(key+':kind')%kinds.length],rule=mischiefRule[kind];
+ const skill=s.manners?.skills?.[rule];
+ const specific=skill?clamp(.4*(skill.training??0)+.6*(skill.practice??0),0,100):general;
+ const education=.55*general+.45*specific;
+ const calm=s.calm??Math.min(s.happy??100,s.energy??100),hunger=s.hunger??100;
+ const trait=traitOf(s);
+ const badMood=clamp((55-calm)/55,0,1),hungry=clamp((45-hunger)/45,0,1);
+ const base=clamp(.11+(100-education)*.005,0,.68);
+ const traitBonus=trait==='stubborn'?.10:trait==='playful'?.07:0;
+ const experience=behaviorMemoryEffect(s,rule);
+ const impulse=clamp(base+badMood*.12+hungry*.09+traitBonus-experience,.025,.85);
+ const interval=clamp(education<20?40:education<40?65:education<60?100:education<80?145:210,35,240)*MINUTE;
+ const roll=stableHash(key+':roll')%10000/10000;
+ // Needs remain actionable even if the pet is too ill/tired to make a mess.
  const allowed=!s.dead&&!s.vacation&&!s.sleeping&&!s.napping&&(s.health??100)>=35&&(s.energy??100)>=20;
- return {happens:allowed&&roll<clamp(impulse-experience,.03,.95),kind,rule:mischiefRule[kind],nextAt:now+interval,impulse};
+ return {happens:allowed&&roll<impulse,kind,rule,nextAt:now+interval,impulse};
 }
