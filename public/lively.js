@@ -1,3 +1,4 @@
+import {petWhim,whimLine} from './pet-whims.js';
 import {ambientSlot} from './calm-behavior.js';
 import {noteHomeScene} from './room-enrichment.js';
 import {newPets} from './new-pets.js';
@@ -29,6 +30,14 @@ export function ambient(s,now=Date.now()){
  const secret=s.lively?.secret;if(secret?.until>now&&now>=secret.at&&now-secret.at<12000)return {...secret,progress:(now-secret.at)/10000};
  const slot=ambientSlot(s,now);const littleMoment=chatter(s,now,slot);if(littleMoment)return littleMoment;
  const journal=slot?.lane==='weather'?journalAmbient(s,now,slot):null;if(journal)return journal;
+ const episode=petWhim(s,now);
+ // Give each mood an 8-second physical beat every 55 seconds, leaving room
+ // for ordinary habits and interactions rather than a nonstop forced pose.
+ if(episode&&now%55000<8000&&slot?.lane!=='habit'){
+  const poses={playful:['chase','toy'],contrary:['stomp','rug'],snack:['graze','bowl'],quiet:['doze','bed'],affectionate:['welcome','front']};
+  const [kind,item]=poses[episode.kind];
+  return {kind,item:item==='bed'&&!s.room?.bed?'rug':item==='toy'&&!s.room?.toy?'rug':item,text:whimLine(s,now),progress:(now%55000)/8000,whim:episode.kind};
+ }
  if(slot?.lane!=='habit')return null;const block=slot.block,phase=now-slot.at;const h=habits[s.species]||habits.cat,seed=stableHash(s.id+':'+block)>>>12,owned=id=>id==='box'&&s.room?.box!==false||s.room?.[id]||s.cozy?.owned?.[id]||id==='toy'&&s.playroom?.toys?.ball;
  const choices=[{...h,item:owned(h.item)?h.item:'rug'},{kind:'window',item:'window',text:'Дивлюся у вікно. Там теж хтось дивний.'},{kind:'carry',item:s.room?.bed?'bed':'rug',text:'Тягну іграшку у своє гніздечко. Не забирай.'},{kind:'doze',item:s.room?.bed?'bed':'rug',text:'Грався-грався… очі самі закрилися.'}];
  const result=choices[(seed+(s.trait==='playful'?1:s.trait==='sleepy'?3:0))%choices.length];return {...result,progress:slot.progress};
