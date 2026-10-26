@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+const src=readFileSync(new URL('../public/detailed-renderer.js',import.meta.url),'utf8');
+test('detailed framed artwork preserves the exact saved journal drawing rather than a generic pet portrait',()=>{assert.match(src,/import \{drawRoomJournal,drawDoodle\}/);assert.match(src,/drawDoodle\(c,drawing,x\+2,y\+2,w-4,h-4\)/);assert.match(src,/if\(row\)framed\(280,34,86,66,row\)/);assert.match(src,/if\(j\.familyArt\)framed\(294,116,56,44,j\.familyArt\)/);assert.doesNotMatch(src,/stamp\(c,'teens',species,x\+Math\.round\(w\*\.28\)/);});
