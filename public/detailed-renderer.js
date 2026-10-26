@@ -90,11 +90,11 @@ function furniture(c,s,id,rect,frame,reduced){if(!rect||rect.length!==4||!rect.e
 export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){background(c,'empty-room');drawMood(c,s,384,288,true);const pos=layout(s),owned=id=>s?.room?.[id]||s?.cozy?.owned?.[id];stamp(c,'furniture','window',27,17,103,98);if(s?.room?.box!==false){shade(c,65,255,48,26,'#9e805e');shade(c,67,257,44,22,'#c6ab83');shade(c,67,257,12,22,'#b0946f');shade(c,84,257,8,22,'#e0caa1');shade(c,64,251,50,7,'#d3bc95');shade(c,103,265,6,3,'#876f54');drawDesignAccent(c,s,'box',65,251,48,29);}
  for(const id of ['rug','curtains','shelf','mirror','bed','tent','plant','lamp','cushion','post','fountain','bowl','toybox'])if(owned(id))furniture(c,s,id,pos[id],frame,reduced);
  // Current mechanics remain visible: poop, messes, handmade items, souvenirs, stories.
- if(s?.playroom?.crafted?.stoneArt){shade(c,215,14,43,36,'#947354');for(let i=0;i<9;i++)shade(c,220+i%3*11,19+Math.floor(i/3)*9,7,6,['#b7c8b0','#d6b59d','#b5a0c3'][i%3]);}
+ if(s?.playroom?.crafted?.stoneArt){c.save();c.fillStyle='#584a3d';c.fillRect(211,11,51,43);c.fillStyle='#d4c3a5';c.fillRect(215,15,43,35);stamp(c,'props','leaf',220,19,20,25);stamp(c,'props','heart',240,24,13,12);c.restore();}
  if(s?.playroom?.crafted?.mobile){shade(c,pos.bed[0]+53,10,1,36,'#997d5b');shade(c,pos.bed[0]+32,44,42,1,'#997d5b');prop(c,'leaf',pos.bed[0]+30,45,12,18);treasure(c,'shell',pos.bed[0]+62,45,16);}
  if(s?.playroom?.decor?.display)treasure(c,s.playroom.decor.display,owned('shelf')?pos.shelf[0]+32:326,owned('shelf')?pos.shelf[1]+23:258,21);
  if(s?.heirloom)prop(c,'gift',259,68,19);
- if(s?.living?.finished?.[0]||s?.living?.story?.step&&!(s.living.story.chapter>0)){shade(c,283,249,23,20,'#b08c68');shade(c,280,247,29,5,'#d1ae81');prop(c,'leaf',284,223,20,28);if(s.living.finished?.[0]||s.living.story.step>=3)prop(c,'heart',288,215,14);}
+ if(s?.living?.finished?.[0]||s?.living?.story?.step&&!(s.living.story.chapter>0)){stamp(c,'props','pot',280,246,32,28);prop(c,'leaf',283,219,21,32);if(s.living.finished?.[0]||s.living.story.step>=3)prop(c,'heart',288,211,16);}
  const stash=Object.keys(s?.daily?.stash||{}).filter(id=>s.daily.stash[id]>0);for(let i=0;i<Math.min(4,stash.length);i++)treasure(c,stash[i],11+i*15,270-i%2*3,14);if(s?.daily?.kind?.kind==='warm')prop(c,'blanket',258,269,101,22);
  if(s?.daily?.mess)for(let i=0;i<5;i++){if(s.daily.mess.kind==='puddle')shade(c,66+i*44,269+i%2*5,14,3,'#9dbbbb');else prop(c,'debris',66+i*44,267+i%2*5,17,8);}
  if(s?.poop)for(let i=0;i<Math.min(4,s.poop);i++)prop(c,'poop',28+i*32,263,25,22);
