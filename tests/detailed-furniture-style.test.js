@@ -20,6 +20,6 @@ test('all pet types have detailed atlas art for all ordinary ages and sleep',()=
 });
 test('owned keepsake silhouettes gain ink outline without modifying user saved art',()=>{
  assert.match(src,/const mask=treasureMasks/);
- assert.match(src,/shade\(c,bx-1,by-1/);
+ assert.doesNotMatch(src,/shade\(c,bx-1,by-1/);
  assert.match(src,/drawDoodle\(c,drawing,x\+2,y\+2,w-4,h-4\)/);
 });
