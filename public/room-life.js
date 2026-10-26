@@ -121,6 +121,21 @@ export function roomMoment(s,now=Date.now()){
  const id=followUp?.item||first;
  return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{})};
 }
+// A short, purely visual finale during the last seconds of an existing autonomous room slot.
+// The result is deterministic and never writes mood, rewards or extra dialogue to the save.
+export function roomActivityFinale(s,m,now=Date.now()){
+ if(!s||!m?.auto||m.kind==='ask'||!Number.isFinite(m.at)||!Number.isFinite(m.until)||now<m.at+3200||now<m.until-2200||now>=m.until)return null;
+ const taste=roomTaste(s,m.item);
+ if(taste==='love')return 'fond';
+ if(m.item==='laser'){
+  const seed=stableHash((s.id||s.species)+':laser-finale:'+m.at);
+  return seed%3===0?'miss':'caught';
+ }
+ if(m.kind==='doze'||m.kind==='nest')return 'rest';
+ if(m.item==='toy'||m.item==='toybox')return 'discover';
+ if(m.kind==='dance')return 'proud';
+ return null;
+}
 export function roomMomentPose(s,m,style='classic',now=Date.now(),reduced=false){if(!m)return null;const rect=roomRects(s,style)[m.item],isOutfit=m.kind==='outfit';if(!rect&&!isOutfit)return null;const [rx,ry,rw,rh]=rect||[76,105,40,25];let x=rx+rw/2,feet=Math.min(136,Math.max(88,ry+rh+10));if(m.item==='bed')feet=ry+rh-5;if(m.item==='plant'||m.item==='shelf'||m.item==='mirror')feet=Math.max(98,feet);if(isOutfit){x=96;feet=133;}
  const elapsed=Math.max(0,now-m.at),duration=m.auto?2400:1300,k=reduced?1:Math.min(1,elapsed/duration);
  let from=m.origin||{x:96,feet:130};
@@ -129,7 +144,7 @@ export function roomMomentPose(s,m,style='classic',now=Date.now(),reduced=false)
  const approaching=k<1;
  x=from.x+(x-from.x)*k;feet=from.feet+(feet-from.feet)*k;const beat=reduced?0:Math.sin((elapsed-duration)/140),acting=!approaching;
  if(acting&&!reduced){if(m.kind==='jump')feet-=Math.abs(beat)*13;if(['faces','outfit','dance','play','shadow'].includes(m.kind))x+=Math.sin(elapsed/180)*3;if(['roll','nest','sniff','drink','read'].includes(m.kind))feet+=Math.sin(elapsed/260)*2;}
- const scale=feet<110?.76:.93;return {x,feet,scale,interaction:{...m,acting,approaching,elapsed},ambient:null};
+ const scale=feet<110?.76:.93;return {x,feet,scale,interaction:{...m,acting,approaching,elapsed,finale:acting?roomActivityFinale(s,m,now):null},ambient:null};
 }
 // Shared visual responses, composed over the same pet in both styles.
 export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=pose?.interaction;if(!m||!m.acting)return;const x=pose.x,y=pose.feet,beat=reduced?0:Math.floor(now/220)%3,r=(a,b,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(a),Math.round(b),w,h);},heart=(a,b)=>{r(a,b,3,3,'#ba758a');r(a+5,b,3,3,'#ba758a');r(a,b+3,8,3,'#ba758a');r(a+2,b+6,4,2,'#ba758a');};
@@ -144,6 +159,12 @@ export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=
  if(m.kind==='doze'){c.fillStyle='#8d7baf';c.font='bold 8px monospace';c.fillText('zzz',x+13,y-39-beat);}
  if(m.kind==='ask')heart(x+14,y-44);if(m.kind==='outfit'||m.event==='new'||m.kind==='nest'){if(m.taste==='annoy'){r(x+15,y-40-beat,2,7,'#a57969');r(x+15,y-31-beat,2,2,'#a57969');}else heart(x+14,y-44-beat*3);}
  if(m.kind==='gentle'||m.kind==='repair'){for(let i=0;i<3;i++){r(x-20+i*18,y-26-i%2*9,1,5,'#eee5a9');r(x-22+i*18,y-24-i%2*9,5,1,'#eee5a9');}}
+ // Finale accents sit outside the original face and sprite outlines in either visual style.
+ const finale=m.finale;if(finale==='fond'||finale==='rest')heart(x+15,y-46-(reduced?0:beat));
+ if(finale==='caught'||finale==='discover'||finale==='proud'){
+  for(let i=0;i<3;i++){const sx=x-17+i*16,sy=y-43-(reduced?0:(i+beat)%3*2);r(sx,sy,2,6,'#eee5a9');r(sx-2,sy+2,6,2,'#eee5a9');}
+ }
+ if(finale==='miss'){r(x+15,y-43,4,2,'#af81a4');r(x+17,y-41,3,4,'#af81a4');r(x+15,y-36,2,2,'#af81a4');}
 }
 export function speechFilter(){const recent=new Map();return (text,now=Date.now(),important=false)=>{if(!text)return false;const last=recent.get(text);if(!important&&last!==undefined&&now-last<180000)return false;recent.set(text,now);for(const [t,at]of recent)if(now-at>300000)recent.delete(t);return true;};}
 
