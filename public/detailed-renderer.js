@@ -8,7 +8,7 @@ import {roomRects,roomMoment,roomMomentPose,drawRoomResponse,withRoomGesture} fr
 import {drawBanana} from './new-pet-art.js';
 import {drawItemVariant,drawToyVariant,drawDesignAccent,designFilter,designIndex,drawBowlBadge} from './item-designs.js';
 import {drawMood,drawLighting} from './room-mood.js';
-import {drawRoomJournal} from './journal-effects.js';
+import {drawRoomJournal,drawDoodle} from './journal-effects.js';
 import {wardrobeAnatomy} from './detailed-wardrobe.js';
 import {socialScene,drawSocialScene} from './social-scenes.js';
 import {drawLively} from './lively.js';
@@ -90,17 +90,18 @@ function furniture(c,s,id,rect,frame,reduced){if(!rect||rect.length!==4||!rect.e
 // Detailed scenes retain journal data but never paint enlarged classic doodles.
 export function drawDetailedWallKeepsakes(c,s){
  const j=s?.journal;if(!j)return;
- const framed=(x,y,w,h,key)=>{
-  c.save();c.fillStyle='#57463a';c.fillRect(x-4,y-4,w+8,h+8);
+ const framed=(x,y,w,h,drawing)=>{
+  // Preserve the authored drawing's actual subject (pet + friend, food, or
+  // owner). A wall painting is intentionally illustrated, not a pet portrait.
+  c.save();c.imageSmoothingEnabled=false;
+  c.fillStyle='#57463a';c.fillRect(x-4,y-4,w+8,h+8);
   c.fillStyle='#cfae7b';c.fillRect(x-2,y-2,w+4,h+4);
-  c.fillStyle='#eee0bf';c.fillRect(x+2,y+2,w-4,h-4);
-  const species=key&&detailedArt.teens?.cells?.[key]?key:s.species;
-  stamp(c,'teens',species,x+Math.round(w*.28),y+Math.round(h*.10),Math.round(w*.45),Math.round(h*.78));
+  drawDoodle(c,drawing,x+2,y+2,w-4,h-4);
   c.restore();
  };
  const row=j.drawings?.find(d=>d.id===j.pinned);
- if(row)framed(280,34,86,66,row.species);
- if(j.familyArt)framed(294,116,56,44,j.familyArt.species);
+ if(row)framed(280,34,86,66,row);
+ if(j.familyArt)framed(294,116,56,44,j.familyArt);
 }
 // Render transient marks from the detailed prop atlas instead of scaled classic pixels.
 export function drawDetailedRoomTraces(c,s,now=Date.now()){
