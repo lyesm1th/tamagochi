@@ -39,3 +39,13 @@ test('normal successful play records joy without changing coin payouts',()=>{
  const r=act(s,'play',now+1000,{game:'bug'});assert.ok(!r.error,r.error);
  assert.equal(r.state.coins,s.coins+3);assert.equal(r.state.interactionMemory.playJoy,52);
 });
+
+test('bond and all needs remain intact after reloading emotional memory',()=>{
+ const s=pet();s.coins=234;s.bond=57;s.cozy={owned:{bed:true},items:{}};
+ noteInteractionMemory(s,'care',now);
+ const restored=JSON.parse(JSON.stringify(s));
+ assert.equal(restored.coins,234);assert.equal(restored.bond,57);
+ assert.equal(restored.cozy.owned.bed,true);
+ assert.equal(restored.interactionMemory.comfort,52);
+ assert.equal(noteInteractionMemory(restored,'care',now+1000),false);
+});
