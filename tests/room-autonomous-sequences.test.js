@@ -7,7 +7,7 @@ const slot={at:1800000000000,until:1800000014000};
 const pet=(character={playfulness:85,curiosity:25})=>({
  id:'room-chain-pet',species:'dino',born:slot.at-1000000,
  energy:95,hunger:95,health:100,happy:95,character,
- room:{toy:true,rug:true},cozy:{owned:{},items:{},preferences:{object:{love:'toy'}}}
+ room:{toy:true,rug:true},cozy:{owned:{},items:{},preferences:{object:{}}}
 });
 
 test('a related follow-up occupies only the second half of an existing quiet slot',()=>{
@@ -26,6 +26,14 @@ test('personality, missing furnishings, and disliked objects affect follow-up sa
  s.cozy.preferences.object.annoy='cushion';
  assert.equal(roomSequenceStep(s,items,'music',slot,slot.at+8000).item,'mirror');
  assert.equal(roomSequenceStep(s,['music','cushion'],'music',slot,slot.at+8000),null);
+});
+
+test('a favorite is not interrupted for a neutral follow-up',()=>{
+ const s=pet();
+ s.cozy.preferences.object.love='toy';
+ assert.equal(roomSequenceStep(s,['toy','rug'],'toy',slot,slot.at+8000),null);
+ s.cozy.items.rug={affinity:4};
+ assert.equal(roomSequenceStep(s,['toy','rug'],'toy',slot,slot.at+8000).item,'rug');
 });
 
 test('second activity starts at the previous furnishing in both render modes',()=>{
