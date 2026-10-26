@@ -16,6 +16,25 @@ export function roomLine(s,id,event='use',now=Date.now()){const taste=roomTaste(
 export function noteRoomReaction(s,id,event='new',now=Date.now()){if(event==='repair')feel(s,'grateful','Улюблену річ полагоджено',now);else if(event==='new'||event==='wear')feel(s,roomTaste(s,id)==='annoy'?'annoyed':characterOf(s).curiosity>60?'curious':'surprised','Оглядаю обновку',now,.6,45000);if(['new','repair'].includes(event))rememberThing(s,id,event,now);noteCalm(s,now);s.living??={};s.living.motion=null;if(s.living.enrichment){s.living.enrichment.tidying=null;s.living.enrichment.home=null;s.living.enrichment.touch=null;s.living.enrichment.session=null;}if(s.journal)s.journal.gesture=null;s.living.reaction={item:id,kind:clothIds.has(id)?'outfit':itemMoves[id]||'inspect',event,at:now,until:now+9000,taste:roomTaste(s,id)};}
 export function directRoomAction(id){return id==='bed'?'jump':'use';}
 export function roomNeedPriority(s,items){if((s.energy??100)<65&&items.includes('bed'))return 'bed';if((s.hunger??100)<65&&items.includes('bowl'))return 'bowl';if((s.hunger??100)<65&&items.includes('fountain'))return 'fountain';return null;}
+// Continue a quiet room moment with one related activity, without another timer or persisted state.
+const roomFollowUps={
+ toy:['rug','cushion'],laser:['rug','cushion'],music:['mirror','cushion'],
+ shelf:['plant','cushion'],plant:['mirror','cushion'],mirror:['toy','cushion'],
+ tent:['toy','cushion'],toybox:['toy','rug'],lamp:['mirror','cushion'],
+ post:['rug','cushion'],rug:['toy','cushion']
+};
+export function roomSequenceStep(s,items,first,slot,now){
+ if(!slot||!Number.isFinite(slot.at)||!Number.isFinite(slot.until)||slot.until-slot.at<12000)return null;
+ const halfway=slot.at+Math.floor((slot.until-slot.at)/2);
+ if(now<halfway||now>=slot.until)return null;
+ const candidates=roomFollowUps[first]||[];
+ const {playfulness,curiosity}=characterOf(s);
+ const order=playfulness>=curiosity?candidates:[...candidates].reverse();
+ // A favorite activity should not be cut short for a neutral one.
+ const favorite=roomTaste(s,first)==='love';
+ const next=order.find(id=>id!==first&&items.includes(id)&&roomTaste(s,id)!=='annoy'&&(!favorite||roomTaste(s,id)==='love'));
+ return next?{item:next,at:halfway,originItem:first}:null;
+}
 export function roomMoment(s,now=Date.now()){
  if(!s||s.dead||s.vacation||s.sleeping||s.napping||s.living?.enrichment?.session?.until>now||s.living?.enrichment?.touch?.until>now||s.living?.enrichment?.home?.until>now||s.living?.enrichment?.tidying?.until>now||now-s.born<180000||s.world?.walk?.expires>now||s.cozy?.hide?.expires>now||s.playroom?.session?.expires>now||s.journal?.gesture?.until>now)return null;
  const m=s.living?.motion;if(m?.until>now&&roomOwned(s,m.item))return {...m,kind:m.kind==='use'?itemMoves[m.item]||'inspect':m.kind,manual:true};
@@ -25,11 +44,17 @@ export function roomMoment(s,now=Date.now()){
  const slot=ambientSlot(s,now);if(slot?.lane!=='room')return null;if(bedtimeInvitation(s,now)&&roomOwned(s,'bed'))return {item:'bed',kind:'ask',at:slot.at,until:slot.until,auto:true,origin:{x:96,feet:130}};const phase=now-slot.at,clock=slot.block*37000;
  const items=Object.keys(itemMoves).filter(id=>id!=='window'&&id!=='box'&&roomOwned(s,id)&&(s.cozy?.items?.[id]?.wear??100)>0);if(!items.length)return null;
  const priority=roomNeedPriority(s,items);
- const loved=items.filter(id=>roomTaste(s,id)==='love'),pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:items,id=priority||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
- return {item:id,kind:id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id],at:slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130}};
+ const loved=items.filter(id=>roomTaste(s,id)==='love'),pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:items,first=priority||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
+ const followUp=priority?null:roomSequenceStep(s,items,first,slot,now);
+ const id=followUp?.item||first;
+ return {item:id,kind:id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id],at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{})};
 }
 export function roomMomentPose(s,m,style='classic',now=Date.now(),reduced=false){if(!m)return null;const rect=roomRects(s,style)[m.item],isOutfit=m.kind==='outfit';if(!rect&&!isOutfit)return null;const [rx,ry,rw,rh]=rect||[76,105,40,25];let x=rx+rw/2,feet=Math.min(136,Math.max(88,ry+rh+10));if(m.item==='bed')feet=ry+rh-5;if(m.item==='plant'||m.item==='shelf'||m.item==='mirror')feet=Math.max(98,feet);if(isOutfit){x=96;feet=133;}
- const elapsed=Math.max(0,now-m.at),duration=m.auto?2400:1300,k=reduced?1:Math.min(1,elapsed/duration),from=m.origin||{x:96,feet:130},approaching=k<1;
+ const elapsed=Math.max(0,now-m.at),duration=m.auto?2400:1300,k=reduced?1:Math.min(1,elapsed/duration);
+ let from=m.origin||{x:96,feet:130};
+ const prior=m.originItem&&roomRects(s,style)[m.originItem];
+ if(prior){const [px,py,pw,ph]=prior;from={x:px+pw/2,feet:m.originItem==='bed'?py+ph-5:Math.min(136,Math.max(88,py+ph+10))};if(['plant','shelf','mirror'].includes(m.originItem))from.feet=Math.max(98,from.feet);}
+ const approaching=k<1;
  x=from.x+(x-from.x)*k;feet=from.feet+(feet-from.feet)*k;const beat=reduced?0:Math.sin((elapsed-duration)/140),acting=!approaching;
  if(acting&&!reduced){if(m.kind==='jump')feet-=Math.abs(beat)*13;if(['faces','outfit','dance','play','shadow'].includes(m.kind))x+=Math.sin(elapsed/180)*3;if(['roll','nest','sniff','drink','read'].includes(m.kind))feet+=Math.sin(elapsed/260)*2;}
  const scale=feet<110?.76:.93;return {x,feet,scale,interaction:{...m,acting,approaching,elapsed},ambient:null};
