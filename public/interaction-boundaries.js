@@ -14,6 +14,7 @@ export function directInteraction(s,action,now=Date.now()){
  const b=boundaryState(s,now);
  const hungry=(s.hunger??100)<30,upset=(s.calm??Math.min(s.happy??100,s.energy??100))<30;
  const education=disciplineScore(s),low=education<35,stubborn=traitOf(s)==='stubborn';
+ if(action==='pet'&&!hungry&&!upset&&!low)return null;
  // Affection is not obedience: even a loved, comfortable pet can have a whim.
  // Essential feeding must remain available when actually hungry.
  if(action==='feed'&&((s.hunger??100)<45||(s.health??100)<50))return null;
