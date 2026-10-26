@@ -1,3 +1,4 @@
+import {whimLine} from './pet-whims.js';
 import {relationshipReflection} from './interaction-memory.js';
 import {behaviorMemoryHint} from './behavior-memory.js';
 import {mannersDialogue} from './manners.js';
@@ -138,6 +139,8 @@ export function makeDialogueChooser(){const history=new Map();return (s,now=Date
  const key=s.id||s.species,old=history.get(key)||[],seed=stableHash(key+':words:'+Math.floor(now/1000)+':'+context),roll=seed%100;
  const reflection=stableHash(key+':bond-reflection:'+Math.floor(now/3600000))%100<7?relationshipReflection(s):null;if(reflection&&!old.includes(reflection)){history.set(key,[...old.slice(-23),reflection]);return reflection;}
  const remembered=stableHash(key+':remember:'+Math.floor(now/3600000))%100<9?behaviorMemoryHint(s):null;if(remembered&&!old.includes(remembered)){history.set(key,[...old.slice(-23),remembered]);return remembered;}
+ const episodeText=stableHash(key+':mood-talk:'+Math.floor(now/90000))%100<19?whimLine(s,now):null;
+ if(episodeText&&!old.includes(episodeText)){history.set(key,[...old.slice(-23),episodeText]);return episodeText;}
  const special=mannersDialogue(s,now,context);if(special&&!old.includes(special)){history.set(key,[...old.slice(-23),special]);return special;}
  // Profanity now has one centrally balanced gate in mannersDialogue.
  const pool=context==='room'?dialogue.room:roll<27?dialogue.cheeky:roll<49?(speciesLines[s.species]||dialogue.warm):dialogue.warm;
