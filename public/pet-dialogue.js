@@ -137,7 +137,8 @@ export function makeDialogueChooser(){const history=new Map();return (s,now=Date
  const key=s.id||s.species,old=history.get(key)||[],seed=stableHash(key+':words:'+Math.floor(now/1000)+':'+context),roll=seed%100;
  const remembered=stableHash(key+':remember:'+Math.floor(now/3600000))%100<9?behaviorMemoryHint(s):null;if(remembered&&!old.includes(remembered)){history.set(key,[...old.slice(-23),remembered]);return remembered;}
  const special=mannersDialogue(s,now,context);if(special&&!old.includes(special)){history.set(key,[...old.slice(-23),special]);return special;}
- const pool=context==='room'?dialogue.room:roll<5?dialogue.spicy:roll<32?dialogue.cheeky:roll<48?(speciesLines[s.species]||dialogue.warm):dialogue.warm;
+ // Profanity now has one centrally balanced gate in mannersDialogue.
+ const pool=context==='room'?dialogue.room:roll<27?dialogue.cheeky:roll<49?(speciesLines[s.species]||dialogue.warm):dialogue.warm;
  const available=pool.filter(t=>!old.includes(t)),list=available.length?available:pool.filter(t=>t!==old.at(-1)),text=list[stableHash(seed+':pick')%list.length];history.set(key,[...old.slice(-23),text]);return text;
  };}
 export const chooseDialogue=makeDialogueChooser();
