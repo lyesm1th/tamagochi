@@ -90,8 +90,9 @@ export function roomSpeciesPreference(s,items,block=0){
  return available[stableHash((s.id||s.species)+':species-room:'+block)%available.length];
 }
 // An occasional mood-led choice within the existing quiet slot, never an extra action.
+// Modulo 5 avoids locking mood choices out of the modulo-4 ambient room lane.
 export function roomMoodPreference(s,items,block=0,now=Date.now()){
- if(!s||!Array.isArray(items)||!Number.isFinite(block)||block%4!==1)return null;
+ if(!s||!Array.isArray(items)||!Number.isFinite(block)||block%5!==1)return null;
  const mood=moodOf(s),emotion=emotionOf(s,now).kind,character=characterOf(s);
  let state,options;
  if((s.energy??100)<65){
@@ -116,7 +117,7 @@ export function roomMoment(s,now=Date.now()){
  const items=Object.keys(itemMoves).filter(id=>id!=='window'&&id!=='box'&&roomOwned(s,id)&&(s.cozy?.items?.[id]?.wear??100)>0);if(!items.length)return null;
  const priority=roomNeedPriority(s,items);
  const loved=items.filter(id=>roomTaste(s,id)==='love'),pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:items,moodChoice=loved.length||priority?null:roomMoodPreference(s,items,slot.block,now),speciesChoice=loved.length||moodChoice?null:roomSpeciesPreference(s,items,slot.block),first=priority||moodChoice?.item||speciesChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
- const followUp=priority||moodChoice?.mood!=='play'&&moodChoice?null:roomSequenceStep(s,items,first,slot,now);
+ const followUp=priority||(moodChoice&&moodChoice.mood!=='play')?null:roomSequenceStep(s,items,first,slot,now);
  const id=followUp?.item||first;
  return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{})};
 }
