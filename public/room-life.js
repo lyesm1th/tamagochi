@@ -72,6 +72,22 @@ export function roomSequenceStep(s,items,first,slot,now){
  const next=order.find(id=>id!==first&&items.includes(id)&&roomTaste(s,id)!=='annoy'&&(!favorite||roomTaste(s,id)==='love'));
  return next?{item:next,at:halfway,originItem:first}:null;
 }
+// A soft, species-specific preference when there is no urgent need or loved object.
+const speciesRoomChoices={
+ chicken:['rug','bowl'],cat:['toy','mirror'],corgi:['toy','rug'],
+ frog:['fountain','plant'],bear:['cushion','bed'],dog:['bowl','rug'],
+ dino:['plant','toy'],bunny:['plant','rug'],pig:['rug','bowl'],
+ sheep:['cushion','rug'],fox:['toy','mirror'],monkey:['shelf','toybox'],
+ duck:['fountain','bowl'],penguin:['rug','fountain']
+};
+export function roomSpeciesPreference(s,items,block=0){
+ const choices=speciesRoomChoices[s?.species]||[];
+ const available=choices.filter(id=>items.includes(id)&&roomTaste(s,id)!=='annoy');
+ if(!available.length)return null;
+ // Species preference is occasional, rather than overriding diverse room exploration.
+ if(block%3!==0)return null;
+ return available[stableHash((s.id||s.species)+':species-room:'+block)%available.length];
+}
 export function roomMoment(s,now=Date.now()){
  if(!s||s.dead||s.vacation||s.sleeping||s.napping||s.living?.enrichment?.session?.until>now||s.living?.enrichment?.touch?.until>now||s.living?.enrichment?.home?.until>now||s.living?.enrichment?.tidying?.until>now||now-s.born<180000||s.world?.walk?.expires>now||s.cozy?.hide?.expires>now||s.playroom?.session?.expires>now||s.journal?.gesture?.until>now)return null;
  const m=s.living?.motion;if(m?.until>now&&roomOwned(s,m.item))return {...m,kind:m.kind==='use'?itemMoves[m.item]||'inspect':m.kind,manual:true};
@@ -81,7 +97,7 @@ export function roomMoment(s,now=Date.now()){
  const slot=ambientSlot(s,now);if(slot?.lane!=='room')return null;if(bedtimeInvitation(s,now)&&roomOwned(s,'bed'))return {item:'bed',kind:'ask',at:slot.at,until:slot.until,auto:true,origin:{x:96,feet:130}};const phase=now-slot.at,clock=slot.block*37000;
  const items=Object.keys(itemMoves).filter(id=>id!=='window'&&id!=='box'&&roomOwned(s,id)&&(s.cozy?.items?.[id]?.wear??100)>0);if(!items.length)return null;
  const priority=roomNeedPriority(s,items);
- const loved=items.filter(id=>roomTaste(s,id)==='love'),pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:items,first=priority||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
+ const loved=items.filter(id=>roomTaste(s,id)==='love'),pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:items,speciesChoice=loved.length?null:roomSpeciesPreference(s,items,slot.block),first=priority||speciesChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
  const followUp=priority?null:roomSequenceStep(s,items,first,slot,now);
  const id=followUp?.item||first;
  return {item:id,kind:id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id],at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{})};
