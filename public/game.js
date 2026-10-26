@@ -1,3 +1,4 @@
+import {trainManners,practiceManners,ensureManners,disciplineScore} from './manners.js';
 import {emotionLine} from './emotion-dialogue.js';
 import {emotionalRefusal,noteEmotion} from './emotions.js';
 import {noteCalm} from './calm-behavior.js';
@@ -42,7 +43,7 @@ export function ratesFor(s,now=Date.now()){const r=baseRates(s,now);if(stage(s,n
 export function tick(s,now=Date.now()) {
  if(!s)return s;ensureCompanion(s,now);s.trait??=traitOf(s);ensureWorld(s);if(s.dead)return s;if(s.vacation){s.updated=now;return s;}
  // Old saves keep their birthday and stats. New fields are added in place.
- syncDream(s,s.updated);s.careScore??=80;s.discipline??=70;s.treatStreak??=0;s.poopClock??=0;
+ syncDream(s,s.updated);s.careScore??=80;s.discipline??=70;s.treatStreak??=0;s.poopClock??=0;ensureManners(s);
  // Integrate by fifteen-minute slices so offline neglect matches online time.
  let cursor=s.updated,steps=0;
  while(cursor<now&&!s.dead&&steps++<12000){
@@ -95,12 +96,12 @@ export function act(state,action,now=Date.now(),context={}) {
  const refusal=emotionalRefusal(s,action,now);if(refusal)return {state:s,error:refusal};
  let text='';
  switch(action){
- case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?babyMeal(s.species):line('feed',s.species);break;
+ case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);practiceManners(s,'food',now);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?babyMeal(s.species):line('feed',s.species);break;
  case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);s.treatStreak++;if(s.treatStreak>2){s.health=clamp(s.health-4);s.careScore=clamp(s.careScore-5);s.discipline=clamp(s.discipline-3);}text=stage(s,now)==='Малюк'?babyMeal(s.species):line('treat',s.species);break;
- case 'clean':if(s.living?.enrichment)s.living.enrichment.traces=[];s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean',s.species);break;
+ case 'clean':if(s.poop>0)practiceManners(s,'tidy',now);if(s.living?.enrichment)s.living.enrichment.traces=[];s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean',s.species);break;
  case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+(traitOf(s)==='affectionate'?14:9));text=line('pet',s.species,Math.random,stage(s,now));break;
  case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Я в люлю. Посидь поруч, тільки не шаруди.':'Я прокинувся! Де моя людина й мій сніданок?';break;
- case 'discipline':if(s.discipline>90)return {state:s,error:'Я чемний! Можна вже просто обійняти?'};s.discipline=clamp(s.discipline+(traitOf(s)==='stubborn'?12:18));s.careScore=clamp(s.careScore+1);text='Добре-добре, я зрозумів. Але обійняти після виховання треба.';break;
+ case 'discipline':{const lesson=trainManners(s,now);if(!lesson.ok)return {state:s,error:lesson.text};text=lesson.text;break;}
  case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine',s.species);break;
  case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15+(s.room.toy?3:0));s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':line('play',s.species);break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
