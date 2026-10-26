@@ -29,16 +29,17 @@ export function noteDaily(s,action,now=Date.now(),context={}){
 export function celebrations(s,now=Date.now()){
  const d=ensureDaily(s,now),age=(s.vacation?.started??now)-s.born,list=[];if(age>=3*MIN)list.push({id:'hatch',name:'День вилуплення'});if(age>=7*DAY)list.push({id:'week',name:'Перший тиждень разом'});if(d.counts.walks>=10)list.push({id:'walks10',name:'Десята прогулянка'});return list.map(x=>({...x,done:!!d.celebrated[x.id]}));
 }
-export function updateDaily(s,now=Date.now()){
+export function updateDaily(s,now=Date.now(),options={}){
  const d=ensureDaily(s,now);if(s.dead||s.vacation)return;if(now-s.born<3*MIN)return;
+ const offline=!!options.offline;let generated=0;const room=()=>!offline||generated<3;
  if(s.world?.dream)noteDaily(s,'dream',now);
  if(d.wish&&now>=d.wish.expires){if(d.wish.kind==='noTreat'&&d.wish.accepted)finishWish(s,now,'Дві години без солодкого. Домовленість виконано!');else{d.lastWish={...d.wish,result:'Передумав. Буде ще нагода.',at:now};d.wish=null;}}
  if(s.sleeping||s.napping)return;
- if(!d.wish&&now>=d.wishAt){const seed=stableHash(s.id+Math.floor(now/(4*HOUR))),kind=['walk','noTreat','cuddle'][seed%3],place={frog:'pond',dog:'pond',bear:'forest',dino:'forest',bunny:'forest'}[s.species]||'park';d.wish={id:`${now}-${kind}`,kind,place,expires:now+3*HOUR,accepted:false};d.wishAt=now+(4+seed%5)*HOUR;}
- if(!d.mess&&now>=d.mischiefAt){const decision=mischiefDecision(s,now);d.mischiefAt=decision.nextAt;if(decision.happens){const kind=decision.kind;d.mess={id:`${now}-${kind}`,kind,at:now};s.clean=clamp(s.clean-3);}}
- if(now>=d.findAt){addTreasure(s,now);d.findAt=now+(3+stableHash(s.id+now)%4)*HOUR;}
- if(!d.trainingRequest||now-d.trainingRequest.at>2*HOUR){const invite=trainingInvitation(s,now);if(invite)d.trainingRequest={text:invite,at:now};}
- if(now>=d.kindAt){const item=kindness[stableHash(s.id+now)%kindness.length];d.kind={id:`${now}-${item[0]}`,kind:item[0],text:item[1],at:now};d.kindAt=now+4*HOUR;}
+ if(!d.wish&&now>=d.wishAt&&room()){const seed=stableHash(s.id+Math.floor(now/(4*HOUR))),kind=['walk','noTreat','cuddle'][seed%3],place={frog:'pond',dog:'pond',bear:'forest',dino:'forest',bunny:'forest'}[s.species]||'park';d.wish={id:`${now}-${kind}`,kind,place,expires:now+3*HOUR,accepted:false};d.wishAt=now+(4+seed%5)*HOUR;generated++;}
+ if(!d.mess&&now>=d.mischiefAt&&room()){const decision=mischiefDecision(s,now);d.mischiefAt=decision.nextAt;if(decision.happens){const kind=decision.kind;d.mess={id:`${now}-${kind}`,kind,at:now};s.clean=clamp(s.clean-3);generated++;}}
+ if(now>=d.findAt&&room()){addTreasure(s,now);d.findAt=now+(3+stableHash(s.id+now)%4)*HOUR;generated++;}
+ if((!d.trainingRequest||now-d.trainingRequest.at>2*HOUR)&&room()){const invite=trainingInvitation(s,now);if(invite){d.trainingRequest={text:invite,at:now};generated++;}}
+ if(now>=d.kindAt&&room()){const item=kindness[stableHash(s.id+now)%kindness.length];d.kind={id:`${now}-${item[0]}`,kind:item[0],text:item[1],at:now};d.kindAt=now+4*HOUR;generated++;}
 }
 export function wishText(s){const w=s.daily?.wish;if(!w)return 'Зараз усе добре. Я просто побуду поруч.';return w.kind==='walk'?'Хочу '+({park:'до парку',forest:'до лісу',pond:'до ставка'}[w.place])+'. Виведеш мене, людино?':w.kind==='noTreat'?'Давай дві години без солодкого. Я серйозно. Майже.':'Посиди зі мною й погладь. Справи зачекають, а я маленький.';}
 export const wishAnswers=['Добре, домовились','Запропонувати обійми натомість','Зараз не можу'];
