@@ -7,7 +7,7 @@ export function recordRoomExperience(s,m,outcome,now=Date.now()){
  if(!s||!m?.auto||!m.item||!Number.isFinite(m.at)||!Number.isFinite(m.until)||!Number.isFinite(now)||now<m.until-2200||now>=m.until)return false;
  if(!positiveFinales.has(outcome)&&outcome!=='miss')return false;
  const key=m.at+':'+m.until+':'+m.item;
- if(s.living?.roomExperience?.lastEvent===key)return false;
+ if(s.living?.roomExperience?.lastEvent===key||now<=(s.living?.roomExperience?.lastRecordedAt||0))return false;
  s.living??={};
  const memory=s.living.roomExperience??={items:{},lastEvent:null};
  const items=memory.items??={};
@@ -15,6 +15,7 @@ export function recordRoomExperience(s,m,outcome,now=Date.now()){
  const delta=outcome==='miss'?-1:1;
  items[m.item]={score:boundedScore((previous.score||0)+delta),count:Math.min(20,(previous.count||0)+1),lastAt:now};
  memory.lastEvent=key;
+ memory.lastRecordedAt=now;
  // Keep memory small even if old or modified saves contain many arbitrary keys.
  const keys=Object.keys(items);
  if(keys.length>16){
