@@ -65,3 +65,26 @@ test('full idle chooser stays varied and avoids legacy profanity bypass',()=>{
  const explicit=lines.filter(x=>/^(Блять|Пиздець|Сука|Я такий чемний, аж страшно)/i.test(x)).length;
  assert.ok(explicit/lines.length<.04,'explicit swearing '+explicit+'/600');
 });
+
+test('crossing 80 discipline never makes speech ruder, including stressful days',()=>{
+ for(const extra of [{},{hunger:15,calm:20}]){
+  const near=speechBalance(pet(79,extra)),mastered=speechBalance(pet(80,extra));
+  assert.ok(mastered.rude<near.rude,JSON.stringify({near,mastered}));
+  assert.ok(mastered.spicy<near.spicy,JSON.stringify({near,mastered}));
+  const [low,mid,high]=[10,50,90].map(d=>speechBalance(pet(d,extra)));
+  assert.ok(low.rude>mid.rude&&mid.rude>high.rude);
+  assert.ok(low.spicy>mid.spicy&&mid.spicy>high.spicy);
+  assert.ok(high.spicy<=.01&&high.rude<=.03);
+ }
+});
+
+test('stress and rebellious traits are modifiers, not a substitute for learned manners',()=>{
+ const mastered=pet(90,{hunger:10,calm:10});
+ const untrained=pet(10);
+ const a=mischiefDecision(mastered,now),b=mischiefDecision(untrained,now);
+ assert.ok(a.impulse<b.impulse,JSON.stringify({a,b}));
+ assert.ok(a.nextAt>b.nextAt);
+ const steady=pet(90,{trait:'affectionate'});
+ const stubborn=pet(90,{trait:'stubborn'});
+ assert.ok(mischiefDecision(steady,now).impulse<mischiefDecision(stubborn,now).impulse);
+});
