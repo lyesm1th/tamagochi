@@ -16,13 +16,13 @@ export function trainManners(s,now=Date.now()){
  if((m.sessions||0)>=4)return {ok:false,text:'На сьогодні уроків вистачить. Я краще спробую застосувати їх на практиці.'};
  if(s.hunger<35||s.energy<30)return {ok:false,text:'Спочатку дай мені поїсти або відпочити. На голодний живіт уроки не лізуть.'};
  const i=(m.sessions||0)%mannersRules.length,key=mannersRules[i],skill=m.skills[key];
- skill.training=clamp(skill.training+Math.max(3,Math.round(10*(traitOf(s)==='stubborn'?.85:1))));
+ skill.training=clamp(skill.training+Math.max(3,10*(traitOf(s)==='stubborn'?.85:1))*(1+Math.min(.08,Math.max(0,m.inheritedBonus||0))));
  m.lastTraining=now;m.sessions=(m.sessions||0)+1;s.discipline=disciplineScore(s);
  return {ok:true,text:['Вчуся чемно їсти. Але миска досі підозріла.','Добре, речі не гризти. Навіть дуже гарні.','Спробую відповідати без огризань. Не обіцяю, бляха.','Прибирати за собою? Домовились, спробую.','Чекати складно. Але я потренуюсь.','Навчуся не ображати друзів.'][i]};
 }
 export function practiceManners(s,key,now=Date.now()){
  const m=ensureManners(s);if(!m.skills[key]||(m.lastPractice[key]&&now-m.lastPractice[key]<30*60000))return false;
- m.skills[key].practice=clamp(m.skills[key].practice+4);m.lastPractice[key]=now;s.discipline=disciplineScore(s);return true;
+ m.skills[key].practice=clamp(m.skills[key].practice+4*(1+Math.min(.08,Math.max(0,m.inheritedBonus||0))));m.lastPractice[key]=now;s.discipline=disciplineScore(s);return true;
 }
 const rude=['Ти взагалі слухаєш мене, людино? Бо я себе вже задовбав повторювати.','Я сказав НІ. І навіть не думай командувати моїм хвостом.','Сука, де моя миска? Я тут уже всю підлогу обнюхав.','Пиздець, знову правила. Може, я просто хочу побути динозавром?','Не чіпай мене зараз. Я злюся, і лапки теж.','Мені не подобається цей план. Придумай кращий.','Ти ж головний по їжі. Так от, працюй, людино!','А можна без повчань? Мені вже вуха згорнулися.'];
 const polite=['Дякую, що повернувся. Як минув твій день?','Можна трохи уваги, будь ласка?','Я пам’ятаю нашу домовленість. Постараюся.','Ти, мабуть, втомився. Посидимо разом?','Я хотів бешкетувати, але вирішив краще спитати тебе.','Можна погратися після того, як поїмо?','Я радий тебе бачити. Навіть лапи затремтіли.','Перепрошую, це я тут трохи розкидав. Зараз виправлю.'];
