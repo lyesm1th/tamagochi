@@ -1,3 +1,4 @@
+import {returnBehaviorSummary} from './behavior-return.js';
 import {noteRoomReaction,roomLine} from './room-life.js';
 import {noteRelationshipCare} from './relationship-life.js';
 import {newPets} from './new-pets.js';
@@ -23,7 +24,7 @@ export function ensureCompanion(s,now=Date.now()){
 }
 export function visit(s,now=Date.now(),tz){ensureCompanion(s,now);if(tz)s.routine.timezone=zone(tz);const gap=s.memory.lastSeen?now-s.memory.lastSeen:Infinity;let greeting=null;
  if(gap>=30*60000){s.memory.visits++;s.bond=Math.min(100,s.bond+3);s.memory.lastVisit=now;s.bodyLanguage={kind:'welcome',until:now+8000};greeting=s.vacation?'Ти повернувся! Я відпочиваю в готелі. Коли додому?':gap>DAY&&s.memory.visits>1?'О, моя людина! Я беріг тобі місце для обіймів.':s.bond>=50?'Моя улюблена людина! Я вже впізнаю твої кроки.':'О, моя людина! Заходь, я тобі радий.';}
- greeting=returnHome(s,gap,now)||greeting;s.memory.lastSeen=now;return greeting;
+ greeting=returnHome(s,gap,now)||greeting;const summary=returnBehaviorSummary(s,s.memory.lastSeen,now);if(summary)greeting=(greeting?greeting+' ':'')+summary;s.memory.lastSeen=now;return greeting;
 }
 export function routineSleeping(s,now){const r=s.routine;if(!r?.enabled||now<(r.manualUntil||0))return !!s.sleeping;const h=clock(now,r.timezone).hour;return r.bed>r.wake?(h>=r.bed||h<r.wake):(h>=r.bed&&h<r.wake);}
 function learnHour(s,key,now){const r=s.routine;if(r.locked[key]||(key==='feed'&&(r.locked.meal1||r.locked.meal2)))return;const h=clock(now,r.timezone).hour;const bins=r.samples[key]??=Array(24).fill(0);bins[h]++;const ranked=bins.map((n,h)=>({n,h})).sort((a,b)=>b.n-a.n);if(ranked[0].n<3)return;if(key==='feed'){r.meal1=ranked[0].h;if(ranked[1].n>=3)r.meal2=ranked[1].h;}else r[key]=ranked[0].h;}
