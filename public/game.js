@@ -109,6 +109,7 @@ export function act(state,action,now=Date.now(),context={}) {
  case 'treat':if(s.coins<5)return {state:s,error:'Треба 5 монет. Ходімо заробимо у грі?'};s.coins-=5;s.hunger=clamp(s.hunger+10);s.happy=clamp(s.happy+18);s.treatStreak++;if(s.treatStreak>2){s.health=clamp(s.health-4);s.careScore=clamp(s.careScore-5);s.discipline=clamp(s.discipline-3);}text=stage(s,now)==='Малюк'?babyMeal(s.species):line('treat',s.species);break;
  case 'clean':if(s.poop>0)practiceManners(s,'tidy',now);if(s.living?.enrichment)s.living.enrichment.traces=[];s.careScore=clamp(s.careScore+(s.poop?1:0));s.clean=100;s.poop=0;text=line('clean',s.species);break;
  case 'pet':s.careScore=clamp(s.careScore+(s.happy<70?.5:0));s.happy=clamp(s.happy+(traitOf(s)==='affectionate'?14:9));text=interactionDialogue(s,'pet',now)||line('pet',s.species,Math.random,stage(s,now));break;
+ case 'quietTime':s.happy=clamp(s.happy+3);s.calm=clamp((s.calm??s.happy)+4);text='Посидимо поруч. Мені вже спокійніше.';break;
  case 'sleep':s.sleeping=!s.sleeping;text=s.sleeping?'Я в люлю. Посидь поруч, тільки не шаруди.':'Я прокинувся! Де моя людина й мій сніданок?';break;
  case 'discipline':{const lesson=patienceTraining(s,context.choice??null,now,context.kind??'patience');if(!lesson.ok)return {state:s,error:lesson.text};text=lesson.text;break;}
  case 'medicine':if(s.coins<10)return {state:s,error:'Ліки коштують 10 монет. Заробимо у грі.'};s.coins-=10;s.health=clamp(s.health+35);text=line('medicine',s.species);break;
