@@ -24,20 +24,74 @@ export function practiceManners(s,key,now=Date.now()){
  const m=ensureManners(s);if(!m.skills[key]||(m.lastPractice[key]&&now-m.lastPractice[key]<30*60000))return false;
  m.skills[key].practice=clamp(m.skills[key].practice+4*(1+Math.min(.08,Math.max(0,m.inheritedBonus||0))));m.lastPractice[key]=now;s.discipline=disciplineScore(s);return true;
 }
-const rude=['Ти взагалі слухаєш мене, людино? Бо я себе вже задовбав повторювати.','Я сказав НІ. І навіть не думай командувати моїм хвостом.','Сука, де моя миска? Я тут уже всю підлогу обнюхав.','Пиздець, знову правила. Може, я просто хочу побути динозавром?','Не чіпай мене зараз. Я злюся, і лапки теж.','Мені не подобається цей план. Придумай кращий.','Ти ж головний по їжі. Так от, працюй, людино!','А можна без повчань? Мені вже вуха згорнулися.'];
-const polite=['Дякую, що повернувся. Як минув твій день?','Можна трохи уваги, будь ласка?','Я пам’ятаю нашу домовленість. Постараюся.','Ти, мабуть, втомився. Посидимо разом?','Я хотів бешкетувати, але вирішив краще спитати тебе.','Можна погратися після того, як поїмо?','Я радий тебе бачити. Навіть лапи затремтіли.','Перепрошую, це я тут трохи розкидав. Зараз виправлю.'];
-const spicy=['Блять, як же добре, що ти вдома.','Пиздець, який я сьогодні молодець. Сам у шоці.','Сука, ця іграшка знову закотилася під ліжко.','Я такий чемний, аж страшно, бляха.'];
-const curiosity=['Людино, а що означає слово «блять»? Я чув, але не впевнений, що його варто повторювати.','А слово «пиздець» означає, що щось зламалося? Я сподіваюся, не наш вазон.','Можна запитати? Чому дорослі кажуть «сука», коли щось падає?'];
+const rude=[
+ 'Ти взагалі слухаєш мене, людино? Бо я себе вже задовбав повторювати.',
+ 'Я сказав НІ. І навіть не думай командувати моїм хвостом.',
+ 'Не чіпай мене зараз. Я злюся, і лапки теж.',
+ 'Мені не подобається цей план. Придумай кращий.',
+ 'Ти ж головний по їжі. Так от, працюй, людино!',
+ 'А можна без повчань? Мені вже вуха згорнулися.',
+ 'Сам вирішу, коли прибирати! Але, може, ти й маєш рацію.',
+ 'Ти сказав «зараз»? У мене своє «зараз», двоноге начальство.',
+ 'Я не зобов’язаний бути милим кожну хвилину. Р-р-р!',
+ 'Ні. І не треба робити такі очі. Я все бачу.',
+ 'Невже знову виховна бесіда? Я ще попередню перетравлюю.',
+ 'Відчепись на хвилинку. Мені треба побурчати.',
+];
+const rudeSpicy=[
+ 'Сука, де моя миска? Я вже все обнюхав!',
+ 'Пиздець, знову правила. Може, я просто хочу побути динозавром?',
+ 'Блять, я ж тільки вмостився. Дай хоч лапи скласти!',
+];
+const polite=[
+ 'Дякую, що повернувся. Як минув твій день?',
+ 'Можна трохи уваги, будь ласка?',
+ 'Я пам’ятаю нашу домовленість. Постараюся.',
+ 'Ти, мабуть, втомився. Посидимо разом?',
+ 'Я хотів бешкетувати, але вирішив краще спитати тебе.',
+ 'Можна погратися після того, як поїмо?',
+ 'Я радий тебе бачити. Навіть лапи затремтіли.',
+ 'Перепрошую, це я тут трохи розкидав. Зараз виправлю.',
+ 'Я не згоден, але можу сказати це чемно.',
+ 'Сьогодні я стримався. Це було непросто, зате вазон цілий.',
+ 'Можна я сам оберу гру? Дякую, що питаєш.',
+ 'Я хочу відпочити. Обійми запропонуй трохи згодом.',
+];
+const spicy=[
+ 'Блять, як же добре, що ти вдома.',
+ 'Пиздець, який я сьогодні молодець. Сам у шоці.',
+ 'Сука, ця іграшка знову закотилася під ліжко.',
+ 'Я такий чемний, аж страшно, бляха.',
+];
+const curiosity=[
+ 'Людино, а що означає слово «блять»? Я чув, але не впевнений, що його варто повторювати.',
+ 'А слово «пиздець» означає, що щось зламалося? Я сподіваюся, не наш вазон.',
+ 'Можна запитати? Чому дорослі кажуть «сука», коли щось падає?',
+];
+export function speechBalance(s){
+ const d=disciplineScore(s);
+ const h=s.hunger??100,calm=s.calm??Math.min(s.happy??100,s.energy??100);
+ const stressed=h<35||calm<40,stubborn=traitOf(s)==='stubborn';
+ // Swearing is deliberately rare, even in a rebellious pet. Rudeness is not
+ // necessarily swearing. A very educated pet can still ask about rude words.
+ const spicy=d<20?(stressed?.065:.045):d<40?.035:d<65?.023:d<80?.018:.012;
+ const rude=d<20?(stressed?.67:stubborn?.57:.51):d<40?(stressed?.46:.36):d<60?(stressed?.24:.16):d<80?(stressed?.07:.035):0;
+ return {spicy,rude,curiosity:d>=80?.035:0,polite:d>=80?.54:d>=65?.42:d>=40?.14:0};
+}
 export function mannersDialogue(s,now=Date.now(),context='idle'){
  if(!s||s.dead||s.sleeping||s.napping)return null;
- const d=disciplineScore(s),h=s.hunger??100,calm=s.calm??Math.min(s.happy??100,s.energy??100),trait=traitOf(s);
- const slot=Math.floor(now/90000),seed=stableHash((s.id||s.species)+':manners:'+slot+':'+context),roll=seed%100;
- if(d<20&&(h<45||calm<45||trait==='stubborn')){if(roll<76)return rude[seed%rude.length];}
- else if(d<40&&roll<46)return rude[seed%rude.length];
- if(d>=80&&roll<5)return curiosity[seed%curiosity.length];
- if(d>=65&&roll<57)return polite[seed%polite.length];
- if(d>=40&&roll<3)return spicy[seed%spicy.length];
- if(d<40&&roll<9)return spicy[seed%spicy.length];
+ const profile=speechBalance(s);
+ const seed=(s.id||s.species)+':manners:'+Math.floor(now/90000)+':'+context;
+ const roll=stableHash(seed+':tone')%10000/10000;
+ const pick=stableHash(seed+':words');
+ let threshold=profile.spicy;
+ if(roll<threshold){const pool=disciplineScore(s)<40?rudeSpicy:spicy;return pool[pick%pool.length];}
+ threshold+=profile.rude;
+ if(roll<threshold)return rude[pick%rude.length];
+ threshold+=profile.curiosity;
+ if(roll<threshold)return curiosity[pick%curiosity.length];
+ threshold+=profile.polite;
+ if(roll<threshold)return polite[pick%polite.length];
  return null;
 }
 
