@@ -79,7 +79,7 @@ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let savedSound=true;try{savedSound=localStorage.getItem('hamagochi-sound')!=='off';}catch{}
 const audio=createSound(()=>new (window.AudioContext||window.webkitAudioContext)(),savedSound);
 let menu=groupEntries(groups),menuGroup=null,rootPicked=0;let sandboxPets=[],sandboxScenes=[],sandboxSelfId=null,sandboxTimer=null;
-function groupMenu(id){rootPicked=picked;menuGroup=id;menu=id==='care'?prioritizeCareItems(groupItems(id,groups,journalPages,worldPages),state):groupItems(id,groups,journalPages,worldPages);picked=0;}
+function groupMenu(id){rootPicked=picked;menuGroup=id;menu=groupItems(id,groups,journalPages,worldPages);if(id==='care')menu=prioritizeCareItems(menu,state);picked=0;}
 function rootMenu(){menuGroup=null;menu=groupEntries(groups);picked=Math.max(0,Math.min(rootPicked,menu.length-1));}
 
 function speak(t,important=false){if(!t||t===$('#bubble').textContent||!allowSpeech(t,Date.now(),important))return;$('#bubble').textContent=t;lastSpeech=Date.now();return true;}
