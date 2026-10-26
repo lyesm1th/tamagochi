@@ -10,7 +10,7 @@ import {ensureWorld} from './little-world.js';
 import {personality} from './pet-personality.js';
 import {stableHash} from './traits.js';
 import {HOUR,DAY} from './pet-life.js';
-export const furnishings=[{id:'bed',name:'Ліжечко',price:12,benefit:'+4 енергії/год уві сні'},{id:'bowl',name:'Миска',price:8,benefit:'Ситість падає на 10% повільніше'},{id:'plant',name:'Рослина',price:10,benefit:'Настрій падає на 10% повільніше'},{id:'toy',name:'Іграшка',price:15,benefit:'+3 настрою за гру'}];
+export const furnishings=[{id:'bed',name:'Ліжечко',price:24,benefit:'+4 енергії/год уві сні'},{id:'bowl',name:'Миска',price:16,benefit:'Ситість падає на 10% повільніше'},{id:'plant',name:'Рослина',price:20,benefit:'Настрій падає на 10% повільніше'},{id:'toy',name:'Іграшка',price:30,benefit:'+3 настрою за гру'}];
 export const foodNames={banana:'Банан',milk:'Молочко',grain:'Зернятка',algae:'Водорості',meat:'Шматочки м’яса',cookie:'Печиво',hay:'Сіно',fly:'Комашка',berry:'Ягідки',carrot:'Морквинка',fish:'Рибка',kibble:'Корм',grass:'Травичка',apple:'Яблучко',worm:'Черв’ячок',leaf:'Листочок'};
 const foods={...Object.fromEntries(Object.entries(newPets).map(([id,p])=>[id,p.foods])),cat:['kibble','fish','cookie'],corgi:['kibble','meat','carrot'],dog:['hay','grass','apple'],frog:['fly','worm','algae'],chicken:['grain','berry','leaf'],bear:['berry','fish','apple'],dino:['meat','fish','leaf'],bunny:['hay','carrot','leaf']};
 export function foodsFor(s,age){return age==='Малюк'?[personality(s.species).babyFood]:(foods[s.species]||foods.cat);}
