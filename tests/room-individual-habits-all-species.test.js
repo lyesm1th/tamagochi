@@ -11,9 +11,9 @@ const pet=(species,id='habit-'+species)=>({
  room:{laser:true,toy:true},cozy:{items:{},preferences:{object:{}}}
 });
 const moment=(item,at)=>({auto:true,item,kind:'play',at,until:at+14000});
-const learn=(s,item='laser',n=4)=>{
+const learn=(s,item='laser',n=4,offset=0)=>{
  for(let i=0;i<n;i++){
-  const at=start+i*150000;
+  const at=start+(offset+i)*150000;
   assert.equal(recordRoomExperience(s,moment(item,at),'caught',at+13000),true);
  }
 };
@@ -25,9 +25,9 @@ test('all 14 species develop personal habits from four successful autonomous act
   assert.equal(roomHabitOf(a),null,id);
   learn(a,'laser',3);
   assert.equal(roomHabitOf(a),null,id);
-  learn(a,'toy',1); // A different activity cannot borrow laser experience.
+  learn(a,'toy',1,3); // A different activity cannot borrow laser experience.
   assert.equal(roomHabitOf(a),null,id);
-  assert.equal(recordRoomExperience(a,moment('laser',start+450000),'caught',start+463000),true,id);
+  assert.equal(recordRoomExperience(a,moment('laser',start+600000),'caught',start+613000),true,id);
   assert.deepEqual(roomHabitOf(a),{item:'laser',score:4,count:4},id);
   assert.equal(roomHabitOf(b),null,id);
   assert.equal(roomHabitOf(a,['toy']),null,id);
@@ -45,7 +45,7 @@ test('habits can fade after setbacks, or be replaced by an independently learned
  }
  assert.equal(s.living.roomExperience.items.laser.score,2);
  assert.equal(roomHabitOf(s),null);
- learn(s,'toy',4);
+ learn(s,'toy',4,6);
  assert.equal(roomHabitOf(s)?.item,'toy');
  assert.equal(roomHabitOf(s)?.count,4);
 });
