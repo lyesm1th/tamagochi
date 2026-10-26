@@ -76,10 +76,33 @@ export function enrichmentPose(s,rects,now=Date.now(),reduced=false){
  const weather=weatherAt(now).id,r=rects.window||[14,8,43,43],kind=weather==='sun'?'warmSpot':weather==='rain'?'raindrops':weather==='storm'?'listenRain':'cloudWatch';
  return {x:weather==='sun'?80:r[0]+r[2]/2,feet:weather==='sun'?130:103,scale:.8,interaction:{kind:weather==='sun'?'nest':'watch',item:'window',acting:true,at:slot.at},enriched:{kind}};
 }
+// Small species-specific motion accents for active room interactions only.
+export function speciesRoomAccent(species,kind,item,now){
+ if(!['play','jump','stretch','roll','dance','splash','sniff','search','read','drink','nest'].includes(kind))return {x:0,feet:0,scale:1};
+ const beat=Math.sin(now/300),bounce=Math.abs(beat);
+ switch(species){
+  case 'chicken': return {x:beat*1.5,feet:-bounce*2,scale:1};
+  case 'cat': return {x:beat*2,feet:-bounce*1.5,scale:1};
+  case 'corgi': return {x:beat*2.5,feet:-bounce*2,scale:1};
+  case 'frog': return {x:0,feet:-bounce*4,scale:1};
+  case 'bear': return {x:beat*1.5,feet:0,scale:1};
+  case 'dog': return {x:beat*1.5,feet:-bounce,scale:1};
+  case 'dino': return {x:beat,feet:bounce*1.5,scale:1};
+  case 'bunny': return {x:0,feet:-bounce*5,scale:1};
+  case 'pig': return {x:beat*2,feet:item==='rug'?-bounce*2:0,scale:1};
+  case 'sheep': return {x:beat*2,feet:-bounce,scale:1};
+  case 'fox': return {x:beat*3,feet:-bounce,scale:1};
+  case 'monkey': return {x:beat*3,feet:item==='shelf'?-bounce*3:0,scale:1};
+  case 'duck': return {x:beat*2,feet:-bounce,scale:1};
+  case 'penguin': return {x:beat*4,feet:0,scale:.98};
+  default: return {x:0,feet:0,scale:1};
+ }
+}
 export function enrichPose(s,pose,now=Date.now(),reduced=false){if(pose?._enriched)return pose;if(!s||!pose||s.dead||s.sleeping||s.napping||s.vacation)return pose;const p={...pose,_enriched:true},mood=moodOf(s);p.enriched={...p.enriched,mood};if(reduced)return p;
  if(mood==='springy'&&p.enriched?.point&&!p.interaction?.approaching)p.feet-=Math.max(0,Math.sin(now/400))*1.5;
  if(mood==='sleepy')p.scale*=.97;
  const active=p.interaction?.acting&&['play','jump','stretch','roll','dance','splash'].includes(p.interaction.kind)||p.enriched?.point;if(active){const gait=speciesMotions[s.species];p.enriched.gait=gait;if(gait==='hop'||gait==='earHop')p.feet-=Math.abs(Math.sin(now/240))*6;if(gait==='slide'){p.x=clamp(p.x+Math.sin(now/600)*6,40,152);p.scale*=.88;}if(gait==='hang'&&p.interaction?.item==='post'){p.feet=133;p.x=clamp(p.x,24,168);p.scale*=.55;}if(gait==='stomp')p.feet+=Math.abs(Math.sin(now/240))*2;}
+ if(p.interaction?.acting&&!p.interaction?.approaching){const a=speciesRoomAccent(s.species,p.interaction.kind,p.interaction.item,now);p.x=clamp(p.x+a.x,20,172);p.feet=clamp(p.feet+a.feet,80,136);p.scale*=a.scale;}
  return p;
 }
 export function noteHomeScene(s,gap,now=Date.now()){
