@@ -7,7 +7,7 @@ test('four buttons navigate games, cancel family, create egg, and open parent al
  try{await import('../public/app.js?grouped-controls');const click=async id=>{get('#button-'+id).onclick();await new Promise(r=>setImmediate(r));};
  const root=async()=>{for(let i=0;i<6&&get('#menu-icons').children.length!==6;i++)await click('back');assert.equal(get('#menu-icons').children.length,6);};
  const open=async(group,text)=>{await root();for(let i=0;i<6&&!get('#selected-action').textContent.includes(group);i++)await click('right');await click('ok');for(let i=0;i<20&&!get('#selected-action').textContent.includes(text);i++)await click('right');assert.ok(get('#selected-action').textContent.includes(text),text);await click('ok');};
- assert.equal(get('#menu-icons').children.length,4);
+ assert.equal(get('#menu-icons').children.length,6);
  await open('ДІМ','КІМНАТКА');await click('ok');assert.ok(JSON.parse(memory.get('hamagochi-v1')).room.bed);
  await open('ДІМ','КІМНАТКА');await click('ok');assert.match(get('#choice-detail').textContent,/Поскакати/);await click('ok');let saved=JSON.parse(memory.get('hamagochi-v1'));assert.ok(saved.cozy.items.bed.wear<100);
  await open('ДІМ','КІМНАТКА');await click('ok');await click('right');await click('right');await click('ok');saved=JSON.parse(memory.get('hamagochi-v1'));assert.equal(saved.living.furniture.bed,1);
