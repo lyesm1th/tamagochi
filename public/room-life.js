@@ -29,7 +29,27 @@ export function roomCharacterLine(s,id,now=Date.now()){
  const pool=temperamentLines[lanes[0][0]][id];
  return pool[stableHash((s.id||s.species)+':room-line:'+id+':'+Math.floor(now/2300))%pool.length];
 }
-export function roomLine(s,id,event='use',now=Date.now()){const taste=roomTaste(s,id),n=stableHash((s.id||s.species)+id+Math.floor(now/2300));if(event==='wear'||event==='new'){const pool=taste==='love'?['О! Це тепер моє улюблене. Не забирай.','Підходить. Обійняти покупку можна?']:taste==='annoy'?['Хм. Дивна штука. Дай мені звикнути.','Спершу огляну. Я ще не погодився.']:['Придивлюся. Може, й подружимось.','Ого, обновка! Зараз перевірю.'];return pool[n%pool.length];}if(n%5===0){const memory=thingMemory(s,id,now);if(memory)return memory;}if(n%4===0)return chooseDialogue(s,now,'room');if(event==='use'&&n%3===0){const characterLine=roomCharacterLine(s,id,now);if(characterLine)return characterLine;}const pool=reactions[id]||['Лапки зайняті важливими справами.','Перевіряю. Все моє — все цікаве.'];return pool[n%pool.length];}
+// Species-specific gestures and language use the same existing room interaction cadence.
+const speciesRoomLines={
+ chicken:{rug:'Ко-ко! Пір’ячко після перекиду треба пригладити.',bowl:'Клю-клю. Миска пройшла курячу інспекцію.'},
+ cat:{mirror:'Няв. Дзеркало підтвердило мою велич.',toy:'Мур. Іграшка рухається, отже вона моя здобич.'},
+ corgi:{toy:'Гав! Короткі лапки, великі спортивні амбіції.',rug:'Батон перекотився. Батон задоволений.'},
+ frog:{fountain:'Ква! Нарешті водичка, а не сухі балачки.',plant:'Ква-ква, зелений друже, ми майже родичі.'},
+ bear:{cushion:'Бур. Це не подушка, це ведмежа хмара.',bed:'Буркотун офіційно оголосив час обіймів.'},
+ dog:{bowl:'Муу! Перевірка мисочки завершена.',rug:'Копитця на килимку. Танцювати чи полежати?'},
+ dino:{plant:'Р-р. Маленькі джунглі, велика експедиція.',toy:'Р-р! Здобич упіймано, лапки цілі.'},
+ bunny:{plant:'Фир-фир. Вушка почули, як росте листочок.',rug:'Стриб-стриб. Це моя тренувальна галявинка.'},
+ pig:{rug:'Хрю! П’ятачок шукає скарби під килимком.',bowl:'Хрум! А раптом там яблучко залишилося?'},
+ sheep:{cushion:'Бе-е. Подушка тепер пухнаста майже як я.',rug:'Моя вовна й килимок сьогодні змагаються у м’якості.'},
+ fox:{toy:'Тяф! Іграшка не знала, що я підкрадаюся.',mirror:'Хвіст і хитрість на місці. Дзеркало не бреше.'},
+ monkey:{shelf:'У-а! Поличка, тримайся, я досліджую!',toybox:'У-у-а! Знайшов скарб. Банан не знайшов.'},
+ duck:{fountain:'Кря! Калюжа домашня, а радість справжня.',bowl:'Кря-кря. Дзьобик перевірив рівень води.'},
+ penguin:{rug:'Пі! Ковзаю пузиком, уявімо, що це крижина.',fountain:'Плюх! Морська експедиція у власній кімнаті.'}
+};
+export function roomSpeciesLine(s,id){
+ return speciesRoomLines[s?.species]?.[id]||null;
+}
+export function roomLine(s,id,event='use',now=Date.now()){const taste=roomTaste(s,id),n=stableHash((s.id||s.species)+id+Math.floor(now/2300));if(event==='wear'||event==='new'){const pool=taste==='love'?['О! Це тепер моє улюблене. Не забирай.','Підходить. Обійняти покупку можна?']:taste==='annoy'?['Хм. Дивна штука. Дай мені звикнути.','Спершу огляну. Я ще не погодився.']:['Придивлюся. Може, й подружимось.','Ого, обновка! Зараз перевірю.'];return pool[n%pool.length];}if(n%5===0){const memory=thingMemory(s,id,now);if(memory)return memory;}if(n%4===0)return chooseDialogue(s,now,'room');if(event==='use'&&n%3===0){const characterLine=roomCharacterLine(s,id,now);if(characterLine)return characterLine;}if(event==='use'&&n%7===1){const speciesLine=roomSpeciesLine(s,id);if(speciesLine)return speciesLine;}const pool=reactions[id]||['Лапки зайняті важливими справами.','Перевіряю. Все моє — все цікаве.'];return pool[n%pool.length];}
 export function noteRoomReaction(s,id,event='new',now=Date.now()){if(event==='repair')feel(s,'grateful','Улюблену річ полагоджено',now);else if(event==='new'||event==='wear')feel(s,roomTaste(s,id)==='annoy'?'annoyed':characterOf(s).curiosity>60?'curious':'surprised','Оглядаю обновку',now,.6,45000);if(['new','repair'].includes(event))rememberThing(s,id,event,now);noteCalm(s,now);s.living??={};s.living.motion=null;if(s.living.enrichment){s.living.enrichment.tidying=null;s.living.enrichment.home=null;s.living.enrichment.touch=null;s.living.enrichment.session=null;}if(s.journal)s.journal.gesture=null;s.living.reaction={item:id,kind:clothIds.has(id)?'outfit':itemMoves[id]||'inspect',event,at:now,until:now+9000,taste:roomTaste(s,id)};}
 export function directRoomAction(id){return id==='bed'?'jump':'use';}
 export function roomNeedPriority(s,items){if((s.energy??100)<65&&items.includes('bed'))return 'bed';if((s.hunger??100)<65&&items.includes('bowl'))return 'bowl';if((s.hunger??100)<65&&items.includes('fountain'))return 'fountain';return null;}
