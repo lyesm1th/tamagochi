@@ -173,12 +173,35 @@ export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){backg
  if(s?.cozy?.nightMode&&isNight(s,now)){shade(c,0,0,384,288,'#253b5455');const moon=['0011100','0110000','1100000','1100001','1110011','0111110','0011100'];for(let yy=0;yy<7;yy++)for(let xx=0;xx<7;xx++)if(moon[yy][xx]==='1')shade(c,103+xx*2,32+yy*2,2,2,'#eee3af');if(owned('lamp')){c.fillStyle='#f4dca822';c.beginPath();c.arc(pos.lamp[0]+pos.lamp[2]/2,pos.lamp[1]+22,43,0,Math.PI*2);c.fill();}if(!reduced)for(let i=0;i<5;i++)shade(c,38+i*68,220+Math.sin(frame/1100+i)*16,2,2,'#dfdc96');}
 }
 function outdoor(c,s){if(s.world?.walk?.expires>Date.now()){const key=s.world.walk.place==='forest'?'forest':s.world.walk.place==='pond'?'pond':null;if(key)stamp(c,'walks',key,0,0,384,288);else background(c,'playground');return true;}return false;}
+// Render live room effects in native detailed pixels, not scaled classic
+// fillRect overlays. This applies to every species and age without retouching
+// their authored bodies or integrated wardrobe.
+export function drawDetailedInteractionFeedback(c,s,pose,now=Date.now(),reduced=false){
+ const action=pose?.interaction,step=reduced?0:Math.floor(now/250)%3;
+ if(action?.acting){
+  const x=Math.round(pose.x*2),y=Math.round(pose.feet*2);
+  const symbol={faces:'heart',drink:'water',splash:'water',gentle:'water',sniff:'leaf',
+   read:'leaf',play:'ball',search:'gift',peek:'gift',shadow:'heart',
+   stretch:'leaf',roll:'blanket',jump:'heart',ask:'heart',outfit:'heart',
+   nest:'blanket',repair:'heart',doze:'blanket'}[action.kind];
+  if(symbol)prop(c,symbol,Math.min(354,x+25+step*2),Math.max(8,y-86-step*3),22,22);
+ }
+ const v=pose?.enriched||{},run=s?.living?.enrichment?.session;
+ if(run?.until>now&&v.point){
+  const x=Math.round(v.point.x*2),y=Math.round(v.point.y*2);
+  const key=run.kind==='feather'?'leaf':run.kind==='yarn'?'blanket':'ball';
+  if(key==='ball'&&!drawToyVariant(c,s,x-14,y-16,28,28))prop(c,'ball',x-14,y-16,28,28);
+  else if(key!=='ball')prop(c,key,x-14,y-16,28,28);
+ }
+ if(v.kind==='stroke'||v.kind==='tickle'||v.kind==='nose')
+  prop(c,'heart',Math.round(pose.x*2+30),Math.round(pose.feet*2-92-step*3),18,18);
+}
 export function drawDetailedMain(canvas,s,id,frame=0,reduced=false,pos=null,effect=null){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const pet=s||{species:id,portraitStage:'Дорослий'};if(!outdoor(c,pet))drawDetailedRoom(c,pet,frame,reduced);
  if(pet.vacation){prop(c,'blanket',105,188,170,62);drawDetailedPet(c,pet,id,192,244,126,null,frame,reduced);c.fillStyle='#f4ebd3';c.fillRect(112,17,160,27);c.fillStyle='#4e6555';c.font='bold 13px monospace';c.fillText('HOTEL · PAUSE',131,36);return;}
  const point=pos||{x:96,feet:128,scale:1},age=ageOf(pet),asleep=(pet.sleeping||pet.napping)&&!!pet.room?.bed&&!(pet.world?.walk?.expires>Date.now()),bed=layout(pet).bed,height=asleep?Math.min(142*point.scale*ageScale(age),bed[3]*.85):142*point.scale*ageScale(age),x=asleep?bed[0]+bed[2]/2:point.x*2,feet=asleep?bed[1]+bed[3]-12:point.feet*2;
  if(asleep&&pet.cozy?.wearing?.head)stamp(c,'clothing',pet.cozy.wearing.head,bed[0]+bed[2]+4,bed[1]+bed[3]-25,34,23);
  if(pet.cozy?.hide?.expires>Date.now()){const p=layout(pet),target=p[pet.cozy.hide.spot]||[8,234,52,40];c.save();c.beginPath();c.rect(target[0]-8,target[1]-22,target[2]+16,24);c.clip();drawDetailedPet(c,pet,id,target[0]+target[2]*.6,target[1]+65,78,null,frame,reduced);c.restore();return;}
- c.fillStyle='#635a4226';c.beginPath();c.ellipse(x,feet-2,height*.27,Math.max(3,height*.045),0,0,Math.PI*2);c.fill();if(point.ambient?.kind==='warm'){c.save();c.translate(x,feet-height*.30);c.rotate(-Math.PI/2);drawDetailedPet(c,pet,id,0,height*.4,height*.8,effect,frame,reduced);c.restore();}else if(point.ambient?.kind!=='turned')transformEnriched(c,pet,{...point,x,feet},()=>withRoomGesture(c,{...point,x,feet},()=>drawDetailedPet(c,pet,id,x,feet-(!point.quiet&&!reduced&&!pet.sleeping&&!pet.napping?Math.round(Math.sin(frame/650)*1):0),height,effect,point.quiet?1200:frame,reduced),Date.now(),reduced),Date.now(),reduced);{c.save();c.scale(2,2);drawLively(c,pet,point,Date.now(),reduced,(key,x,y,w,h)=>{if(key!=='ball'||!drawToyVariant(c,pet,x,y,w,h))prop(c,key,x,y,w,h);});c.restore();}{c.save();c.scale(2,2);drawRoomResponse(c,pet,point,Date.now(),reduced);drawEnrichment(c,pet,point,roomRects(pet,'detailed'),Date.now(),reduced);c.restore();}drawLighting(c,pet,384,288);if(pet.cozy?.nightMode&&isNight(pet))shade(c,0,0,384,288,'#253b541a');
+ c.fillStyle='#635a4226';c.beginPath();c.ellipse(x,feet-2,height*.27,Math.max(3,height*.045),0,0,Math.PI*2);c.fill();if(point.ambient?.kind==='warm'){c.save();c.translate(x,feet-height*.30);c.rotate(-Math.PI/2);drawDetailedPet(c,pet,id,0,height*.4,height*.8,effect,frame,reduced);c.restore();}else if(point.ambient?.kind!=='turned')transformEnriched(c,pet,{...point,x,feet},()=>withRoomGesture(c,{...point,x,feet},()=>drawDetailedPet(c,pet,id,x,feet-(!point.quiet&&!reduced&&!pet.sleeping&&!pet.napping?Math.round(Math.sin(frame/650)*1):0),height,effect,point.quiet?1200:frame,reduced),Date.now(),reduced),Date.now(),reduced);{c.save();c.scale(2,2);drawLively(c,pet,point,Date.now(),reduced,(key,x,y,w,h)=>{if(key!=='ball'||!drawToyVariant(c,pet,x,y,w,h))prop(c,key,x,y,w,h);});c.restore();}{c.save();c.scale(2,2);drawDetailedInteractionFeedback(c,pet,point,Date.now(),reduced);c.restore();}drawLighting(c,pet,384,288);if(pet.cozy?.nightMode&&isNight(pet))shade(c,0,0,384,288,'#253b541a');
 }
 export function drawDetailedPortrait(canvas,id,s,frame=0,preview=false,effect=null,reduced=false){const c=canvas.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);c.imageSmoothingEnabled=false;drawDetailedPet(c,s,id,canvas.width/2,canvas.height*.95,canvas.height*.9*ageScale(ageOf(s)),preview?null:effect,frame,reduced);}
 export function drawDetailedSandbox(canvas,s,pets,selected=0,frame=0,reduced=false,scenes=[],selfId=null){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');background(c,'playground');const scene=socialScene(scenes),roster=[{id:selfId,species:s.species,look:s},...pets];const page=Math.floor(selected/6),shown=pets.slice(page*6,page*6+6);for(const [i,p]of shown.entries()){if(scene?.actors.includes(p.id))continue;const x=56+i%3*135,y=170+Math.floor(i/3)*73;drawDetailedPet(c,{...p.look,species:p.species,portraitStage:p.look?.portraitStage||'Дорослий'},p.species,x,y,72*ageScale(p.look?.portraitStage),null,frame,reduced);if(page*6+i===selected)prop(c,'heart',x-7,y-86,15);}
