@@ -11,7 +11,7 @@ export function ensureManners(s){
 export function disciplineScore(s){const m=s.manners;if(!m?.skills)return clamp(s.discipline??70);return clamp(mannersRules.reduce((n,k)=>{const t=m.skills[k]||{};return n+.4*clamp(t.training??0)+.6*clamp(t.practice??0);},0)/mannersRules.length);}
 export function trainManners(s,now=Date.now()){
  const m=ensureManners(s),day=Math.floor(now/86400000);
- if(now-m.lastTraining<2*3600000)return {ok:false,text:'Ми вже сьогодні займалися. Давай закріпимо це у справжньому житті, а не тиснутимемо кнопки.'};
+ if(m.lastTraining&&now-m.lastTraining<2*3600000)return {ok:false,text:'Ми вже сьогодні займалися. Давай закріпимо це у справжньому житті, а не тиснутимемо кнопки.'};
  if(m.day!==day){m.day=day;m.sessions=0;}
  if((m.sessions||0)>=4)return {ok:false,text:'На сьогодні уроків вистачить. Я краще спробую застосувати їх на практиці.'};
  if(s.hunger<35||s.energy<30)return {ok:false,text:'Спочатку дай мені поїсти або відпочити. На голодний живіт уроки не лізуть.'};
@@ -21,7 +21,7 @@ export function trainManners(s,now=Date.now()){
  return {ok:true,text:['Вчуся чемно їсти. Але миска досі підозріла.','Добре, речі не гризти. Навіть дуже гарні.','Спробую відповідати без огризань. Не обіцяю, бляха.','Прибирати за собою? Домовились, спробую.','Чекати складно. Але я потренуюсь.','Навчуся не ображати друзів.'][i]};
 }
 export function practiceManners(s,key,now=Date.now()){
- const m=ensureManners(s);if(!m.skills[key]||now-(m.lastPractice[key]||0)<30*60000)return false;
+ const m=ensureManners(s);if(!m.skills[key]||(m.lastPractice[key]&&now-m.lastPractice[key]<30*60000))return false;
  m.skills[key].practice=clamp(m.skills[key].practice+4);m.lastPractice[key]=now;s.discipline=disciplineScore(s);return true;
 }
 const rude=['Ти взагалі слухаєш мене, людино? Бо я себе вже задовбав повторювати.','Я сказав НІ. І навіть не думай командувати моїм хвостом.','Сука, де моя миска? Я тут уже всю підлогу обнюхав.','Пиздець, знову правила. Може, я просто хочу побути динозавром?','Не чіпай мене зараз. Я злюся, і лапки теж.','Мені не подобається цей план. Придумай кращий.','Ти ж головний по їжі. Так от, працюй, людино!','А можна без повчань? Мені вже вуха згорнулися.'];
