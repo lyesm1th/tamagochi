@@ -3,6 +3,16 @@ export const routineFields=[['enabled','Автоматичний сон'],['bed'
 export const allMenu=[['feed','♨','Годувати'],['sleep','☾','Сон / підйом'],['play','✥','Грати'],['medicine','✚','Ліки · 10'],['clean','≈','Прибрати'],['pet','♡','Погладити'],['discipline','!','Виховати'],['initiative','♡','Запрошення'],['treat','✦','Смаколик · 5'],['status','▦','Мій друг'],['album','▤','Альбом поколінь'],['memory','⌘','Пам’ять і прив’язаність'],['adventure','◇','Маленька пригода'],['room','⌂','Кімнатка'],['vacation','⏸','Відпустка'],['routine','◷','Розпорядок дня'],['tree','⋈','Родинне дерево'],['family','♥','Пара й нове яйце'],['sound','♪','Звук'],['reminders','♧','Нагадування'],['graphics','▧','Графіка'],['rules','?','Правила'],['world','☀','Маленький світ'],['endLife','☠','Завершити життя']];
 export const menuHints={feed:'Нагодувати пета',sleep:'Вкласти або розбудити',clean:'Прибрати за петом',medicine:'Відновити здоров’я за монети',pet:'Погладити та почути реакцію',initiative:'Відповісти на прохання пета',discipline:'Навчити правилам поведінки',play:'Обрати мінігру',room:'Взаємодіяти з меблями',wardrobe:'Приміряти одяг',belongings:'Керувати речами',wallet:'Монети та подарунки',graphics:'Змінити стиль графіки',sound:'Увімкнути або вимкнути звук',reminders:'Налаштувати повідомлення',endLife:'Небезпечна дія, потрібне підтвердження'};
 export function menuHint(key){return menuHints[key]||'';}
+// Preserve menu hierarchy and identifiers while bringing urgent care to the first slot.
+export function prioritizeCareItems(items,s){
+ if(!s||s.dead||s.vacation)return items;
+ const priority=[['health','medicine'],['hunger','feed'],['energy','sleep'],['clean','clean'],['happy','pet']]
+  .filter(([stat])=>Number.isFinite(s[stat]))
+  .sort((a,b)=>s[a[0]]-s[b[0]])[0];
+ if(!priority||s[priority[0]]>=45)return items;
+ const index=items.findIndex(item=>item[0]===priority[1]);
+ return index>0?[items[index],...items.slice(0,index),...items.slice(index+1)]:items;
+}
 export function groupEntries(groups){
  return groups.map(([id,icon,name])=>['group:'+id,icon,name]);
 }
