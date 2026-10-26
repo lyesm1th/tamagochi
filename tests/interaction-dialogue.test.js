@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {interactionDialogue} from '../public/interaction-dialogue.js';
+import {fresh,act,life} from '../public/game.js';
+const now=1800000000000;
+const pet=(discipline,extra={})=>({id:'replies-pet',species:'dino',born:now-life.teen-3600000,discipline,trait:'stubborn',hunger:80,calm:80,happy:80,energy:80,health:80,...extra});
+const messages=(s,action,n=800)=>Array.from({length:n},(_,i)=>interactionDialogue(s,action,now+i*13000,'ball'));
+test('petting and room dialogue have many different messages',()=>{for(const action of ['pet','play','room']){const arr=messages(pet(50),action);assert.ok(new Set(arr).size>=5);assert.ok(arr.every(Boolean));}});
+test('hungry and upset pets do not respond with constant affection',()=>{const hungry=messages(pet(85,{hunger:9}),'pet');const upset=messages(pet(85,{calm:9,happy:15}),'pet');assert.ok(hungry.filter(s=>/їж|миску|голодн|вечер|перекус/.test(s)).length>hungry.length*.40);assert.ok(upset.filter(s=>/нерв|не чіпай|тиші|побути сам|обіймів поки/.test(s)).length>upset.length*.35);});
+test('low education gives more rude touch reactions than high education',()=>{const count=s=>messages(s,'pet').filter(x=>/подушка|не зараз|лапи прибери|хижак|бурчати|знову мене тискаєш|спитай/.test(x)).length;assert.ok(count(pet(12))>count(pet(92))*2);});
+test('room objects give unique context but can still be refused',()=>{const s=pet(90);const a=Array.from({length:500},(_,i)=>interactionDialogue(s,'room',now+i*13000,'bed'));assert.ok(a.some(x=>/ліжку|Ковдру/.test(x)));const rude=messages(pet(5),'room');assert.ok(rude.some(x=>/Не командуй|власні плани|навіщо/.test(x)));});
+test('asleep or vacationing pets are not interrupted',()=>{for(const extra of [{sleeping:true},{napping:true},{dead:true},{vacation:{started:now}}])assert.equal(interactionDialogue(pet(20,extra),'pet',now),null);});
+test('normal game actions still preserve action rewards and character',()=>{const s=fresh('dino',now-life.teen-3600000);s.updated=now;s.id='game-action-reply';s.trait='stubborn';s.routine.enabled=false;const p=act(s,'pet',now+1000);assert.ok(!p.error,p.error);assert.ok(p.text);assert.equal(p.state.trait,'stubborn');const play=act(p.state,'play',now+2500,{game:'bug'});assert.ok(!play.error,play.error);assert.equal(play.state.coins,s.coins+3);assert.ok(play.text);});
