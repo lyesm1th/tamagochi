@@ -6,7 +6,7 @@ import {performDaily} from '../public/daily-life.js';
 import {returnBehaviorSummary} from '../public/behavior-return.js';
 import {mischiefDecision} from '../public/mischief-behavior.js';
 import {rememberBehavior} from '../public/behavior-memory.js';
-import {nextGeneration,candidates} from '../public/family.js';
+import {traitOf} from '../public/traits.js';
 
 const H=3600000,now=Date.parse('2026-10-26T12:00:00Z');
 function pet(){const s=fresh('dino',now-life.baby-6*DAY);s.id='behavior-e2e-dino';s.updated=now;s.routine.enabled=false;s.sleeping=false;s.napping=false;s.lastAction=0;s.hunger=85;s.energy=90;s.health=100;s.happy=85;s.clean=90;return s;}
@@ -45,9 +45,9 @@ test('return recap never replays on same absence window after serialization',()=
 });
 test('offline catch-up preserves ownership, money, sprite identity, and rule score',()=>{
  const s=pet();ensureManners(s);s.daily.wishAt=now+4*DAY;s.daily.mischiefAt=now+4*DAY;s.daily.kindAt=now+4*DAY;s.daily.findAt=now+4*DAY;
- const original={id:s.id,coins:s.coins,species:s.species,trait:s.trait,discipline:disciplineScore(s)};
+ const original={id:s.id,coins:s.coins,species:s.species,trait:traitOf(s),discipline:disciplineScore(s)};
  const recovered=tick(roundTrip(s),now+2*H);
- assert.equal(recovered.id,original.id);assert.equal(recovered.coins,original.coins);assert.equal(recovered.species,original.species);assert.equal(recovered.trait,original.trait);assert.equal(disciplineScore(recovered),original.discipline);
+ assert.equal(recovered.id,original.id);assert.equal(recovered.coins,original.coins);assert.equal(recovered.species,original.species);assert.equal(traitOf(recovered),original.trait);assert.equal(disciplineScore(recovered),original.discipline);
 });
 test('old save without new behavioral fields is lazily compatible',()=>{
  const s=pet();delete s.manners;delete s.behaviorMemory;delete s.behaviorReturn;
