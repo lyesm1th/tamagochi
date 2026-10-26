@@ -5,7 +5,7 @@ const clamp=n=>Math.max(0,Math.min(100,n));
 const HOUR=3600000;
 export function boundaryState(s,now=Date.now()){
  const b=s.interactionBoundary??={refusedAt:0,until:0,kind:'',times:0};
- if(now>=b.until){b.until=0;b.kind='';}
+ if(now>=b.until){b.until=0;if(!b.refusedAt)b.kind='';}
  s.interactionBoundary=b;return b;
 }
 export function directInteraction(s,action,now=Date.now()){
