@@ -87,6 +87,31 @@ function furniture(c,s,id,rect,frame,reduced){if(!rect||rect.length!==4||!rect.e
  if(wear<65){shade(c,x+w*.54,y+h*.5,2,8,'#6f5847');shade(c,x+w*.56,y+h*.56,4,2,'#6f5847');}if(wear<30){prop(c,'debris',x+w*.4,y+h-4,w*.4,16);if(['bed','cushion','tent','rug','curtains'].includes(id))prop(c,'cotton',x+w*.12,y+h+4,18,12);}
  if(s.living?.motion?.item===id&&s.living.motion.until>Date.now()&&!reduced){const b=Math.floor(frame/180)%2;if(s.living.motion.kind==='gentle')sparkles(c,x+w*.5,y,frame,reduced);if(id==='fountain'||id==='bowl'){shade(c,x+w*.3,y-3-b*5,2,4,'#bad8d9');shade(c,x+w*.7,y-7+b*4,2,4,'#bad8d9');}if(id==='mirror')prop(c,'heart',x+w*.35,y+h*.35,14);}
 }
+// Detailed scenes retain journal data but never paint enlarged classic doodles.
+export function drawDetailedWallKeepsakes(c,s){
+ const j=s?.journal;if(!j)return;
+ const framed=(x,y,w,h,key)=>{
+  c.save();c.fillStyle='#57463a';c.fillRect(x-4,y-4,w+8,h+8);
+  c.fillStyle='#cfae7b';c.fillRect(x-2,y-2,w+4,h+4);
+  c.fillStyle='#eee0bf';c.fillRect(x+2,y+2,w-4,h-4);
+  const species=key&&detailedArt.teens?.cells?.[key]?key:s.species;
+  stamp(c,'teens',species,x+Math.round(w*.28),y+Math.round(h*.10),Math.round(w*.45),Math.round(h*.78));
+  c.restore();
+ };
+ const row=j.drawings?.find(d=>d.id===j.pinned);
+ if(row)framed(280,34,86,66,row.species);
+ if(j.familyArt)framed(294,116,56,44,j.familyArt.species);
+}
+// Render transient marks from the detailed prop atlas instead of scaled classic pixels.
+export function drawDetailedRoomTraces(c,s,now=Date.now()){
+ const traces=s?.living?.enrichment?.traces||[],rects=roomRects(s,'detailed');
+ for(const trace of traces){if(trace.until<=now)continue;
+  const a=rects[trace.item]||rects.rug||[70,105,40,20];
+  const x=Math.round((a[0]+a[2]/2)*2),y=Math.min(270,Math.round((a[1]+a[3])*2));
+  const key=trace.kind==='book'?'heart':trace.kind==='wet'?'water':trace.kind==='blanket'||trace.kind==='pillow'?'blanket':'leaf';
+  prop(c,key,x-11,y-19,22,19);
+ }
+}
 export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){background(c,'empty-room');drawMood(c,s,384,288,true);const pos=layout(s),owned=id=>s?.room?.[id]||s?.cozy?.owned?.[id];stamp(c,'furniture','window',27,17,103,98);if(s?.room?.box!==false){shade(c,65,255,48,26,'#9e805e');shade(c,67,257,44,22,'#c6ab83');shade(c,67,257,12,22,'#b0946f');shade(c,84,257,8,22,'#e0caa1');shade(c,64,251,50,7,'#d3bc95');shade(c,103,265,6,3,'#876f54');drawDesignAccent(c,s,'box',65,251,48,29);}
  for(const id of ['rug','curtains','shelf','mirror','bed','tent','plant','lamp','cushion','post','fountain','bowl','toybox'])if(owned(id))furniture(c,s,id,pos[id],frame,reduced);
  // Current mechanics remain visible: poop, messes, handmade items, souvenirs, stories.
@@ -101,7 +126,7 @@ export function drawDetailedRoom(c,s,frame=0,reduced=false,now=Date.now()){backg
  const run=s?.playroom?.session;if(run?.expires>now){const x=68+run.target*30;if(run.kind==='laser'){shade(c,x,245,4,4,['#d28687','#82b680','#d8c47a'][designIndex(s,'laser')]);shade(c,x-1,246,6,1,'#efb2a4');}else{if(run.kind==='music'){prop(c,'music',x,240,43);drawDesignAccent(c,s,'music',x,240,43,43);}else if(!drawToyVariant(c,s,x,240,19,19))prop(c,'ball',x,240,19);if(run.kind==='ball'&&s.playroom.crafted?.featherToy)treasure(c,'feather',x+10,229,15);}}
  else if((s?.room?.toy||s?.playroom?.toys?.ball)&&!(s?.living?.enrichment?.session?.until>now)&&!(s?.journal?.gesture?.kind==='ball'&&s.journal.gesture.until>now)){if(!drawToyVariant(c,s,264,253,23,23))prop(c,'ball',264,253,23);}
  if(s?.daily?.celebration)for(let i=0;i<7;i++)prop(c,'heart',38+i*48,12+i%2*8,10);
- c.save();c.scale(2,2);drawRoomJournal(c,s);drawEnrichment(c,s,null,roomRects(s,'detailed'),now,reduced);c.restore();const weather=weatherAt(now);if(weather.id!=='sun'){shade(c,42,33,70,27,'#c4d0c166');if(weather.id==='rain'||weather.id==='storm')for(let i=0;i<8;i++)shade(c,39+i*9,61+(reduced?i%3:Math.floor(frame/220+i)%3)*7,1,6,'#799eab');}
+ c.save();c.scale(2,2);drawRoomJournal(c,s,{drawPictures:false});c.restore();drawDetailedWallKeepsakes(c,s);drawDetailedRoomTraces(c,s,now);const weather=weatherAt(now);if(weather.id!=='sun'){shade(c,42,33,70,27,'#c4d0c166');if(weather.id==='rain'||weather.id==='storm')for(let i=0;i<8;i++)shade(c,39+i*9,61+(reduced?i%3:Math.floor(frame/220+i)%3)*7,1,6,'#799eab');}
  if(s?.cozy?.nightMode&&isNight(s,now)){shade(c,0,0,384,288,'#253b5455');const moon=['0011100','0110000','1100000','1100001','1110011','0111110','0011100'];for(let yy=0;yy<7;yy++)for(let xx=0;xx<7;xx++)if(moon[yy][xx]==='1')shade(c,103+xx*2,32+yy*2,2,2,'#eee3af');if(owned('lamp')){c.fillStyle='#f4dca822';c.beginPath();c.arc(pos.lamp[0]+pos.lamp[2]/2,pos.lamp[1]+22,43,0,Math.PI*2);c.fill();}if(!reduced)for(let i=0;i<5;i++)shade(c,38+i*68,220+Math.sin(frame/1100+i)*16,2,2,'#dfdc96');}
 }
 function outdoor(c,s){if(s.world?.walk?.expires>Date.now()){const key=s.world.walk.place==='forest'?'forest':s.world.walk.place==='pond'?'pond':null;if(key)stamp(c,'walks',key,0,0,384,288);else background(c,'playground');return true;}return false;}
