@@ -7,7 +7,7 @@ import {species} from '../public/game.js';
 const src=readFileSync(new URL('../public/detailed-renderer.js',import.meta.url),'utf8');
 test('detailed furniture uses original detailed atlas even for styled cactus and feeding bowl',()=>{
  for(const id of ['plant','bowl','shelf','window','mirror','bed','toybox','curtains','rug'])assert.equal(detailedFurniturePolicy(id).base,'detailed-atlas',id);
- assert.equal(detailedFurniturePolicy('plant').variant,'shaded-overlay');
+ assert.equal(detailedFurniturePolicy('plant').variant,'full-replacement');
  assert.equal(detailedFurniturePolicy('bowl').variant,'atlas-badge');
  assert.doesNotMatch(src,/else if\(!drawItemVariant\(c,s,id/);
  assert.match(src,/stamp\(c,'furniture',key,x,y,w,h/);
