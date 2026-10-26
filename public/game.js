@@ -74,8 +74,8 @@ export function tick(s,now=Date.now()) {
  if(cursor===s.born+life.baby&&st==='Малюк')s.sleeping=false;
  if(cursor>=s.born+seniorAt(s)+3*DAY){s.dead=true;s.health=0;s.diedAt??=cursor;}
  }
- const offlineCatchUp=now-s.updated>=30*MINUTE;s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
- if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);updateDaily(s,now,{offline:offlineCatchUp});updateCozy(s,now);updateLively(s,now);updateJournal(s,now);const moment=roomMoment(s,now);if(!offlineCatchUp&&moment?.auto&&now-moment.at>5000)markRoomTrace(s,moment.item,now);updateEnrichment(s,now);return s;
+ const elapsedSinceUpdate=now>s.updated,offlineCatchUp=now-s.updated>=30*MINUTE;s.updated=now;s.napping=stage(s,now)==='Малюк'&&now-s.born>=life.baby-5*MINUTE;
+ if(s.dead){s.sleeping=false;s.napping=false;}else{if(s.routine.enabled&&!['Яєчко','Малюк'].includes(stage(s,now)))s.sleeping=routineSleeping(s,now);maybeAdventure(s,now,!s.sleeping&&!s.napping&&stage(s,now)!=='Яєчко');}syncDream(s,now);if(elapsedSinceUpdate||!s.daily)updateDaily(s,now,{offline:offlineCatchUp});updateCozy(s,now);updateLively(s,now);updateJournal(s,now);const moment=roomMoment(s,now);if(!offlineCatchUp&&moment?.auto&&now-moment.at>5000)markRoomTrace(s,moment.item,now);updateEnrichment(s,now);return s;
 }
 export const phrases={
  feed:['О, сніданок. Ти мій улюблений персонал.','Дякую, сонечко. Тепер можна й обійняти.','Хрум. Нічого ти так куховариш, людино.','Нарешті їжа, бляха. Іди сюди, обійму.'],
