@@ -1,3 +1,4 @@
+import {answerPetInitiative} from './pet-initiative.js';
 import {experiencePreference} from './interaction-preferences.js';
 import {noteInteractionMemory} from './interaction-memory.js';
 import {directInteraction,reconcileInteraction} from './interaction-boundaries.js';
@@ -92,6 +93,7 @@ export function act(state,action,now=Date.now(),context={}) {
  const s=tick(structuredClone(state),now);
  if(!s)return {error:'Спочатку обери друга.'};
  if(s.dead)return {state:s,error:'Друг уже на веселці. Можна обрати нового.'};
+ if(action==='initiativeAnswer')return answerPetInitiative(s,context.eventId,context.choice,now);
  if(now-s.lastAction<650)return {state:s,error:'Не поспішай, у мене лапки.'};
  if(action==='endLife'){s.health=0;s.dead=true;s.diedAt=now;s.endReason='ended';s.sleeping=false;s.updated=now;s.lastAction=now;return {state:s,text:'Прощавай, людино. У нас були хороші обійми. ♡'};}
  if(s.vacation)return {state:s,error:'Друг у готелі. Обери відпустку, щоб повернути його додому.'};
