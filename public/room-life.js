@@ -4,7 +4,7 @@ import {rememberThing,thingMemory,withQuietBody,bedtimeInvitation} from './relat
 import {ambientSlot,noteCalm} from './calm-behavior.js';
 import {moodOf} from './room-enrichment.js';
 import {stableHash} from './traits.js';
-import {roomExperienceChoice} from './room-experience.js';
+import {roomExperienceChoice,roomHabitOf} from './room-experience.js';
 export function roomFurniture(s){const n=s?.playroom?.decor?.layout||0;return n===1?{bed:126,bowl:18,plant:12,tent:20,shelf:87}:n===2?{bed:70,bowl:16,plant:170,tent:132,shelf:7}:{bed:8,bowl:156,plant:170,tent:124,shelf:82};}
 // Coordinates in the 192×144 logical room; detailed assets are drawn at 2×.
 export function roomRects(s,style='classic'){const p=roomFurniture(s);if(style==='detailed')return {box:[32.5,126,24,14.5],bed:[p.bed,66,56,44],bowl:[p.bowl,108.5,26,14],plant:[p.bed===126?95:p.plant-6,50,25,44],rug:[56,116.5,79,18],shelf:[p.shelf,12,42,29],lamp:[p.bed===70?31:66,45.5,19,45.5],tent:[p.tent,45.5,40,48],cushion:[72.5,111.5,26,14],fountain:[p.bowl===18?42.5:133,104.5,25.5,22.5],mirror:[145.5,7.5,21,35],post:[4.5,96.5,23.5,36.5],curtains:[9,4.5,58.5,55],toybox:[149,126.5,35.5,15.5],toy:[132,126.5,14,14],music:[151,104,26,19],laser:[131,118,17,13],window:[13.5,8.5,51.5,49]};return {box:[4,121,25,17],bed:[p.bed,68,52,41],bowl:[p.bowl,114,26,14],plant:[p.plant-8,49,28,42],rug:[59,121,76,17],shelf:[p.shelf,17,42,24],lamp:[170,71,18,33],tent:[p.tent,43,40,50],cushion:[38,108,25,13],fountain:[p.bowl,106,26,20],mirror:[145,9,20,32],post:[5,97,24,35],curtains:[9,7,52,44],toybox:[149,126,35,16],toy:[133,124,12,12],music:[151,104,26,19],laser:[131,118,17,13],window:[14,8,43,43]};}
@@ -51,7 +51,27 @@ const speciesRoomLines={
 export function roomSpeciesLine(s,id){
  return speciesRoomLines[s?.species]?.[id]||null;
 }
-export function roomLine(s,id,event='use',now=Date.now()){const taste=roomTaste(s,id),n=stableHash((s.id||s.species)+id+Math.floor(now/2300));if(event==='wear'||event==='new'){const pool=taste==='love'?['О! Це тепер моє улюблене. Не забирай.','Підходить. Обійняти покупку можна?']:taste==='annoy'?['Хм. Дивна штука. Дай мені звикнути.','Спершу огляну. Я ще не погодився.']:['Придивлюся. Може, й подружимось.','Ого, обновка! Зараз перевірю.'];return pool[n%pool.length];}if(n%5===0){const memory=thingMemory(s,id,now);if(memory)return memory;}if(n%4===0)return chooseDialogue(s,now,'room');if(event==='use'&&n%3===0){const characterLine=roomCharacterLine(s,id,now);if(characterLine)return characterLine;}if(event==='use'&&n%7===1){const speciesLine=roomSpeciesLine(s,id);if(speciesLine)return speciesLine;}const pool=reactions[id]||['Лапки зайняті важливими справами.','Перевіряю. Все моє — все цікаве.'];return pool[n%pool.length];}
+// One extra line in an existing interaction can acknowledge a pet's learned ritual.
+const habitLines={
+ toy:'Цю іграшку я знаю напам’ять. Але все одно цікаво!',
+ laser:'Мій фірмовий двобій із цяткою. Реванш!',
+ music:'Мої лапки вже пам’ятають цей танець.',
+ toybox:'Тут я завжди знаходжу щось цікаве.',
+ rug:'Це моя особлива ділянка килимка.',
+ bed:'У мене тут перевірене місце для дрімоти.',
+ cushion:'Моя подушка знає всі мої секрети.',
+ tent:'Моя маленька фортеця затишку.',
+ mirror:'Дзеркало, ми з тобою вже давні знайомі.',
+ plant:'Знову перевіряю зеленого сусіда.',
+ shelf:'Моя улюблена поличка з історіями.',
+ fountain:'Час перевірити моє улюблене джерельце.'
+};
+export function roomHabitLine(s,id){
+ const habit=roomHabitOf(s);
+ if(!habit||habit.item!==id||roomTaste(s,id)==='annoy')return null;
+ return habitLines[id]||'Я тут уже стільки разів був. Це мій ритуал.';
+}
+export function roomLine(s,id,event='use',now=Date.now()){const taste=roomTaste(s,id),n=stableHash((s.id||s.species)+id+Math.floor(now/2300));if(event==='wear'||event==='new'){const pool=taste==='love'?['О! Це тепер моє улюблене. Не забирай.','Підходить. Обійняти покупку можна?']:taste==='annoy'?['Хм. Дивна штука. Дай мені звикнути.','Спершу огляну. Я ще не погодився.']:['Придивлюся. Може, й подружимось.','Ого, обновка! Зараз перевірю.'];return pool[n%pool.length];}if(n%5===0){const memory=thingMemory(s,id,now);if(memory)return memory;}if(n%4===0)return chooseDialogue(s,now,'room');if(event==='use'&&n%3===0){const characterLine=roomCharacterLine(s,id,now);if(characterLine)return characterLine;}if(event==='use'&&n%7===1){const speciesLine=roomSpeciesLine(s,id);if(speciesLine)return speciesLine;}if(event==='use'&&n%9===2){const habitLine=roomHabitLine(s,id);if(habitLine)return habitLine;}const pool=reactions[id]||['Лапки зайняті важливими справами.','Перевіряю. Все моє — все цікаве.'];return pool[n%pool.length];}
 export function noteRoomReaction(s,id,event='new',now=Date.now()){if(event==='repair')feel(s,'grateful','Улюблену річ полагоджено',now);else if(event==='new'||event==='wear')feel(s,roomTaste(s,id)==='annoy'?'annoyed':characterOf(s).curiosity>60?'curious':'surprised','Оглядаю обновку',now,.6,45000);if(['new','repair'].includes(event))rememberThing(s,id,event,now);noteCalm(s,now);s.living??={};s.living.motion=null;if(s.living.enrichment){s.living.enrichment.tidying=null;s.living.enrichment.home=null;s.living.enrichment.touch=null;s.living.enrichment.session=null;}if(s.journal)s.journal.gesture=null;s.living.reaction={item:id,kind:clothIds.has(id)?'outfit':itemMoves[id]||'inspect',event,at:now,until:now+9000,taste:roomTaste(s,id)};}
 export function directRoomAction(id){return id==='bed'?'jump':'use';}
 export function roomNeedPriority(s,items){if((s.energy??100)<65&&items.includes('bed'))return 'bed';if((s.hunger??100)<65&&items.includes('bowl'))return 'bowl';if((s.hunger??100)<65&&items.includes('fountain'))return 'fountain';return null;}
@@ -120,7 +140,8 @@ export function roomMoment(s,now=Date.now()){
  const loved=items.filter(id=>roomTaste(s,id)==='love'),likedOrNeutral=items.filter(id=>roomTaste(s,id)!=='annoy'),normalPool=likedOrNeutral.length?likedOrNeutral:items,pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:normalPool,moodChoice=loved.length||priority?null:roomMoodPreference(s,items,slot.block,now),speciesChoice=loved.length||moodChoice?null:roomSpeciesPreference(s,items,slot.block),learnedChoice=loved.length||priority||moodChoice||speciesChoice?null:roomExperienceChoice(s,items.filter(id=>roomTaste(s,id)!=='annoy'),slot.block),first=priority||moodChoice?.item||speciesChoice||learnedChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
  const followUp=priority||(moodChoice&&moodChoice.mood!=='play')?null:roomSequenceStep(s,items,first,slot,now);
  const id=followUp?.item||first;
- return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{})};
+ const habit=roomHabitOf(s,items.filter(item=>roomTaste(s,item)!=='annoy'));
+ return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{}),...(habit?.item===id?{habit:true}:{})};
 }
 // A short, purely visual finale during the last seconds of an existing autonomous room slot.
 // The result is deterministic and never writes mood, rewards or extra dialogue to the save.
@@ -166,6 +187,7 @@ export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=
   for(let i=0;i<3;i++){const sx=x-17+i*16,sy=y-43-(reduced?0:(i+beat)%3*2);r(sx,sy,2,6,'#eee5a9');r(sx-2,sy+2,6,2,'#eee5a9');}
  }
  if(finale==='miss'){r(x+15,y-43,4,2,'#af81a4');r(x+17,y-41,3,4,'#af81a4');r(x+15,y-36,2,2,'#af81a4');}
+ if(m.habit&&finale&&finale!=='miss'&&!reduced){r(x-21,y-42,2,4,'#eee5a9');r(x-22,y-41,4,2,'#eee5a9');}
 }
 export function speechFilter(){const recent=new Map();return (text,now=Date.now(),important=false)=>{if(!text)return false;const last=recent.get(text);if(!important&&last!==undefined&&now-last<180000)return false;recent.set(text,now);for(const [t,at]of recent)if(now-at>300000)recent.delete(t);return true;};}
 

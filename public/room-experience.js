@@ -25,11 +25,28 @@ export function recordRoomExperience(s,m,outcome,now=Date.now()){
  return true;
 }
 
+// Habits emerge from repeated positive experiences; no separate save schema is needed.
+// A failed activity can lower the score enough to dissolve an established habit.
+export function roomHabitOf(s,available=null){
+ const memory=s?.living?.roomExperience?.items;
+ if(!memory)return null;
+ const allowed=Array.isArray(available)?new Set(available):null;
+ const candidates=Object.entries(memory).filter(([id,value])=>
+  (!allowed||allowed.has(id))&&Number.isFinite(value?.score)&&value.score>=3&&
+  Number.isFinite(value?.count)&&value.count>=4);
+ if(!candidates.length)return null;
+ candidates.sort((a,b)=>b[1].score-a[1].score||b[1].count-a[1].count||
+  (b[1].lastAt||0)-(a[1].lastAt||0)||a[0].localeCompare(b[0]));
+ const [item,history]=candidates[0];
+ return {item,score:history.score,count:history.count};
+}
+
 // Memory influences only an occasional neutral room choice, never explicit likes/dislikes.
 export function roomExperienceChoice(s,available,block=0){
  if(!s||!Array.isArray(available)||!Number.isInteger(block)||block%7!==2)return null;
  const items=s.living?.roomExperience?.items;
  if(!items||!available.length)return null;
+ const habit=roomHabitOf(s,available);if(habit)return habit.item;
  const learned=available.filter(id=>Number.isFinite(items[id]?.score)&&items[id].score>=2);
  if(!learned.length)return null;
  const peak=Math.max(...learned.map(id=>items[id].score));
