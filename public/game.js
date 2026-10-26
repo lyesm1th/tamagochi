@@ -1,3 +1,4 @@
+import {directInteraction,reconcileInteraction} from './interaction-boundaries.js';
 import {interactionDialogue} from './interaction-dialogue.js';
 import {neglectSkills} from './behavior-development.js';
 import {patienceTraining} from './patience-training.js';
@@ -97,6 +98,7 @@ export function act(state,action,now=Date.now(),context={}) {
  if(s.napping)return {state:s,error:'Малюк дрімає перед дорослішанням. Не буди його.'};
  if(s.sleeping&&action!=='sleep')return {state:s,error:'Я сплю. Дай ще п’ять хвилиночок, буркотун.'};
  const refusal=emotionalRefusal(s,action,now);if(refusal)return {state:s,error:refusal};
+ const boundary=directInteraction(s,action,now);if(boundary){s.lastAction=now;return {state:s,text:boundary.text,refused:true};}
  let text='';
  switch(action){
  case 'feed':if(s.hunger>95)return {state:s,error:'Я вже ситий. Обійняти ще можу, їсти — ні.'};s.hunger=clamp(s.hunger+24);practiceManners(s,'food',now);s.clean=clamp(s.clean-4);s.treatStreak=0;s.careScore=clamp(s.careScore+1);text=stage(s,now)==='Малюк'?babyMeal(s.species):line('feed',s.species);break;
@@ -109,6 +111,7 @@ export function act(state,action,now=Date.now(),context={}) {
  case 'play':if(s.energy<12)return {state:s,error:'Я втомився, сонечко. Дай поспати.'};s.energy-=8;s.hunger=clamp(s.hunger-4);s.happy=clamp(s.happy+15+(s.room.toy?3:0));s.coins+=3;s.xp+=5;text=context.game==='food'?'Наловили смаколиків! +3 монетки. Ти чудова обслуга.':context.game==='direction'?'Усі напрямки вгадали! +3 монетки, розумники.':context.game==='jump'?'Перестрибнули всі перешкоди! +3 монети й обійми.':(interactionDialogue(s,'play',now,context.game||'game')||line('play',s.species));break;
  default:return {state:s,error:'Не зрозумів, чого ти хочеш. Обіймів?'};
  }
+ const reunion=['feed','pet','play'].includes(action)?reconcileInteraction(s,now):null;if(reunion)text+=' '+reunion;
  syncDream(s,now);if(action==='sleep'&&!s.sleeping){const story=wakeStory(s);if(story)text+=' '+story;}
  noteCozy(s,action,now);noteDaily(s,action,now);noteCare(s,action,now,context.food||foodsFor(s,stage(s,now))[0]);if(action==='feed'&&context.food===s.favoriteFood)text+=' Це мій улюблений смак!';recordHabit(s,action,now);noteEmotion(s,action,now,context);const emotionalText=emotionLine(s,now);if(emotionalText)text+=' '+emotionalText;noteCalm(s,now,true);s.xp+=1;s.lastAction=now;return {state:s,text};
 }
