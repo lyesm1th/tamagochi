@@ -1,3 +1,4 @@
+import {noteInteractionMemory,emotionalAffinity} from './interaction-memory.js';
 import {disciplineScore} from './manners.js';
 import {traitOf,stableHash} from './traits.js';
 
@@ -16,10 +17,10 @@ export function directInteraction(s,action,now=Date.now()){
  if(!hungry&&!upset&&!low)return null;
  if(now-b.refusedAt<3*60000)return null;
  const seed=(s.id||s.species)+':boundary:'+action+':'+Math.floor(now/90000);
- const chance=hungry?.55:upset?.5:low&&stubborn?.35:.22;
+ const chance=Math.max(.04,Math.min(.75,(hungry?.55:upset?.5:low&&stubborn?.35:.22)-emotionalAffinity(s)));
  if(stableHash(seed)%1000/1000>=chance)return null;
  b.refusedAt=now;b.until=now+45000;b.kind=hungry?'hungry':upset?'upset':'stubborn';b.times=Math.min(30,(b.times||0)+1);
- s.bodyLanguage={kind:hungry?'disgust':upset?'turned':'look',until:now+6000};
+ s.bodyLanguage={kind:hungry?'disgust':upset?'turned':'look',until:now+6000};noteInteractionMemory(s,'boundary',now);
  const text=hungry?'Зачекай із цим. Мені зараз важливіше поїсти.':upset?'Я сьогодні не в настрої. Можемо просто посидіти поруч?':'Не хочу зараз. Давай я сам вирішу, коли ми пограємось.';
  return {text,refused:true};
 }
@@ -30,6 +31,6 @@ export function reconcileInteraction(s,now=Date.now()){
  if((s.hunger??100)<40||(s.happy??100)<35)return null;
  if(now-b.refusedAt<45000)return null;
  const response=b.kind==='hungry'?'Дякую за їжу. Тепер уже можна й погратися.':b.kind==='upset'?'Я заспокоївся. Посидиш зі мною?':'Я трохи набурчав. Давай почнемо спочатку.';
- b.refusedAt=0;b.until=0;b.kind='';s.bodyLanguage={kind:'approach',until:now+6000};
+ b.refusedAt=0;b.until=0;b.kind='';noteInteractionMemory(s,'reunion',now);s.bodyLanguage={kind:'approach',until:now+6000};
  return response;
 }
