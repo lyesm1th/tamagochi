@@ -104,7 +104,7 @@ export class PetRoom{
  if(!species.some(p=>p.id===body.species))return json({error:'Невідомий вид'},400);
  if(s?.dead)await this.archive(s);s=fresh(body.species);prefs.pendingAt=0;if(typeof body.name==='string'&&body.name.trim())s.name=body.name.trim().slice(0,24);result={state:s,text:'У яйці хтось ворушиться. Годинник налаштовано, чекаємо 3 хвилини.'};
  }else if(path==='/api/state'){s=tick(s);if(s&&body.roomReturn){if(s.cozy)s.cozy.hide=null;if(s.lively)s.lively.secret=null;}const greeting=s&&!s.dead?visit(s,Date.now(),body.timezone):null;if(s&&!s.dead)petInitiative(s,Date.now());const story=s&&!s.dead?wakeStory(s):null;result={state:s||null,greeting:story||greeting};}
- else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action,Date.now(),{game:body.game,food:body.food,choice:body.choice,kind:body.kind});s=result.state||s;}
+ else if(path==='/api/action'){if(!s)return json({error:'Спочатку обери друга'},400);result=act(s,body.action,Date.now(),{game:body.game,food:body.food,choice:body.choice,kind:body.kind,eventId:body.eventId});s=result.state||s;}
  else return json({error:'Not found'},404);
  if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
  if(prefs.userId){await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);}
