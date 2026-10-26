@@ -14,3 +14,8 @@ test('primary screens and key actions have different recognizable pictograms',()
  const rendered=ids.map(x=>iconGlyph(x).join(''));
  assert.equal(new Set(rendered).size,ids.length,'core menu items require distinct icons');
 });
+
+test('every navigable menu entry has its own 7x7 silhouette',()=>{
+ const ids=[...groupEntries(groups),...groups.flatMap(group=>groupItems(group[0],groups,journalPages,worldPages))].map(entry=>entry[0]);
+ const used=new Map();for(const id of ids){const pixels=iconGlyph(id).join('/');assert.ok(!used.has(pixels),id+' shares the same icon with '+used.get(pixels));used.set(pixels,id);}
+});
