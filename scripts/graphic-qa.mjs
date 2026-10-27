@@ -16,7 +16,7 @@ await fs.writeFile(path.join(out,'report.json'),JSON.stringify({status:'running'
 checkVisualBaseline(); // Includes the approved teen atlas; never rewrite it here.
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTABLE_PATH||(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
 const page=await browser.newPage({viewport:{width:430,height:932},deviceScaleFactor:1,reducedMotion:'no-preference'});
-const errors=[],checks=[],outfitChecks=[],headwearChecks=[];let passed=false;
+const errors=[],checks=[],outfitChecks=[],headwearChecks=[],motionSequences=[];let passed=false;
 page.on('pageerror',e=>errors.push(e.message));
 try{
  // Test-only transport serves the actual private page without production auth.
@@ -93,6 +93,23 @@ try{
  }
  await select('head','');await select('item','');
  console.log(`Captured ${headwearChecks.length} headwear scenes.`);
+ // Preserve intermediate browser frames for human review of approach and
+ // interaction timing. These are examples, not a claim of physical realism.
+ const motionTimes=[0,400,800,1200,2000,3000,4500,6500,8000];
+ for(const id of ['dino','bunny','duck']){
+  await select('species',id);await select('age','Підліток');await select('item','bed');
+  const tiles=[],hashes=[];
+  for(const [i,time] of motionTimes.entries()){
+   await seek(time);const frame=await pixels();
+   await fs.writeFile(path.join(out,`motion-bed-${id}-${String(i).padStart(2,'0')}.png`),frame);
+   hashes.push(createHash('sha256').update(frame).digest('hex'));
+   tiles.push({input:await sharp(frame).resize(192,144,{kernel:'nearest'}).png().toBuffer(),left:(i%3)*192,top:Math.floor(i/3)*144});
+  }
+  assert.ok(new Set(hashes).size>1,`${id} bed sequence should show movement`);
+  await sharp({create:{width:576,height:432,channels:4,background:'#eee8da'}}).composite(tiles).png().toFile(path.join(out,`motion-bed-${id}-sheet.png`));
+  motionSequences.push({species:id,age:'Підліток',item:'bed',timesMs:motionTimes});
+ }
+ await select('item','');
  await select('species','dino');await select('age','Підліток');
  await seek(2000);const a=await pixels();await seek(2000);assert.ok(Buffer.from(await pixels()).equals(Buffer.from(a)),'same frozen frame must reproduce exactly');
  await page.locator('#capture').click();await page.locator('#compare').click();assert.match(await page.locator('#difference').textContent(),/Змінено 0 /);
@@ -117,7 +134,7 @@ try{
   await sharp({create:{width:7*384,height:6*288,channels:4,background:'#eee8da'}}).composite(tiles).png().toFile(path.join(out,`species-stages-${group+1}.png`));
  }
  assert.deepEqual(errors,[]);
- await fs.writeFile(path.join(out,'report.json'),JSON.stringify({status:'passed',runStarted,browser:browser.version(),checks,outfitChecks,headwearChecks,headwearSheetLayout:{rows:headwearAges,columns:['panama idle','panama bed','crown idle','crown bed']},furnitureCases:species.length*16,errors,baseline:'Approved source-file hashes; captures are review evidence, not newly approved goldens.'},null,2));
+ await fs.writeFile(path.join(out,'report.json'),JSON.stringify({status:'passed',runStarted,browser:browser.version(),checks,outfitChecks,headwearChecks,motionSequences,headwearSheetLayout:{rows:headwearAges,columns:['panama idle','panama bed','crown idle','crown bed']},furnitureCases:species.length*16,errors,baseline:'Approved source-file hashes; captures are review evidence, not newly approved goldens.'},null,2));
  passed=true;
  console.log(`Graphic QA: ${checks.length} species/age frames, ${species.length*16} furniture cases, deterministic frame comparison passed.`);
 }finally{if(!passed)await fs.writeFile(path.join(out,'report.json'),JSON.stringify({status:'failed',runStarted,checks:checks.length,outfitChecks:outfitChecks.length,errors}));await browser.close();}
