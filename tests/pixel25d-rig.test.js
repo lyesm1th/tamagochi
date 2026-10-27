@@ -10,7 +10,7 @@ test('all real pet anatomies provide finite neck and eye coordinates',()=>{
   }
  }
 });
-test('experimental head controls remain inside owner-only lab',()=>{
+test('experimental head controls remain inside owner-only lab',async()=>{
  const {readFileSync}=await import('node:fs');
  const html=readFileSync(new URL('../public/lab.html',import.meta.url),'utf8');
  const source=readFileSync(new URL('../public/lab-pixel25d.js',import.meta.url),'utf8');
