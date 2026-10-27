@@ -181,7 +181,7 @@ export function roomMoment(s,now=Date.now()){
  const followUp=priority||(moodChoice&&!['play','explore'].includes(moodChoice.mood))?null:roomSequenceStep(s,items,first,slot,now);
  const id=followUp?.item||first;
  const habit=roomHabitOf(s,items.filter(item=>roomTaste(s,item)!=='annoy'));
- return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{}),...(habit?.item===id?{habit:true}:{}),...(behaviorChoice?.item===id?{behaviorStyle:behaviorChoice.style}:{}),...(moodChoice?.item===id?{emotionStyle:moodChoice.mood}:{})};
+ return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{}),...(habit?.item===id?{habit:true}:{}),...(behaviorChoice?.item===first?{behaviorStyle:behaviorChoice.style}:{}),...(moodChoice?.item===first?{emotionStyle:moodChoice.mood}:{})};
 }
 // A short, purely visual finale during the last seconds of an existing autonomous room slot.
 // The result is deterministic and never writes mood, rewards or extra dialogue to the save.
