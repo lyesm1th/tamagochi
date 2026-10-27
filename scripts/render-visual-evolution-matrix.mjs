@@ -21,9 +21,11 @@ export const visualVariants=[
  {label:'Панама',wearing:{head:'panama'}},
  {label:'Корона й окуляри',wearing:{head:'crown',eyes:'glasses'}}
 ];
-function detailedActor(id,sheet,wearing,age){
+export function detailedMatrixActor(id,wearing,age){
  const canvas=createCanvas(160,160),pet={species:id,portraitStage:age,cozy:{wearing},happy:85,energy:85,health:85};
- drawDetailedPortrait(canvas,id,pet,0,true,null,true);
+ // A wider camera leaves room for headwear while keeping the runtime painter.
+ const ctx=canvas.getContext('2d');ctx.save();ctx.translate(32,32);ctx.scale(.6,.6);
+ drawDetailedPortrait(canvas,id,pet,0,true,null,true);ctx.restore();
  return canvas;
 }
 function classicActor(id,age,wearing){
@@ -55,7 +57,7 @@ export async function renderVisualMatrix(){
    c.fillStyle='#344e40';c.font='bold 13px sans-serif';c.fillText(name||id,8,y+28);
    c.font='11px monospace';c.fillText(id,8,y+44);
    for(const [j,{wearing}] of visualVariants.entries()){
-    const sprite=style==='classic'?classicActor(id,age,wearing):await detailedActor(id,sheet,wearing,age);
+    const sprite=style==='classic'?classicActor(id,age,wearing):detailedMatrixActor(id,wearing,age);
     const scale=Math.min(155/sprite.width,153/sprite.height,style==='classic'?1.35:1);
     const sw=sprite.width*scale,sh=sprite.height*scale,x=labelWidth+j*cellW+(cellW-sw)/2;
     c.imageSmoothingEnabled=false;c.drawImage(sprite,Math.round(x),Math.round(y+8+(160-sh)/2),Math.round(sw),Math.round(sh));
