@@ -2,6 +2,7 @@ import {drawPetArt} from './pixel-art.js';
 import {drawYoungPet} from './young-pets.js';
 import {emotionalAppearance,withEmotionalPose} from './pet-expression.js';
 import {faceAnchors} from './emotion-art.js';
+import {applySeniorPatina} from './age-appearance.js';
 
 // Keep classic garments within the actual source silhouette at every age.
 // Headwear and glasses are intentionally separate silhouette accessories.
@@ -18,7 +19,7 @@ export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  const expression=emotionalAppearance(s,Date.now(),reduced),faceFrame=expression.blink>.3?0:frame;
  const original={...s,cozy:{...s?.cozy,wearing:{}},suppressEmotion:true},young=['Малюк','Дитина','Підліток'].includes(age);
  if(young)drawYoungPet(c,id,age,color,faceFrame,s?.sleeping||s?.napping,reduced,original);else drawPetArt(c,id,faceFrame,original,reduced);
- const earlyWear=s?.cozy?.wearing||{},earlyEmotion=expression;if(!Object.values(earlyWear).some(Boolean)&&earlyEmotion.tear<0){withEmotionalPose(ctx,earlyEmotion,64,84,()=>ctx.drawImage(cv,0,0),reduced);return;}
+ const earlyWear=s?.cozy?.wearing||{},earlyEmotion=expression;if(!Object.values(earlyWear).some(Boolean)&&earlyEmotion.tear<0){applySeniorPatina(cv,age);withEmotionalPose(ctx,earlyEmotion,64,84,()=>ctx.drawImage(cv,0,0),reduced);return;}
  const source=c.getImageData(0,0,128,100),wear=earlyWear,sy=age==='Малюк'?.36:age==='Дитина'?.60:age==='Підліток'?.84:1,sx=age==='Малюк'?.42:age==='Дитина'?.65:age==='Підліток'?.75:1,oy=age==='Малюк'?52:age==='Дитина'?32:age==='Підліток'?12:0;
  const p=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(64+(x-64)*sx),Math.round(oy+y*sy),Math.max(1,Math.round(w*sx)),Math.max(1,Math.round(h*sy)));};
  if(cloth[wear.body]){
@@ -53,5 +54,6 @@ export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  const a=faceAnchors(id,age),e=expression;
  if(!asleep&&wear.eyes==='glasses'){const [left,right]=a.eyes;for(const [x,y]of [left,right]){c.strokeStyle='#3e5a50';c.lineWidth=1;c.strokeRect(Math.round(x-5*sx),Math.round(y-4*sy),Math.max(4,Math.round(11*sx)),Math.max(3,Math.round(9*sy)));}c.fillStyle='#3e5a50';c.fillRect(Math.round(left[0]+5*sx),Math.round(left[1]),Math.max(1,Math.round(right[0]-left[0]-10*sx)),1);}
  if(e.tear>=0){c.globalAlpha=Math.min(1,(1-e.tear)*4)*e.strength;for(const [x,y]of a.eyes){c.fillStyle='#70b5c9';c.fillRect(Math.round(x),Math.round(y+4*sy+e.tear*7*sy),1,Math.max(1,Math.round(3*sy)));}c.globalAlpha=1;}
+ applySeniorPatina(cv,age);
  withEmotionalPose(ctx,e,64,oy+84*sy,()=>ctx.drawImage(cv,0,0),reduced);
 }

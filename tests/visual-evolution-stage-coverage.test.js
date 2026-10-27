@@ -31,7 +31,7 @@ test('the visual gallery covers every pet, growth stage and outfit without subst
 });
 test('every age transition selects the intended stage, even across old-save boundaries',()=>{
  const now=Date.parse('2026-10-27T12:00:00Z');
- const cases=[[life.egg+1,'Малюк'],[life.baby+1,'Дитина'],[life.child+1,'Підліток'],[life.teen+1,'Дорослий']];
+ const cases=[[life.egg+1,'Малюк'],[life.baby+1,'Дитина'],[life.child+1,'Підліток'],[life.teen+1,'Дорослий'],[life.teen+25*86400000,'Старенький']];
  for(const {id} of species)for(const [elapsed,label] of cases){
   assert.equal(stage({species:id,born:now-elapsed,discipline:70},now),label,id);
  }
