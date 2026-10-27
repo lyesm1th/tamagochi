@@ -133,15 +133,23 @@ export function roomMoodPreference(s,items,block=0,now=Date.now()){
  let state,options;
  if((s.energy??100)<65){
   state='tired';options=['bed','cushion','tent','rug'];
- }else if(mood==='sulky'||(s.happy??100)<55||['sad','hurt','anxious'].includes(emotion)){
+ }else if(['angry','annoyed','hurt','anxious'].includes(emotion)){
+  // Strong feelings seek a quiet reset. A stubborn pet may want its own tent.
+  state='comfort';options=character.stubbornness>=65?['tent','rug','cushion','bed']:['cushion','tent','bed','rug'];
+ }else if(mood==='sulky'||(s.happy??100)<55||emotion==='sad'){
   state='comfort';options=character.affection>=character.independence?['cushion','bed','tent','rug']:['tent','cushion','rug','bed'];
- }else if(mood==='springy'||['amused','curious'].includes(emotion)){
+ }else if(emotion==='bored'){
+  // Variety is a response to boredom, not another automatic reward.
+  state='explore';options=character.curiosity>=character.playfulness?['shelf','plant','mirror','toybox']:['toybox','mirror','plant','shelf'];
+ }else if(emotion==='curious'){
+  state='explore';options=character.curiosity>=character.playfulness?['shelf','plant','toybox','mirror']:['toybox','mirror','shelf','plant'];
+ }else if(mood==='springy'||emotion==='amused'){
   state='play';options=character.playfulness>=character.curiosity?['toy','laser','music','rug','toybox']:['toybox','laser','toy','music','rug'];
  }else return null;
  const available=options.filter(id=>items.includes(id)&&roomTaste(s,id)!=='annoy');
  if(!available.length)return null;
  const item=available[stableHash((s.id||s.species)+':room-mood:'+state+':'+block)%available.length];
- return {item,kind:state==='play'?itemMoves[item]:item==='bed'?'doze':'nest',mood:state};
+ return {item,kind:state==='play'||state==='explore'?itemMoves[item]:item==='bed'?'doze':'nest',mood:state};
 }
 // Living Pets 4.0: learned manners and previous repaired/defiant moments steer
 // the style of autonomous play without creating new timers or persisted fields.
