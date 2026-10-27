@@ -59,7 +59,7 @@ test('behavior signals act only in existing room slots, honoring loved items, mo
  assert.equal(roomMoment(s,now)?.item,'toy');
  s.cozy.preferences.object={};
  s.energy=50;
- assert.equal(roomMoment(s,now)?.item==='bed',false);
+ assert.notEqual(roomMoment(s,now)?.behaviorStyle,'careful');
  s.energy=95;
  s.living={motion:{kind:'use',item:'toy',at:now,until:now+12000}};
  assert.equal(roomMoment(s,now)?.manual,true);
@@ -81,7 +81,7 @@ test('old saves can tick without a behavior memory, including all 14 species',()
   const s=fresh(id,at-life.teen-60000);s.updated=at;s.routine.enabled=false;
   delete s.behaviorMemory;delete s.living.roomExperience;
   const old=structuredClone(s);
-  assert.equal(roomBehaviorChoice(s,all,3),null===roomBehaviorChoice(s,all,3)?null:roomBehaviorChoice(s,all,3));
+  assert.equal(roomBehaviorChoice(s,all,3),null);
   tick(s,at);
   assert.equal(s.species,old.species);
  }
