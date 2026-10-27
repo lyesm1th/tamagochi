@@ -14,12 +14,34 @@ export function clipWardrobeToSprite(canvas,source){
  c.putImageData(d,0,0);
 }
 const cloth={pajamas:['#574563','#9b84b4','#d3beda'],sweater:['#653c4b','#ad6c81','#d89ca7'],raincoat:['#795625','#dbaf4f','#f2d17e']};
+// Readable baby and child silhouettes, rendered from the same original pixel art.
+// Preserve the original adolescent dinosaur and every older age unchanged.
+export function fitYoungClassicActor(canvas,age){
+ const factor=age==='Малюк'?1.40:age==='Дитина'?1.18:1;
+ if(factor===1)return false;
+ const ctx=canvas.getContext('2d'),{width:w,height:h}=canvas;
+ const data=ctx.getImageData(0,0,w,h).data;
+ let left=w,right=-1,top=h,bottom=-1;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(data[(y*w+x)*4+3]>16){
+  left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+ }
+ if(right<left)return false;
+ const sw=right-left+1,sh=bottom-top+1;
+ const scale=Math.min(factor,(w-6)/sw,(h-6)/sh);
+ if(scale<=1)return false;
+ const copy=document.createElement('canvas');copy.width=w;copy.height=h;
+ copy.getContext('2d').putImageData(ctx.getImageData(0,0,w,h),0,0);
+ ctx.clearRect(0,0,w,h);ctx.imageSmoothingEnabled=false;
+ const dw=Math.round(sw*scale),dh=Math.round(sh*scale);
+ ctx.drawImage(copy,left,top,sw,sh,Math.round(w/2-dw/2),Math.round(Math.min(h-4-dh,bottom+1-dh)),dw,dh);
+ return true;
+}
 export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  const cv=document.createElement('canvas');cv.width=128;cv.height=100;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
  const expression=emotionalAppearance(s,Date.now(),reduced),faceFrame=expression.blink>.3?0:frame;
  const original={...s,cozy:{...s?.cozy,wearing:{}},suppressEmotion:true},young=['Малюк','Дитина','Підліток'].includes(age);
  if(young)drawYoungPet(c,id,age,color,faceFrame,s?.sleeping||s?.napping,reduced,original);else drawPetArt(c,id,faceFrame,original,reduced);
- const earlyWear=s?.cozy?.wearing||{},earlyEmotion=expression;if(!Object.values(earlyWear).some(Boolean)&&earlyEmotion.tear<0){applySeniorPatina(cv,age);withEmotionalPose(ctx,earlyEmotion,64,84,()=>ctx.drawImage(cv,0,0),reduced);return;}
+ const earlyWear=s?.cozy?.wearing||{},earlyEmotion=expression;if(!Object.values(earlyWear).some(Boolean)&&earlyEmotion.tear<0){applySeniorPatina(cv,age);fitYoungClassicActor(cv,age);withEmotionalPose(ctx,earlyEmotion,64,84,()=>ctx.drawImage(cv,0,0),reduced);return;}
  const source=c.getImageData(0,0,128,100),wear=earlyWear,sy=age==='Малюк'?.36:age==='Дитина'?.60:age==='Підліток'?.84:1,sx=age==='Малюк'?.42:age==='Дитина'?.65:age==='Підліток'?.75:1,oy=age==='Малюк'?52:age==='Дитина'?32:age==='Підліток'?12:0;
  const p=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(64+(x-64)*sx),Math.round(oy+y*sy),Math.max(1,Math.round(w*sx)),Math.max(1,Math.round(h*sy)));};
  if(cloth[wear.body]){
@@ -55,5 +77,6 @@ export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  if(!asleep&&wear.eyes==='glasses'){const [left,right]=a.eyes;for(const [x,y]of [left,right]){c.strokeStyle='#3e5a50';c.lineWidth=1;c.strokeRect(Math.round(x-5*sx),Math.round(y-4*sy),Math.max(4,Math.round(11*sx)),Math.max(3,Math.round(9*sy)));}c.fillStyle='#3e5a50';c.fillRect(Math.round(left[0]+5*sx),Math.round(left[1]),Math.max(1,Math.round(right[0]-left[0]-10*sx)),1);}
  if(e.tear>=0){c.globalAlpha=Math.min(1,(1-e.tear)*4)*e.strength;for(const [x,y]of a.eyes){c.fillStyle='#70b5c9';c.fillRect(Math.round(x),Math.round(y+4*sy+e.tear*7*sy),1,Math.max(1,Math.round(3*sy)));}c.globalAlpha=1;}
  applySeniorPatina(cv,age);
+ fitYoungClassicActor(cv,age);
  withEmotionalPose(ctx,e,64,oy+84*sy,()=>ctx.drawImage(cv,0,0),reduced);
 }
