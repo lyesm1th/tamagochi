@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {species,fresh,tick,life} from '../public/game.js';
-import {roomBehaviorChoice,roomMoment,roomMomentPose,drawRoomResponse,roomNeedPriority} from '../public/room-life.js';
+import {roomBehaviorChoice,roomMannersLine,roomLine,roomMoment,roomMomentPose,drawRoomResponse,roomNeedPriority} from '../public/room-life.js';
 import {roomHabitOf} from '../public/room-experience.js';
 import {ambientSlot} from '../public/calm-behavior.js';
 
@@ -84,5 +84,19 @@ test('old saves can tick without a behavior memory, including all 14 species',()
   assert.equal(roomBehaviorChoice(s,all,3),null);
   tick(s,at);
   assert.equal(s.species,old.species);
+ }
+});
+
+test('existing room conversations reflect learned manners across all species, without added speech events',()=>{
+ for(const {id} of species){
+  const polite=pet(id,90);
+  assert.ok(roomMannersLine(polite,'shelf')?.includes('Книжки'),id);
+  const speech=Array.from({length:350},(_,n)=>roomLine(polite,'shelf','use',at+n*2300));
+  assert.ok(speech.includes(roomMannersLine(polite,'shelf')),id);
+  assert.notEqual(roomLine(polite,'shelf','new',at),roomMannersLine(polite,'shelf'));
+  polite.cozy.preferences.object.annoy='shelf';
+  assert.equal(roomMannersLine(polite,'shelf'),null);
+  const unruly=pet(id,20);unruly.character.stubbornness=85;
+  assert.ok(roomMannersLine(unruly,'toybox')?.includes('сам'));
  }
 });
