@@ -5,6 +5,8 @@ import {ambientSlot,noteCalm} from './calm-behavior.js';
 import {moodOf} from './room-enrichment.js';
 import {stableHash} from './traits.js';
 import {roomExperienceChoice,roomHabitOf} from './room-experience.js';
+import {disciplineScore} from './manners.js';
+import {behaviorMemoryEffect} from './behavior-memory.js';
 export function roomFurniture(s){const n=s?.playroom?.decor?.layout||0;return n===1?{bed:126,bowl:18,plant:12,tent:20,shelf:87}:n===2?{bed:70,bowl:16,plant:170,tent:132,shelf:7}:{bed:8,bowl:156,plant:170,tent:124,shelf:82};}
 // Coordinates in the 192×144 logical room; detailed assets are drawn at 2×.
 export function roomRects(s,style='classic'){const p=roomFurniture(s);if(style==='detailed')return {box:[32.5,126,24,14.5],bed:[p.bed,66,56,44],bowl:[p.bowl,108.5,26,14],plant:[p.bed===126?95:p.plant-6,50,25,44],rug:[56,116.5,79,18],shelf:[p.shelf,12,42,29],lamp:[p.bed===70?31:66,45.5,19,45.5],tent:[p.tent,45.5,40,48],cushion:[72.5,111.5,26,14],fountain:[p.bowl===18?42.5:133,104.5,25.5,22.5],mirror:[145.5,7.5,21,35],post:[4.5,96.5,23.5,36.5],curtains:[9,4.5,58.5,55],toybox:[149,126.5,35.5,15.5],toy:[132,126.5,14,14],music:[151,104,26,19],laser:[131,118,17,13],window:[13.5,8.5,51.5,49]};return {box:[4,121,25,17],bed:[p.bed,68,52,41],bowl:[p.bowl,114,26,14],plant:[p.plant-8,49,28,42],rug:[59,121,76,17],shelf:[p.shelf,17,42,24],lamp:[170,71,18,33],tent:[p.tent,43,40,50],cushion:[38,108,25,13],fountain:[p.bowl,106,26,20],mirror:[145,9,20,32],post:[5,97,24,35],curtains:[9,7,52,44],toybox:[149,126,35,16],toy:[133,124,12,12],music:[151,104,26,19],laser:[131,118,17,13],window:[14,8,43,43]};}
@@ -131,6 +133,23 @@ export function roomMoodPreference(s,items,block=0,now=Date.now()){
  const item=available[stableHash((s.id||s.species)+':room-mood:'+state+':'+block)%available.length];
  return {item,kind:state==='play'?itemMoves[item]:item==='bed'?'doze':'nest',mood:state};
 }
+// Living Pets 4.0: learned manners and previous repaired/defiant moments steer
+// the style of autonomous play without creating new timers or persisted fields.
+export function roomBehaviorChoice(s,items,block=0){
+ if(!s||!Array.isArray(items)||!Number.isInteger(block)||block%11!==3)return null;
+ const available=items.filter(id=>roomTaste(s,id)!=='annoy');
+ if(!available.length)return null;
+ const c=characterOf(s),discipline=disciplineScore(s);
+ const tidyPractice=behaviorMemoryEffect(s,'tidy');
+ const requestsPractice=behaviorMemoryEffect(s,'requests');
+ const polite=discipline>=75&&(tidyPractice>=0||requestsPractice>=0);
+ const restless=discipline<40&&c.playfulness>=50&&requestsPractice<=0;
+ const options=polite?['shelf','plant','cushion','rug']:restless?['toybox','toy','laser','rug']:null;
+ if(!options)return null;
+ const candidates=options.filter(id=>available.includes(id));
+ if(!candidates.length)return null;
+ return {item:candidates[stableHash((s.id||s.species)+':behavior:'+block)%candidates.length],style:polite?'careful':'restless'};
+}
 export function roomMoment(s,now=Date.now()){
  if(!s||s.dead||s.vacation||s.sleeping||s.napping||s.living?.enrichment?.session?.until>now||s.living?.enrichment?.touch?.until>now||s.living?.enrichment?.home?.until>now||s.living?.enrichment?.tidying?.until>now||now-s.born<180000||s.world?.walk?.expires>now||s.cozy?.hide?.expires>now||s.playroom?.session?.expires>now||s.journal?.gesture?.until>now)return null;
  const m=s.living?.motion;if(m?.until>now&&roomOwned(s,m.item))return {...m,kind:m.kind==='use'?itemMoves[m.item]||'inspect':m.kind,manual:true};
@@ -140,11 +159,11 @@ export function roomMoment(s,now=Date.now()){
  const slot=ambientSlot(s,now);if(slot?.lane!=='room')return null;if(bedtimeInvitation(s,now)&&roomOwned(s,'bed'))return {item:'bed',kind:'ask',at:slot.at,until:slot.until,auto:true,origin:{x:96,feet:130}};const phase=now-slot.at,clock=slot.block*37000;
  const items=Object.keys(itemMoves).filter(id=>id!=='window'&&id!=='box'&&roomOwned(s,id)&&(s.cozy?.items?.[id]?.wear??100)>0);if(!items.length)return null;
  const priority=roomNeedPriority(s,items);
- const loved=items.filter(id=>roomTaste(s,id)==='love'),likedOrNeutral=items.filter(id=>roomTaste(s,id)!=='annoy'),normalPool=likedOrNeutral.length?likedOrNeutral:items,pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:normalPool,moodChoice=loved.length||priority?null:roomMoodPreference(s,items,slot.block,now),speciesChoice=loved.length||moodChoice?null:roomSpeciesPreference(s,items,slot.block),learnedChoice=loved.length||priority||moodChoice||speciesChoice?null:roomExperienceChoice(s,items.filter(id=>roomTaste(s,id)!=='annoy'),slot.block),first=priority||moodChoice?.item||speciesChoice||learnedChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
+ const loved=items.filter(id=>roomTaste(s,id)==='love'),likedOrNeutral=items.filter(id=>roomTaste(s,id)!=='annoy'),normalPool=likedOrNeutral.length?likedOrNeutral:items,pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:normalPool,moodChoice=loved.length||priority?null:roomMoodPreference(s,items,slot.block,now),speciesChoice=loved.length||moodChoice?null:roomSpeciesPreference(s,items,slot.block),behaviorChoice=loved.length||priority||moodChoice||speciesChoice?null:roomBehaviorChoice(s,items,slot.block),learnedChoice=loved.length||priority||moodChoice||speciesChoice||behaviorChoice?null:roomExperienceChoice(s,items.filter(id=>roomTaste(s,id)!=='annoy'),slot.block),first=priority||moodChoice?.item||speciesChoice||behaviorChoice?.item||learnedChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
  const followUp=priority||(moodChoice&&moodChoice.mood!=='play')?null:roomSequenceStep(s,items,first,slot,now);
  const id=followUp?.item||first;
  const habit=roomHabitOf(s,items.filter(item=>roomTaste(s,item)!=='annoy'));
- return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{}),...(habit?.item===id?{habit:true}:{})};
+ return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{}),...(habit?.item===id?{habit:true}:{}),...(behaviorChoice?.item===id?{behaviorStyle:behaviorChoice.style}:{})};
 }
 // A short, purely visual finale during the last seconds of an existing autonomous room slot.
 // The result is deterministic and never writes mood, rewards or extra dialogue to the save.
@@ -191,6 +210,8 @@ export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=
  }
  if(finale==='miss'){r(x+15,y-43,4,2,'#af81a4');r(x+17,y-41,3,4,'#af81a4');r(x+15,y-36,2,2,'#af81a4');}
  if(m.habit&&finale&&finale!=='miss'&&!reduced){r(x-21,y-42,2,4,'#eee5a9');r(x-22,y-41,4,2,'#eee5a9');}
+ if(m.behaviorStyle==='careful'&&!reduced&&m.acting){r(x-11,y+2,2,2,'#b7c9aa');}
+ if(m.behaviorStyle==='restless'&&!reduced&&m.acting){r(x+15,y-32,2,3,'#e5cc88');}
 }
 export function speechFilter(){const recent=new Map();return (text,now=Date.now(),important=false)=>{if(!text)return false;const last=recent.get(text);if(!important&&last!==undefined&&now-last<180000)return false;recent.set(text,now);for(const [t,at]of recent)if(now-at>300000)recent.delete(t);return true;};}
 
