@@ -1,5 +1,6 @@
 import {loadWardrobeAssets,repairedOriginal,dressedBody,wearHeadwear,wearNeckwear} from './authored-wardrobe.js';
 import {getRecent,storeRecent} from './wardrobe-cache.js';
+import {applySeniorPatina} from './age-appearance.js';
 import {cachedExpressionFrame} from './wardrobe-expression-cache.js';
 import {emotionalAppearance,expressionFrame,withEmotionalPose} from './pet-expression.js';
 import {petAnatomy} from './pet-anatomy.js';
@@ -49,6 +50,7 @@ export function dressedSprite(pet,id,age,sheet,now=Date.now(),reduced=false,expr
   if(!sleep){wearNeckwear(ctx,id,sheet,wearing.neck,pad,base);wearHeadwear(ctx,base,sprites.get('clothing:'+wearing.head),id,sheet,wearing.head,pad);
    if(wearing.eyes==='glasses'){const a=petAnatomy[id]?.[sheet];if(a){const eyes=a.eyes.map(b=>[(b[0]+b[2])/2,(b[1]+b[3])/2]),gap=eyes[1][0]-eyes[0][0],art=sprites.get('clothing:glasses'),ww=gap*2.1,hh=ww*art.height/art.width;ctx.drawImage(art,Math.round(pad+(eyes[0][0]+eyes[1][0])/2-ww/2),Math.round(pad+(eyes[0][1]+eyes[1][1])/2-hh*.43),Math.round(ww),Math.round(hh));}}
   }
+  applySeniorPatina(cv,age);
   result={image:cv,pad,width:base.width,height:base.height};storeRecent(dressedSprites,key,result,128);
  }
  if(!expressive||sleep||id==='dino')return result;
@@ -75,7 +77,7 @@ export function drawDetailedPet(c,s,id,x,feet,height,effect,frame=0,reduced=fals
  if(age==='Яєчко'){const wobble=reduced?0:Math.sin(frame/230)*.05;prop(c,'egg',x-height*.23,feet-height*.60,height*.46,height*.60,{rotate:wobble});return;}
  const now=Date.now(),sheet=sheetOf(pet,effect,now),rect=detailedArt[sheet]?.cells?.[id]||detailedArt['new_'+sheet]?.cells?.[id];if(!rect)return;const sprite=sprites.get(sheet+':'+id),ratio=sprite?sprite.width/sprite.height:rect[2]/rect[3],w=Math.min(height*1.3,height*ratio)*(age==='Малюк'?1.14:age==='Дитина'?1.08:age==='Підліток'?.88:1),h=height,box={x:x-w/2,y:feet-h,w,h};
  // A single atlas style is used everywhere, including albums and the sandbox.
- const appearance=emotionalAppearance(pet,now,reduced);withEmotionalPose(c,id==='dino'?{...appearance,strength:0}:appearance,x,feet,()=>{const dressed=dressedSprite(pet,id,age,sheet,now,reduced,!active(effect,now),appearance);if(dressed){c.save();c.imageSmoothingEnabled=false;if(age==='Старенький'&&id!=='dino')c.filter='grayscale(.72) saturate(.6)';const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
+ const appearance=emotionalAppearance(pet,now,reduced);withEmotionalPose(c,id==='dino'?{...appearance,strength:0}:appearance,x,feet,()=>{const dressed=dressedSprite(pet,id,age,sheet,now,reduced,!active(effect,now),appearance);if(dressed){c.save();c.imageSmoothingEnabled=false;// Senior patina is applied to the complete dressed sprite before caching.const px=dressed.pad*w/dressed.width,py=dressed.pad*h/dressed.height;c.drawImage(dressed.image,0,0,dressed.image.width,dressed.image.height,Math.round(box.x-px),Math.round(box.y-py),Math.round(w+px*2),Math.round(h+py*2));c.restore();}else stamp(c,sheet,id,box.x,box.y,w,h);
  if(pet.appearance){const col=pet.appearance.color||'#bba16b';shade(c,box.x+w*.25,box.y+h*.79,3,3,col);if(pet.appearance.mark==='stripe')shade(c,box.x+w*.25,box.y+h*.83,4,1,col);}
  if(!pet.sleeping&&!pet.napping&&careForm(pet)==='radiant')sparkles(c,box.x-8,box.y+h*.2,frame,reduced);if(careForm(pet)==='scruffy'){shade(c,box.x+w*.72,box.y+h*.82,4,3,'#9a8a70');shade(c,box.x+w*.76,box.y+h*.86,3,2,'#9a8a70');}
  effects(c,pet,box,effect,frame,reduced);},reduced);
