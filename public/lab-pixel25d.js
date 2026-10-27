@@ -29,9 +29,9 @@ export function createPixel25D(canvas){
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,source);
   gl.drawArrays(gl.TRIANGLES,0,6);
  }
- return {render(background,portrait,{yaw=0,depth=0}={}){
+ return {render(background,portrait,{yaw=0,depth=0,bob=0}={}){
   canvas.width=size[0];canvas.height=size[1];gl.viewport(0,0,...size);gl.clearColor(.91,.88,.82,1);gl.clear(gl.COLOR_BUFFER_BIT);
-  layer(background,[-1,-1,2,2]);layer(portrait,[-.34+depth*.13,-.81,.68,.83],yaw,depth,true);
+  layer(background,[-1,-1,2,2]);layer(portrait,[-.34+depth*.13,-.81+bob/144,.68,.83],yaw,depth,true);
  },destroy(){gl.deleteTexture(texture);gl.deleteBuffer(buffer);gl.deleteProgram(program);}};
 }
 export function mountPixel25DLab(){
@@ -53,7 +53,7 @@ export function mountPixel25DLab(){
   const clip=get('pixel25d-clip').value;
   const pose=clip==='manual'?null:labClipPose(clip,clock);
   const articulated=articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:pose?.tilt??Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
-  engine.render(background,articulated,{yaw:(pose?.yaw??Number(get('pixel25d-yaw').value))*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100});
+  engine.render(background,articulated,{yaw:(pose?.yaw??Number(get('pixel25d-yaw').value))*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100,bob:pose?.bob||0});
   const anchors=detailedAnchors(pet.species,pet.portraitStage);
   get('pixel25d-yaw-output').textContent=get('pixel25d-yaw').value+'°';
   status.textContent='WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
