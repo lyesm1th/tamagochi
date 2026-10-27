@@ -58,7 +58,8 @@ test('behavior signals act only in existing room slots, honoring loved items, mo
  s.cozy.preferences.object.love='toy';
  assert.equal(roomMoment(s,now)?.item,'toy');
  s.cozy.preferences.object={};
- s.energy=50;
+ s.room.bed=true;s.energy=50;
+ assert.equal(roomMoment(s,now)?.item,'bed');
  assert.notEqual(roomMoment(s,now)?.behaviorStyle,'careful');
  s.energy=95;
  s.living={motion:{kind:'use',item:'toy',at:now,until:now+12000}};
@@ -79,7 +80,7 @@ test('both drawing modes safely render optional behavior details and honor reduc
 test('old saves can tick without a behavior memory, including all 14 species',()=>{
  for(const {id} of species){
   const s=fresh(id,at-life.teen-60000);s.updated=at;s.routine.enabled=false;
-  delete s.behaviorMemory;delete s.living.roomExperience;
+  delete s.behaviorMemory;if(s.living)delete s.living.roomExperience;
   const old=structuredClone(s);
   assert.equal(roomBehaviorChoice(s,all,3),null);
   tick(s,at);
