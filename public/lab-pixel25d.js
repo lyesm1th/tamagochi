@@ -2,6 +2,7 @@
 import {drawDetailedRoom,drawDetailedPortrait, detailedAnchors} from './detailed-renderer.js';
 import {labPet} from './lab-state.js';
 import {articulatePortrait} from './lab-rig.js';
+import {labClipPose} from './lab-motion.js';
 const size=[384,288];
 export function createPixel25D(canvas){
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:true});
@@ -41,14 +42,17 @@ export function mountPixel25DLab(){
  const background=document.createElement('canvas'),portrait=document.createElement('canvas');
  background.width=384;background.height=288;portrait.width=128;portrait.height=128;
  const get=id=>document.getElementById(id);
+ let clock=0,last=0,alive=true;
  const redraw=()=>{
   const options=Object.fromEntries(['species','age','body','head','neck','eyes','emotion','scenario','item','action','variant','condition','layout'].map(id=>[id,get(id)?.value]));
   options.sleeping=!!get('sleeping')?.checked;
   const pet=labPet(options,Date.now());
   drawDetailedRoom(background.getContext('2d'),pet,0,!!get('reduced')?.checked,Date.now());
   drawDetailedPortrait(portrait,pet.species,pet,0,true,null,!!get('reduced')?.checked);
-  const articulated=articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
-  engine.render(background,articulated,{yaw:Number(get('pixel25d-yaw').value)*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100});
+  const clip=get('pixel25d-clip').value;
+  const pose=clip==='manual'?null:labClipPose(clip,clock);
+  const articulated=articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:pose?.tilt??Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
+  engine.render(background,articulated,{yaw:(pose?.yaw??Number(get('pixel25d-yaw').value))*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100});
   const anchors=detailedAnchors(pet.species,pet.portraitStage);
   get('pixel25d-yaw-output').textContent=get('pixel25d-yaw').value+'°';
   status.textContent='WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
@@ -56,8 +60,11 @@ export function mountPixel25DLab(){
  for(const el of document.querySelectorAll('select,input'))el.addEventListener('change',redraw);
  for(const id of ['pixel25d-yaw','pixel25d-depth','pixel25d-head'])get(id).addEventListener('input',redraw);
  get('pixel25d-refresh').addEventListener('click',redraw);
+ get('pixel25d-time').addEventListener('input',()=>{clock=Number(get('pixel25d-time').value);redraw();});
+ const tick=t=>{if(!alive)return;if(get('pixel25d-play').checked&&get('pixel25d-clip').value!=='manual'){clock=(clock+Math.min(64,Math.max(0,t-(last||t))))%3000;get('pixel25d-time').value=String(Math.round(clock));redraw();}last=t;requestAnimationFrame(tick);};
+ requestAnimationFrame(tick);
  get('pixel25d-save').addEventListener('click',()=>{redraw();const link=document.createElement('a');link.download='pixel25d-'+get('species').value+'-'+get('age').value+'.png';link.href=target.toDataURL('image/png');link.click();});
  redraw();
- return {redraw,destroy:()=>engine.destroy()};
+ return {redraw,destroy:()=>{alive=false;engine.destroy();}};
 }
 if(typeof document!=='undefined'&&document.getElementById('pixel25d-stage'))window.addEventListener('load',()=>{mountPixel25DLab();});
