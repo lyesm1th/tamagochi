@@ -6,7 +6,7 @@ test('isolated 2.5D clips are finite, reproducible and loop smoothly',()=>{
   const a=labClipPose(name,0),b=labClipPose(name,clip.duration),mid=labClipPose(name,clip.duration/4);
   assert.deepEqual(a,b,name);
   for(const pose of [a,b,mid])for(const value of Object.values(pose))assert.ok(Number.isFinite(value),name);
-  assert.ok(Math.abs(mid.tilt)<=clip.tilt+0.01);
+  assert.ok(Math.abs(mid.tilt)<=Math.abs(clip.tilt)+0.01);
  }
 });
 test('animation controller is separate from player storage and production graphics mode',async()=>{
