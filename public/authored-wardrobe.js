@@ -17,10 +17,23 @@ export function loadWardrobeAssets(load=loadRaster){
  return loadingWardrobe;
 }
 const canvas=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+// Keep atlas-derived fabric inside the actual source silhouette, including
+// small juvenile bodies, tails and empty gutters. Original RGB and alpha survive.
+export function maskDressedBody(base,dressed){
+ const c=dressed.getContext('2d'),b=base.getContext('2d').getImageData(0,0,base.width,base.height);
+ const d=c.getImageData(0,0,dressed.width,dressed.height);
+ for(let i=0;i<d.data.length;i+=4){
+  if(!b.data[i+3]){
+   d.data[i]=b.data[i];d.data[i+1]=b.data[i+1];d.data[i+2]=b.data[i+2];
+  }
+  d.data[i+3]=b.data[i+3];
+ }
+ c.putImageData(d,0,0);return dressed;
+}
 export function dressedBody(base,id,stage,body){
  const layer=wardrobeLayers[stage]?.[body]?.[id],atlas=atlases.get(stage+':'+body);if(!layer||!atlas)return base;
  const cv=canvas(base.width,base.height),c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.drawImage(base,0,0);
- const [x,y,w,h]=layer.cell;c.drawImage(atlas,x,y,w,h,...layer.at,w,h);return cv;
+ const [x,y,w,h]=layer.cell;c.drawImage(atlas,x,y,w,h,...layer.at,w,h);return maskDressedBody(base,cv);
 }
 // Hat art comes from the illustrated wardrobe, never a thumbnail-shaped box.
 // Its brim sits against the skull; original ears, horns and crests occlude it.
