@@ -3,6 +3,15 @@ import {drawYoungPet} from './young-pets.js';
 import {emotionalAppearance,withEmotionalPose} from './pet-expression.js';
 import {faceAnchors} from './emotion-art.js';
 
+// Keep classic garments within the actual source silhouette at every age.
+// This prevents floating scarf, hat and glasses pixels beside small pets.
+export function clipWardrobeToSprite(canvas,source){
+ const c=canvas.getContext('2d'),d=c.getImageData(0,0,canvas.width,canvas.height);
+ for(let q=0;q<d.data.length;q+=4)if(source.data[q+3]===0){
+  d.data[q]=source.data[q];d.data[q+1]=source.data[q+1];d.data[q+2]=source.data[q+2];d.data[q+3]=0;
+ }
+ c.putImageData(d,0,0);
+}
 const cloth={pajamas:['#574563','#9b84b4','#d3beda'],sweater:['#653c4b','#ad6c81','#d89ca7'],raincoat:['#795625','#dbaf4f','#f2d17e']};
 export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  const cv=document.createElement('canvas');cv.width=128;cv.height=100;const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
@@ -43,5 +52,6 @@ export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  const a=faceAnchors(id,age),e=expression;
  if(!asleep&&wear.eyes==='glasses'){const [left,right]=a.eyes;for(const [x,y]of [left,right]){c.strokeStyle='#3e5a50';c.lineWidth=1;c.strokeRect(Math.round(x-5*sx),Math.round(y-4*sy),Math.max(4,Math.round(11*sx)),Math.max(3,Math.round(9*sy)));}c.fillStyle='#3e5a50';c.fillRect(Math.round(left[0]+5*sx),Math.round(left[1]),Math.max(1,Math.round(right[0]-left[0]-10*sx)),1);}
  if(e.tear>=0){c.globalAlpha=Math.min(1,(1-e.tear)*4)*e.strength;for(const [x,y]of a.eyes){c.fillStyle='#70b5c9';c.fillRect(Math.round(x),Math.round(y+4*sy+e.tear*7*sy),1,Math.max(1,Math.round(3*sy)));}c.globalAlpha=1;}
+ clipWardrobeToSprite(cv,source);
  withEmotionalPose(ctx,e,64,oy+84*sy,()=>ctx.drawImage(cv,0,0),reduced);
 }
