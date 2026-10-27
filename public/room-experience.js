@@ -25,6 +25,14 @@ export function recordRoomExperience(s,m,outcome,now=Date.now()){
  return true;
 }
 
+// Failure matters too: repeated negative experiences can temporarily take an
+// item out of neutral exploration, unless it is the only safe activity left.
+export function roomExperienceAvoidance(s,available){
+ if(!s||!Array.isArray(available))return [];
+ const memory=s.living?.roomExperience?.items||{};
+ return available.filter(id=>Number.isFinite(memory[id]?.score)&&memory[id].score<=-2);
+}
+
 // Habits emerge from repeated positive experiences; no separate save schema is needed.
 // A failed activity can lower the score enough to dissolve an established habit.
 export function roomHabitOf(s,available=null){
