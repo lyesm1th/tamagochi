@@ -10,3 +10,6 @@ writeFileSync(new URL(filename,directory),bytes);
 const htmlURL=new URL('../public/index.html',import.meta.url),html=readFileSync(htmlURL,'utf8').replace(/<script type="module" src="\/(?:app\.js|assets\/game\.[a-f0-9]+\.js)(?:\?[^"<>]*)?"><\/script>/,`<script type="module" src="/assets/${filename}"></script>`);
 if(!html.includes(`/assets/${filename}`))throw Error('Client entry not found in index.html');writeFileSync(htmlURL,html);
 console.log(`Client: /assets/${filename}`);
+// Keep the experimental renderer behind the same /lab* owner-only route.
+buildSync({entryPoints:[new URL('./lab-25d-entry.js',import.meta.url).pathname],bundle:true,minify:true,format:'esm',target:'es2022',outfile:new URL('../public/lab-25d-bundle.js',import.meta.url).pathname,logLevel:'silent'});
+console.log('Private 2.5D lab bundle built.');

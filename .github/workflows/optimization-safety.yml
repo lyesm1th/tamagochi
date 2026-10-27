@@ -49,11 +49,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - run: npm run build
       - run: npm run test:graphic-qa
+      - run: node scripts/graphic-qa-25d.mjs
       - name: Upload browser frames and report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: graphic-qa-browser
-          path: tmp/graphic-qa/
+          path: |
+            tmp/graphic-qa/
+            tmp/graphic-qa-25d/
           retention-days: 7

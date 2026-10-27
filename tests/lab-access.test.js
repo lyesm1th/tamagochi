@@ -18,7 +18,7 @@ test('owner access verifies Telegram signature, denies non-owner and never touch
  const r=await access(session(42));assert.equal(r.status,200);assert.deepEqual(await r.json(),{owner:true});
  const cookie=r.headers.get('set-cookie');for(const flag of ['HttpOnly','Secure','SameSite=Strict','Max-Age=900'])assert.ok(cookie.includes(flag));
  const request=(path,cookieValue)=>worker.fetch(new Request('https://game.test'+path,{headers:cookieValue?{Cookie:cookieValue}:{}}),env);
- for(const path of ['/lab','/lab.html','/lab.js','/lab-state.js','/lab-frames.js','/%6cab.html','/lab.html/'])assert.equal((await request(path)).status,403,path);
+ for(const path of ['/lab','/lab.html','/lab.js','/lab-state.js','/lab-frames.js','/lab-25d.html','/lab-25d-bundle.js','/%6cab.html','/lab.html/'])assert.equal((await request(path)).status,403,path);
  const allowed=await request('/lab.html',cookie.split(';')[0]);assert.equal(allowed.status,200);assert.equal(await allowed.text(),'private lab');assert.equal(allowed.headers.get('cache-control'),'private, no-store');
  assert.equal((await request('/lab.html','__Host-pet-lab='+encodeURIComponent(session(43)))).status,403);
  assert.equal((await request('/lab.html','__Host-pet-lab='+encodeURIComponent(session(42,Math.floor(Date.now()/1000)-86401)))).status,403);
