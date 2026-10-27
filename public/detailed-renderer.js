@@ -291,12 +291,54 @@ export function drawDetailedInteractionFeedback(c,s,pose,now=Date.now(),reduced=
  if(v.kind==='stroke'||v.kind==='tickle'||v.kind==='nose')
   prop(c,'heart',Math.round(pose.x*2+30),Math.round(pose.feet*2-92-step*3),18,18);
 }
+// Physical staging for the detailed room. All coordinates are native 384x288.
+// Contact depth is tied to the ACTING phase: approach never teleports onto furniture.
+export function detailedPhysicalPlacement(s,pose,now=Date.now(),reduced=false){
+ const action=pose?.interaction;
+ const output={x:(pose?.x??96)*2,feet:(pose?.feet??128)*2,scale:1,occlusion:null,kind:action?.kind||null};
+ if(!action?.acting||!action.item)return output;
+ const target=detailedInteractionTarget(s,action);
+ if(!target)return output;
+ const phase=reduced?0:Math.sin((now-(action.at??now))/320);
+ const rect=layout(s)[action.item],left=rect[0],top=rect[1],w=rect[2],h=rect[3];
+ if(action.item==='bed'&&['jump','doze'].includes(action.kind)){
+  output.x=left+w*.52;output.feet=top+h*.73-(action.kind==='jump'&&!reduced?Math.abs(phase)*17:0);
+  output.scale=.76;output.occlusion={item:'bed',x:left+w*.10,y:top+h*.64,w:w*.80,h:h*.22};
+ }else if(action.item==='tent'&&action.kind==='peek'){
+  output.x=left+w*.54;output.feet=top+h*.79;
+  output.scale=.66;output.occlusion={item:'tent',x:left+w*.06,y:top+h*.53,w:w*.88,h:h*.31};
+ }else if(action.item==='cushion'&&action.kind==='nest'){
+  output.x=left+w*.5;output.feet=top+h*.73;output.scale=.78;
+  output.occlusion={item:'cushion',x:left+w*.08,y:top+h*.72,w:w*.84,h:h*.15};
+ }else if(action.item==='rug'&&action.kind==='roll'){
+  output.x=left+w*.48;output.feet=top+h*.76;output.scale=.84;
+ }else if(['bowl','fountain'].includes(action.item)&&['drink','splash'].includes(action.kind)){
+  output.x=left+w*.48;output.feet=Math.min(272,top+h*.83);output.scale=.80;
+  output.occlusion={item:action.item,x:left+w*.10,y:top+h*.58,w:w*.80,h:h*.18};
+ }else if(['shelf','mirror','plant','post','toybox'].includes(action.item)){
+  output.x=left+w*.50;output.feet=Math.min(272,top+h+8);output.scale=.88;
+ }
+ return output;
+}
+export function drawDetailedForegroundOcclusion(c,s,placement){
+ const a=placement?.occlusion;if(!a)return false;
+ const wear=s?.cozy?.items?.[a.item]?.wear??100;
+ if(!roomOwned(s,a.item)||wear<=0)return false;
+ // Restore only the near-facing surface after drawing the actor, not the
+ // complete atlas. This avoids hiding the pet behind an entire bed or tent.
+ c.save();c.beginPath();c.rect(Math.round(a.x),Math.round(a.y),Math.round(a.w),Math.round(a.h));c.clip();
+ const rect=layout(s)[a.item];
+ const variant=s?.living?.furniture?.[a.item]||0;
+ stamp(c,'furniture',detailedFurnitureKey(a.item,variant),...rect);
+ c.restore();return true;
+}
 export function drawDetailedMain(canvas,s,id,frame=0,reduced=false,pos=null,effect=null){canvas.width=384;canvas.height=288;const c=canvas.getContext('2d');c.imageSmoothingEnabled=false;const pet=s||{species:id,portraitStage:'Дорослий'};if(!outdoor(c,pet))drawDetailedRoom(c,pet,frame,reduced);
  if(pet.vacation){prop(c,'blanket',105,188,170,62);drawDetailedPet(c,pet,id,192,244,126,null,frame,reduced);c.fillStyle='#f4ebd3';c.fillRect(112,17,160,27);c.fillStyle='#4e6555';c.font='bold 13px monospace';c.fillText('HOTEL · PAUSE',131,36);return;}
- const point=pos||{x:96,feet:128,scale:1},age=ageOf(pet),asleep=(pet.sleeping||pet.napping)&&!!pet.room?.bed&&!(pet.world?.walk?.expires>Date.now()),bed=layout(pet).bed,height=asleep?Math.min(142*point.scale*ageScale(age),bed[3]*.85):142*point.scale*ageScale(age),x=asleep?bed[0]+bed[2]/2:point.x*2,feet=asleep?bed[1]+bed[3]-12:point.feet*2;
+ const point=pos||{x:96,feet:128,scale:1},physical=detailedPhysicalPlacement(pet,point,Date.now(),reduced),age=ageOf(pet),asleep=(pet.sleeping||pet.napping)&&!!pet.room?.bed&&!(pet.world?.walk?.expires>Date.now()),bed=layout(pet).bed,height=asleep?Math.min(142*point.scale*ageScale(age),bed[3]*.85):142*point.scale*physical.scale*ageScale(age),x=asleep?bed[0]+bed[2]/2:physical.x,feet=asleep?bed[1]+bed[3]-12:physical.feet;
  if(asleep&&pet.cozy?.wearing?.head)stamp(c,'clothing',pet.cozy.wearing.head,bed[0]+bed[2]+4,bed[1]+bed[3]-25,34,23);
  if(pet.cozy?.hide?.expires>Date.now()){const p=layout(pet),target=p[pet.cozy.hide.spot]||[8,234,52,40];c.save();c.beginPath();c.rect(target[0]-8,target[1]-22,target[2]+16,24);c.clip();drawDetailedPet(c,pet,id,target[0]+target[2]*.6,target[1]+65,78,null,frame,reduced);c.restore();return;}
  c.fillStyle='#635a4226';c.beginPath();c.ellipse(x,feet-2,height*.27,Math.max(3,height*.045),0,0,Math.PI*2);c.fill();if(point.ambient?.kind==='warm'){c.save();c.translate(x,feet-height*.30);c.rotate(-Math.PI/2);drawDetailedPet(c,pet,id,0,height*.4,height*.8,effect,frame,reduced);c.restore();}else if(point.ambient?.kind!=='turned')transformEnriched(c,pet,{...point,x,feet},()=>withRoomGesture(c,{...point,x,feet},()=>drawDetailedPet(c,pet,id,x,feet-(!point.quiet&&!reduced&&!pet.sleeping&&!pet.napping?Math.round(Math.sin(frame/650)*1):0),height,effect,point.quiet?1200:frame,reduced),Date.now(),reduced),Date.now(),reduced);
+ drawDetailedForegroundOcclusion(c,pet,physical);
  // Draw effects in native detailed pixels, after the actor and before lighting.
  c.save();
  drawDetailedFurnitureReaction(c,pet,point,Date.now(),reduced);
