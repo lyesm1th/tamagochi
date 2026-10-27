@@ -57,7 +57,7 @@ try{
  // Review evidence, not golden images: capture the live scene with each hat
  // for every non-egg age, at rest and during a furniture interaction. Keep
  // labels in the report and fixed tile order so defects are easy to locate.
- const headwearAges=['Малюк','Дитина','Підліток','Дорослий'];
+ const headwearAges=labAges.filter(age=>age!=='Яєчко');
  for(const pet of species){
   await select('species',pet.id);await select('body','');await select('neck','');await select('eyes','');
   const tiles=[];
@@ -69,7 +69,7 @@ try{
    tiles.push({input:tile,left:(col*2+poseIndex)*192,top:row*144});
    headwearChecks.push({species:pet.id,age,head,pose});
   }
-  await sharp({create:{width:768,height:576,channels:4,background:'#eee8da'}}).composite(tiles).png().toFile(path.join(out,`headwear-${pet.id}.png`));
+  await sharp({create:{width:768,height:headwearAges.length*144,channels:4,background:'#eee8da'}}).composite(tiles).png().toFile(path.join(out,`headwear-${pet.id}.png`));
  }
  await select('head','');await select('item','');
  console.log(`Captured ${headwearChecks.length} headwear scenes.`);
