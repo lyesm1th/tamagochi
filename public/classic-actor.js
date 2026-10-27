@@ -20,6 +20,7 @@ export function fitYoungClassicActor(canvas,age){
  const factor=age==='Малюк'?1.40:age==='Дитина'?1.18:1;
  if(factor===1)return false;
  const ctx=canvas.getContext('2d'),{width:w,height:h}=canvas;
+ if(typeof ctx?.getImageData!=='function'||typeof ctx?.drawImage!=='function'||typeof ctx?.putImageData!=='function')return false;
  const data=ctx.getImageData(0,0,w,h).data;
  let left=w,right=-1,top=h,bottom=-1;
  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(data[(y*w+x)*4+3]>16){
