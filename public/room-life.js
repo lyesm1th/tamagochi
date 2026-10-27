@@ -178,10 +178,10 @@ export function roomMoment(s,now=Date.now()){
  const items=Object.keys(itemMoves).filter(id=>id!=='window'&&id!=='box'&&roomOwned(s,id)&&(s.cozy?.items?.[id]?.wear??100)>0);if(!items.length)return null;
  const priority=roomNeedPriority(s,items);
  const loved=items.filter(id=>roomTaste(s,id)==='love'),likedOrNeutral=items.filter(id=>roomTaste(s,id)!=='annoy'),avoided=roomExperienceAvoidance(s,likedOrNeutral),freshOptions=likedOrNeutral.filter(id=>!avoided.includes(id)),normalPool=freshOptions.length?freshOptions:likedOrNeutral.length?likedOrNeutral:items,pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:normalPool,moodChoice=loved.length||priority?null:roomMoodPreference(s,items,slot.block,now),speciesChoice=loved.length||moodChoice?null:roomSpeciesPreference(s,items,slot.block),behaviorChoice=loved.length||priority||moodChoice||speciesChoice?null:roomBehaviorChoice(s,items,slot.block),learnedChoice=loved.length||priority||moodChoice||speciesChoice||behaviorChoice?null:roomExperienceChoice(s,items.filter(id=>roomTaste(s,id)!=='annoy'),slot.block),first=priority||moodChoice?.item||speciesChoice||behaviorChoice?.item||learnedChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
- const followUp=priority||(moodChoice&&moodChoice.mood!=='play')?null:roomSequenceStep(s,items,first,slot,now);
+ const followUp=priority||(moodChoice&&!['play','explore'].includes(moodChoice.mood))?null:roomSequenceStep(s,items,first,slot,now);
  const id=followUp?.item||first;
  const habit=roomHabitOf(s,items.filter(item=>roomTaste(s,item)!=='annoy'));
- return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{}),...(habit?.item===id?{habit:true}:{}),...(behaviorChoice?.item===id?{behaviorStyle:behaviorChoice.style}:{})};
+ return {item:id,kind:followUp?itemMoves[id]:moodChoice?.kind||(id==='bed'&&(s.energy??100)<65?'doze':itemMoves[id]),at:followUp?.at??slot.at,until:slot.until,auto:true,taste:roomTaste(s,id),origin:{x:96,feet:130},...(followUp?{originItem:first}:{}),...(habit?.item===id?{habit:true}:{}),...(behaviorChoice?.item===id?{behaviorStyle:behaviorChoice.style}:{}),...(moodChoice?.item===id?{emotionStyle:moodChoice.mood}:{})};
 }
 // A short, purely visual finale during the last seconds of an existing autonomous room slot.
 // The result is deterministic and never writes mood, rewards or extra dialogue to the save.
