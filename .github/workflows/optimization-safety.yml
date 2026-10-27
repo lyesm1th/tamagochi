@@ -36,3 +36,24 @@ jobs:
           name: visual-evolution-14-pets
           path: artifacts/visual-evolution/*.png
           retention-days: 7
+
+  graphic-qa:
+    name: Private Canvas lab in Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:graphic-qa
+      - name: Upload browser frames and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphic-qa-browser
+          path: tmp/graphic-qa/
+          retention-days: 7
