@@ -26,3 +26,13 @@ jobs:
         if: always()
       - run: npm run check:visual-baseline
         if: always()
+      - name: Render all species, ages and wardrobe comparison sheets
+        run: npm run visual:matrix
+        if: success()
+      - name: Upload visual evolution comparison sheets
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: visual-evolution-14-pets
+          path: artifacts/visual-evolution/*.png
+          retention-days: 7
