@@ -1,6 +1,5 @@
 // Owner-only Pixel 2.5D experiment. Reuses the actual Detailed art, without changing a save.
 import {drawDetailedRoom,drawDetailedPortrait, detailedAnchors} from './detailed-renderer.js';
-import {roomMomentPose} from './room-life.js';
 import {labPet} from './lab-state.js';
 import {articulatePortrait} from './lab-rig.js';
 const size=[384,288];
@@ -51,11 +50,13 @@ export function mountPixel25DLab(){
   const articulated=articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
   engine.render(background,articulated,{yaw:Number(get('pixel25d-yaw').value)*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100});
   const anchors=detailedAnchors(pet.species,pet.portraitStage);
+  get('pixel25d-yaw-output').textContent=get('pixel25d-yaw').value+'°';
   status.textContent='WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
  };
  for(const el of document.querySelectorAll('select,input'))el.addEventListener('change',redraw);
- for(const id of ['pixel25d-yaw','pixel25d-depth'])get(id).addEventListener('input',redraw);
+ for(const id of ['pixel25d-yaw','pixel25d-depth','pixel25d-head'])get(id).addEventListener('input',redraw);
  get('pixel25d-refresh').addEventListener('click',redraw);
+ get('pixel25d-save').addEventListener('click',()=>{redraw();const link=document.createElement('a');link.download='pixel25d-'+get('species').value+'-'+get('age').value+'.png';link.href=target.toDataURL('image/png');link.click();});
  redraw();
  return {redraw,destroy:()=>engine.destroy()};
 }
