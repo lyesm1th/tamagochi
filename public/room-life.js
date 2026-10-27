@@ -142,7 +142,7 @@ export function roomBehaviorChoice(s,items,block=0){
  const c=characterOf(s),discipline=disciplineScore(s);
  const tidyPractice=behaviorMemoryEffect(s,'tidy');
  const requestsPractice=behaviorMemoryEffect(s,'requests');
- const polite=discipline>=75&&(tidyPractice>=0||requestsPractice>=0);
+ const polite=discipline>=75&&tidyPractice>=0&&requestsPractice>=0;
  const restless=discipline<40&&c.playfulness>=50&&requestsPractice<=0;
  const options=polite?['shelf','plant','cushion','rug']:restless?['toybox','toy','laser','rug']:null;
  if(!options)return null;
