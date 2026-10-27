@@ -4,7 +4,7 @@ import {rememberThing,thingMemory,withQuietBody,bedtimeInvitation} from './relat
 import {ambientSlot,noteCalm} from './calm-behavior.js';
 import {moodOf} from './room-enrichment.js';
 import {stableHash} from './traits.js';
-import {roomExperienceChoice,roomHabitOf} from './room-experience.js';
+import {roomExperienceChoice,roomHabitOf,roomExperienceAvoidance} from './room-experience.js';
 import {disciplineScore} from './manners.js';
 import {behaviorMemoryEffect} from './behavior-memory.js';
 export function roomFurniture(s){const n=s?.playroom?.decor?.layout||0;return n===1?{bed:126,bowl:18,plant:12,tent:20,shelf:87}:n===2?{bed:70,bowl:16,plant:170,tent:132,shelf:7}:{bed:8,bowl:156,plant:170,tent:124,shelf:82};}
@@ -177,7 +177,7 @@ export function roomMoment(s,now=Date.now()){
  const slot=ambientSlot(s,now);if(slot?.lane!=='room')return null;if(bedtimeInvitation(s,now)&&roomOwned(s,'bed'))return {item:'bed',kind:'ask',at:slot.at,until:slot.until,auto:true,origin:{x:96,feet:130}};const phase=now-slot.at,clock=slot.block*37000;
  const items=Object.keys(itemMoves).filter(id=>id!=='window'&&id!=='box'&&roomOwned(s,id)&&(s.cozy?.items?.[id]?.wear??100)>0);if(!items.length)return null;
  const priority=roomNeedPriority(s,items);
- const loved=items.filter(id=>roomTaste(s,id)==='love'),likedOrNeutral=items.filter(id=>roomTaste(s,id)!=='annoy'),normalPool=likedOrNeutral.length?likedOrNeutral:items,pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:normalPool,moodChoice=loved.length||priority?null:roomMoodPreference(s,items,slot.block,now),speciesChoice=loved.length||moodChoice?null:roomSpeciesPreference(s,items,slot.block),behaviorChoice=loved.length||priority||moodChoice||speciesChoice?null:roomBehaviorChoice(s,items,slot.block),learnedChoice=loved.length||priority||moodChoice||speciesChoice||behaviorChoice?null:roomExperienceChoice(s,items.filter(id=>roomTaste(s,id)!=='annoy'),slot.block),first=priority||moodChoice?.item||speciesChoice||behaviorChoice?.item||learnedChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
+ const loved=items.filter(id=>roomTaste(s,id)==='love'),likedOrNeutral=items.filter(id=>roomTaste(s,id)!=='annoy'),avoided=roomExperienceAvoidance(s,likedOrNeutral),freshOptions=likedOrNeutral.filter(id=>!avoided.includes(id)),normalPool=freshOptions.length?freshOptions:likedOrNeutral.length?likedOrNeutral:items,pool=loved.length&&Math.floor(clock/37000)%3!==0?loved:normalPool,moodChoice=loved.length||priority?null:roomMoodPreference(s,items,slot.block,now),speciesChoice=loved.length||moodChoice?null:roomSpeciesPreference(s,items,slot.block),behaviorChoice=loved.length||priority||moodChoice||speciesChoice?null:roomBehaviorChoice(s,items,slot.block),learnedChoice=loved.length||priority||moodChoice||speciesChoice||behaviorChoice?null:roomExperienceChoice(s,items.filter(id=>roomTaste(s,id)!=='annoy'),slot.block),first=priority||moodChoice?.item||speciesChoice||behaviorChoice?.item||learnedChoice||pool[stableHash((s.id||s.species)+Math.floor(clock/37000))%pool.length];
  const followUp=priority||(moodChoice&&moodChoice.mood!=='play')?null:roomSequenceStep(s,items,first,slot,now);
  const id=followUp?.item||first;
  const habit=roomHabitOf(s,items.filter(item=>roomTaste(s,item)!=='annoy'));
