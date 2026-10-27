@@ -228,6 +228,10 @@ export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=
  }
  if(finale==='miss'){r(x+15,y-43,4,2,'#af81a4');r(x+17,y-41,3,4,'#af81a4');r(x+15,y-36,2,2,'#af81a4');}
  if(m.habit&&finale&&finale!=='miss'&&!reduced){r(x-21,y-42,2,4,'#eee5a9');r(x-22,y-41,4,2,'#eee5a9');}
+ // Contextual emotion cues float beyond the sprite silhouette, without altering pixel assets.
+ if(m.emotionStyle==='explore'){r(x+20,y-46,2,5,'#e3c982');r(x+18,y-44,6,2,'#e3c982');}
+ if(m.emotionStyle==='comfort'){r(x+17,y-43,3,3,'#b49cc3');r(x+22,y-41,3,3,'#b49cc3');}
+ if(m.emotionStyle==='tired'){c.fillStyle='#8d7baf';c.font='bold 8px monospace';c.fillText('z',x+18,y-43);}
  if(m.behaviorStyle==='careful'&&!reduced&&m.acting){r(x-11,y+2,2,2,'#b7c9aa');}
  if(m.behaviorStyle==='restless'&&!reduced&&m.acting){r(x+15,y-32,2,3,'#e5cc88');}
 }
