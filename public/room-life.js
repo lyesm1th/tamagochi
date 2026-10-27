@@ -4,6 +4,7 @@ import {rememberThing,thingMemory,withQuietBody,bedtimeInvitation} from './relat
 import {ambientSlot,noteCalm} from './calm-behavior.js';
 import {moodOf} from './room-enrichment.js';
 import {stableHash} from './traits.js';
+import {stage} from './pet-life.js';
 import {roomExperienceChoice,roomHabitOf,roomExperienceAvoidance} from './room-experience.js';
 import {disciplineScore} from './manners.js';
 import {behaviorMemoryEffect} from './behavior-memory.js';
@@ -198,6 +199,30 @@ export function roomActivityFinale(s,m,now=Date.now()){
  if(m.kind==='dance')return 'proud';
  return null;
 }
+// Object-aware motion for both graphic modes. Age changes gesture energy,
+// never the pet's base sprite identity or equipped outfit.
+export function roomFurnitureGesture(s,m,now=Date.now(),reduced=false){
+ if(!m?.kind||reduced)return {x:0,feet:0,scale:1};
+ const phase=(now-(m.at??now))/260,cycle=Math.sin(phase),sway=Math.sin(phase*.65);
+ const age=stage(s,now),energy=age==='Малюк'?.5:age==='Дитина'?.75:age==='Старенький'?.6:1;
+ const motion={
+  read:[sway*.8,Math.abs(cycle)*.5,1],
+  search:[cycle*2.2,-Math.abs(sway)*1.5,1],
+  sniff:[sway*.75,Math.abs(cycle)*1.2,1],
+  drink:[0,Math.abs(cycle)*1.1,.995],
+  splash:[cycle*2,-Math.abs(cycle)*2.2,1],
+  peek:[sway*1.4,-Math.abs(cycle)*1.6,1],
+  shadow:[cycle*1.9,-Math.abs(cycle)*.8,1],
+  faces:[sway*1.1,Math.abs(cycle)*.5,1],
+  nest:[sway*.5,Math.abs(cycle)*.55,.99],
+  doze:[0,Math.abs(sway)*.5,.99],
+  stretch:[sway*.4,-Math.abs(cycle)*1.4,1.01],
+  dance:[cycle*1.8,-Math.abs(cycle)*1.3,1],
+  roll:[cycle*1.1,Math.abs(cycle)*.8,1],
+  play:[cycle*1.7,-Math.abs(sway)*1,1]
+ }[m.kind]||[0,0,1];
+ return {x:motion[0]*energy,feet:motion[1]*energy,scale:1+(motion[2]-1)*energy};
+}
 export function roomMomentPose(s,m,style='classic',now=Date.now(),reduced=false){if(!m)return null;const rect=roomRects(s,style)[m.item],isOutfit=m.kind==='outfit';if(!rect&&!isOutfit)return null;const [rx,ry,rw,rh]=rect||[76,105,40,25];let x=rx+rw/2,feet=Math.min(136,Math.max(88,ry+rh+10));if(m.item==='bed')feet=ry+rh-5;if(m.item==='plant'||m.item==='shelf'||m.item==='mirror')feet=Math.max(98,feet);if(isOutfit){x=96;feet=133;}
  const elapsed=Math.max(0,now-m.at),duration=m.auto?2400:1300,k=reduced?1:Math.min(1,elapsed/duration);
  let from=m.origin||{x:96,feet:130};
@@ -206,7 +231,9 @@ export function roomMomentPose(s,m,style='classic',now=Date.now(),reduced=false)
  const approaching=k<1;
  x=from.x+(x-from.x)*k;feet=from.feet+(feet-from.feet)*k;const beat=reduced?0:Math.sin((elapsed-duration)/140),acting=!approaching;
  if(acting&&!reduced){if(m.kind==='jump')feet-=Math.abs(beat)*13;if(['faces','outfit','dance','play','shadow'].includes(m.kind))x+=Math.sin(elapsed/180)*3;if(['roll','nest','sniff','drink','read'].includes(m.kind))feet+=Math.sin(elapsed/260)*2;}
- const scale=feet<110?.76:.93;return {x,feet,scale,interaction:{...m,acting,approaching,elapsed,finale:acting?roomActivityFinale(s,m,now):null},ambient:null};
+ const gesture=acting?roomFurnitureGesture(s,m,now,reduced):{x:0,feet:0,scale:1};
+ x=Math.max(20,Math.min(172,x+gesture.x));feet=Math.max(80,Math.min(136,feet+gesture.feet));
+ const scale=(feet<110?.76:.93)*gesture.scale;return {x,feet,scale,interaction:{...m,acting,approaching,elapsed,finale:acting?roomActivityFinale(s,m,now):null},ambient:null};
 }
 // Shared visual responses, composed over the same pet in both styles.
 export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=pose?.interaction;if(!m||!m.acting)return;const x=pose.x,y=pose.feet,beat=reduced?0:Math.floor(now/220)%3,r=(a,b,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(a),Math.round(b),w,h);},heart=(a,b)=>{r(a,b,3,3,'#ba758a');r(a+5,b,3,3,'#ba758a');r(a,b+3,8,3,'#ba758a');r(a+2,b+6,4,2,'#ba758a');};
