@@ -5,7 +5,7 @@ import {cachedExpressionFrame} from './wardrobe-expression-cache.js';
 import {emotionalAppearance,expressionFrame,withEmotionalPose} from './pet-expression.js';
 import {petAnatomy} from './pet-anatomy.js';
 import {enrichmentPose,enrichPose,drawEnrichment,transformEnriched} from './room-enrichment.js';
-import {roomRects,roomMoment,roomMomentPose,drawRoomResponse,withRoomGesture} from './room-life.js';
+import {roomRects,roomOwned,roomMoment,roomMomentPose,drawRoomResponse,withRoomGesture} from './room-life.js';
 import {drawBanana} from './new-pet-art.js';
 import {drawItemVariant,drawToyVariant,drawDesignAccent,designFilter,designIndex,drawBowlBadge} from './item-designs.js';
 import {drawMood,drawLighting} from './room-mood.js';
@@ -217,8 +217,7 @@ function outdoor(c,s){if(s.world?.walk?.expires>Date.now()){const key=s.world.wa
 // The room scheduler uses half-resolution coordinates; do not mix the two.
 export function detailedInteractionTarget(s,action){
  if(!action?.item)return null;
- const owned=!!(s?.room?.[action.item]||s?.cozy?.owned?.[action.item]||['toy','ball','laser','music','box'].includes(action.item));
- if(!owned)return null;
+ if(!roomOwned(s,action.item)||s?.cozy?.items?.[action.item]?.wear===0)return null;
  const rect=layout(s)[action.item];
  if(!rect||rect.length!==4||!rect.every(Number.isFinite))return null;
  const [x,y,w,h]=rect;return {x:x+w/2,y:y+h*.55,w,h,item:action.item};
@@ -245,6 +244,24 @@ export function drawDetailedFurnitureReaction(c,s,pose,now=Date.now(),reduced=fa
   mark(p.x-6,p.y-6+step,4,2,'#dfedea');
  }else if(a.kind==='dance'){
   mark(p.x-6+step*4,p.y-18,3,8,'#e7ce91');
+  mark(p.x+6-step*2,p.y-12,2,6,'#dcb1d6');
+ }else if(a.kind==='jump'){
+  mark(p.x-10+step*2,p.y-15-step*2,4,3,'#e9d5af');
+  mark(p.x+8-step*2,p.y-10-step*2,4,3,'#f0e4c8');
+ }else if(a.kind==='peek'){
+  mark(p.x-11+step*2,p.y-7,4,4,'#a8b7a1');
+  mark(p.x+7-step,p.y-5,4,3,'#eee0bb');
+ }else if(a.kind==='shadow'){
+  mark(p.x-12-step*2,p.y+4,20+step*3,3,'#897b8655');
+ }else if(a.kind==='stretch'){
+  mark(p.x-5,p.y-15-step,3,7,'#b49b75');
+  mark(p.x+7,p.y-11+step,3,6,'#ddc9a3');
+ }else if(a.kind==='roll'){
+  mark(p.x-14+step*5,p.y+5,8,2,'#d3b5a4');
+ }else if(a.kind==='watch'){
+  mark(p.x-7+step*4,p.y-10,3,5,'#d3e1ce');
+ }else if(a.kind==='play'&&['toy','laser','ball'].includes(a.item)){
+  mark(p.x-9+step*5,p.y-5,6,5,'#eacb8d');
  }else return false;
  return true;
 }
@@ -262,7 +279,7 @@ export function drawDetailedInteractionFeedback(c,s,pose,now=Date.now(),reduced=
    read:'leaf',play:'ball',search:'gift',peek:'gift',shadow:'heart',
    stretch:'leaf',roll:'blanket',jump:'heart',ask:'heart',outfit:'heart',
    nest:'blanket',repair:'heart',doze:'blanket'}[action.kind];
-  if(symbol&&!(detailedInteractionTarget(s,action)&&['drink','splash','sniff','read','search','doze','nest','faces'].includes(action.kind)))prop(c,symbol,Math.min(354,x+25+step*2),Math.max(8,y-86-step*3),22,22);
+  if(symbol&&!(detailedInteractionTarget(s,action)&&['drink','splash','sniff','read','search','doze','nest','faces','jump','peek','shadow','stretch','roll','dance','watch'].includes(action.kind)))prop(c,symbol,Math.min(354,x+25+step*2),Math.max(8,y-86-step*3),22,22);
  }
  const v=pose?.enriched||{},run=s?.living?.enrichment?.session;
  if(run?.until>now&&v.point){
