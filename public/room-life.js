@@ -235,6 +235,21 @@ export function roomMomentPose(s,m,style='classic',now=Date.now(),reduced=false)
  x=Math.max(20,Math.min(172,x+gesture.x));feet=Math.max(80,Math.min(136,feet+gesture.feet));
  const scale=(feet<110?.76:.93)*gesture.scale;return {x,feet,scale,interaction:{...m,acting,approaching,elapsed,finale:acting?roomActivityFinale(s,m,now):null},ambient:null};
 }
+// Show which actual piece of furniture the pet is interacting with.
+// Decorations never replace the pet sprite and use the same 192x144 scene coordinates.
+export function drawFurnitureFeedback(c,s,m,now=Date.now(),reduced=false){
+ if(!m?.acting||!m.item||!c?.fillRect)return;
+ const rect=roomRects(s,c.canvas?.width>=384?'detailed':'classic')[m.item];if(!rect)return;
+ const [x,y,w,h]=rect,t=reduced?0:Math.floor(now/240)%3;
+ const dot=(a,b,w,h,color)=>{c.fillStyle=color;c.fillRect(Math.round(a),Math.round(b),w,h);};
+ if(m.kind==='read'){dot(x+9,y+8,2,8,'#eadfc6');dot(x+14+t,y+8,1,8,'#d2b982');}
+ if(m.kind==='search'){dot(x+7+t*3,y+3,4,3,'#edcf92');dot(x+18-t*2,y+1,3,3,'#ba98c2');}
+ if(m.kind==='sniff'){dot(x+w/2+t,y-5-t,2,4,'#91b87a');}
+ if(['drink','splash'].includes(m.kind)){dot(x+3+t*5,y+4,6,2,'#a9d9da');dot(x+w-10-t*3,y+7,4,2,'#e1f4e9');}
+ if(m.kind==='nest'||m.kind==='doze'){dot(x+4,y+h-4,Math.min(w-8,12+t*2),2,'#e4c1af');}
+ if(m.kind==='dance'){dot(x+8+t*3,y-6,2,5,'#e4c990');dot(x+10+t*3,y-9,4,2,'#e4c990');}
+ if(m.kind==='faces'){dot(x+4,y+7+t,3,2,'#ddf0e7');}
+}
 // Shared visual responses, composed over the same pet in both styles.
 export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=pose?.interaction;if(!m||!m.acting)return;const x=pose.x,y=pose.feet,beat=reduced?0:Math.floor(now/220)%3,r=(a,b,w,h,col)=>{c.fillStyle=col;c.fillRect(Math.round(a),Math.round(b),w,h);},heart=(a,b)=>{r(a,b,3,3,'#ba758a');r(a+5,b,3,3,'#ba758a');r(a,b+3,8,3,'#ba758a');r(a+2,b+6,4,2,'#ba758a');};
  if(m.kind==='faces'){r(x-8,y-29,4,2,'#354d43');r(x+5,y-27,4,2,'#354d43');r(x-1,y-20,4,5,'#db8e99');const rect=roomRects(s,c.canvas?.width>=384?'detailed':'classic').mirror;r(rect[0]+5,rect[1]+12,10,9,'#e7e6cf');r(rect[0]+7,rect[1]+15,2,2,'#354d43');r(rect[0]+12,rect[1]+15,2,2,'#354d43');}
@@ -261,6 +276,7 @@ export function drawRoomResponse(c,s,pose,now=Date.now(),reduced=false){const m=
  if(m.emotionStyle==='tired'){c.fillStyle='#8d7baf';c.font='bold 8px monospace';c.fillText('z',x+18,y-43);}
  if(m.behaviorStyle==='careful'&&!reduced&&m.acting){r(x-11,y+2,2,2,'#b7c9aa');}
  if(m.behaviorStyle==='restless'&&!reduced&&m.acting){r(x+15,y-32,2,3,'#e5cc88');}
+ drawFurnitureFeedback(c,s,m,now,reduced);
 }
 export function speechFilter(){const recent=new Map();return (text,now=Date.now(),important=false)=>{if(!text)return false;const last=recent.get(text);if(!important&&last!==undefined&&now-last<180000)return false;recent.set(text,now);for(const [t,at]of recent)if(now-at>300000)recent.delete(t);return true;};}
 
