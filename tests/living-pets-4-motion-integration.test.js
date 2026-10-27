@@ -48,6 +48,7 @@ test('curiosity can continue multi-step exploration without doubling ambient slo
   if(candidate?.lane==='room'&&candidate.block%5===1){slot=candidate;break;}
  }
  assert.ok(slot);
+ s.emotion.at=slot.at-1000;s.emotion.until=slot.until+20000;
  const early=roomMoment(s,slot.at+1000);
  const later=roomMoment(s,slot.at+9000);
  assert.ok(early?.auto&&later?.auto);
