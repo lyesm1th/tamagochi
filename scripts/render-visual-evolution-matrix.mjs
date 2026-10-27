@@ -11,10 +11,11 @@ import {isolateSprite} from '../public/sprite-cleanup.js';
 import {loadWardrobeAssets,dressedBody,wearHeadwear,wearNeckwear} from '../public/authored-wardrobe.js';
 import {petAnatomy} from '../public/pet-anatomy.js';
 import {drawClassicActor} from '../public/classic-actor.js';
+import {applySeniorPatina} from '../public/age-appearance.js';
 
 const root=fileURLToPath(new URL('../public/',import.meta.url));
 const target=path.resolve(process.argv[2]||'artifacts/visual-evolution');
-const stages={babies:'Малюк',children:'Дитина',teens:'Підліток',adults:'Дорослий'};
+const stages={babies:'Малюк',children:'Дитина',teens:'Підліток',adults:'Дорослий',seniors:'Старенький'};
 export const visualVariants=[
  {label:'Без одягу',wearing:{}},
  {label:'Светр',wearing:{body:'sweater'}},
@@ -50,13 +51,15 @@ function glasses(c,base,id,sheet,pad,art){
  const gap=eyes[1][0]-eyes[0][0],ww=gap*2.1,hh=ww*art.height/art.width;
  c.drawImage(art,Math.round(pad+(eyes[0][0]+eyes[1][0])/2-ww/2),Math.round(pad+(eyes[0][1]+eyes[1][1])/2-hh*.43),Math.round(ww),Math.round(hh));
 }
-async function detailedActor(id,sheet,wearing){
+async function detailedActor(id,sheet,wearing,age){
+ sheet=sheet==='seniors'?'adults':sheet;
  const base=await sourceSprite(id,sheet);
  const pad=42,c=createCanvas(base.width+pad*2,base.height+pad*2),ctx=c.getContext('2d');
  ctx.imageSmoothingEnabled=false;ctx.drawImage(dressedBody(base,id,sheet,wearing.body),pad,pad);
  if(wearing.neck)wearNeckwear(ctx,id,sheet,wearing.neck,pad,base);
  if(wearing.head)wearHeadwear(ctx,base,await clothesArt(wearing.head),id,sheet,wearing.head,pad);
  if(wearing.eyes==='glasses')glasses(ctx,base,id,sheet,pad,await clothesArt('glasses'));
+ applySeniorPatina(c,age);
  return c;
 }
 function classicActor(id,age,wearing){
@@ -84,7 +87,7 @@ export async function renderVisualMatrix(){
    c.fillStyle='#344e40';c.font='bold 13px sans-serif';c.fillText(name||id,8,y+28);
    c.font='11px monospace';c.fillText(id,8,y+44);
    for(const [j,{wearing}] of visualVariants.entries()){
-    const sprite=style==='classic'?classicActor(id,age,wearing):await detailedActor(id,sheet,wearing);
+    const sprite=style==='classic'?classicActor(id,age,wearing):await detailedActor(id,sheet,wearing,age);
     const scale=Math.min(155/sprite.width,153/sprite.height,style==='classic'?1.35:1);
     const sw=sprite.width*scale,sh=sprite.height*scale,x=labelWidth+j*cellW+(cellW-sw)/2;
     c.imageSmoothingEnabled=false;c.drawImage(sprite,Math.round(x),Math.round(y+8+(160-sh)/2),Math.round(sw),Math.round(sh));
