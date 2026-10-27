@@ -4,7 +4,7 @@ import {emotionalAppearance,withEmotionalPose} from './pet-expression.js';
 import {faceAnchors} from './emotion-art.js';
 
 // Keep classic garments within the actual source silhouette at every age.
-// This prevents floating scarf, hat and glasses pixels beside small pets.
+// Headwear and glasses are intentionally separate silhouette accessories.
 export function clipWardrobeToSprite(canvas,source){
  const c=canvas.getContext('2d'),d=c.getImageData(0,0,canvas.width,canvas.height);
  for(let q=0;q<d.data.length;q+=4)if(source.data[q+3]===0){
@@ -38,6 +38,7 @@ export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  c.putImageData(d,0,0);
  const neckTop=id==='frog'?65:['dog','pig','bunny'].includes(id)?70:69;
  if(wear.neck==='scarf'){p(51,neckTop,26,2,'#c88d83');p(72,neckTop+2,3,6,'#af746f');}if(wear.neck==='bow'){p(57,neckTop,5,3,'#88a7b8');p(66,neckTop,5,3,'#88a7b8');p(62,neckTop+1,4,2,'#435f76');}
+ clipWardrobeToSprite(cv,source);
  const asleep=s?.sleeping||s?.napping;
  if(!asleep&&wear.head){const seat=id==='frog'?29:id==='bunny'?36:37;
  if(wear.head==='panama'){p(52,seat-10,24,9,'#7b6645');p(54,seat-9,20,6,'#d5bd85');p(49,seat-1,30,3,'#7b6645');p(50,seat-1,28,1,'#ead6a0');}
@@ -52,6 +53,5 @@ export function drawClassicActor(ctx,id,age,color,frame,s,reduced=false){
  const a=faceAnchors(id,age),e=expression;
  if(!asleep&&wear.eyes==='glasses'){const [left,right]=a.eyes;for(const [x,y]of [left,right]){c.strokeStyle='#3e5a50';c.lineWidth=1;c.strokeRect(Math.round(x-5*sx),Math.round(y-4*sy),Math.max(4,Math.round(11*sx)),Math.max(3,Math.round(9*sy)));}c.fillStyle='#3e5a50';c.fillRect(Math.round(left[0]+5*sx),Math.round(left[1]),Math.max(1,Math.round(right[0]-left[0]-10*sx)),1);}
  if(e.tear>=0){c.globalAlpha=Math.min(1,(1-e.tear)*4)*e.strength;for(const [x,y]of a.eyes){c.fillStyle='#70b5c9';c.fillRect(Math.round(x),Math.round(y+4*sy+e.tear*7*sy),1,Math.max(1,Math.round(3*sy)));}c.globalAlpha=1;}
- clipWardrobeToSprite(cv,source);
  withEmotionalPose(ctx,e,64,oy+84*sy,()=>ctx.drawImage(cv,0,0),reduced);
 }
