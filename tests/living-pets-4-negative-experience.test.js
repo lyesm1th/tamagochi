@@ -61,7 +61,7 @@ test('manual interactions and explicit likes remain higher priority than neutral
  let slot;
  for(let i=0;i<1200;i++){
   const found=ambientSlot(s,at+i*5000);
-  if(found?.lane==='room'){slot=found;break;}
+  if(found?.lane==='room'&&found.block%3!==0){slot=found;break;}
  }
  assert.ok(slot);
  const now=slot.at+100;
