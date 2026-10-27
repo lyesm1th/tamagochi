@@ -46,9 +46,10 @@ export function mountPixel25DLab(){
  const redraw=()=>{
   const options=Object.fromEntries(['species','age','body','head','neck','eyes','emotion','scenario','item','action','variant','condition','layout'].map(id=>[id,get(id)?.value]));
   options.sleeping=!!get('sleeping')?.checked;
-  const pet=labPet(options,Date.now());
-  drawDetailedRoom(background.getContext('2d'),pet,0,!!get('reduced')?.checked,Date.now());
-  drawDetailedPortrait(portrait,pet.species,pet,0,true,null,!!get('reduced')?.checked);
+  const time=1700000000000+clock;
+  const pet=labPet(options,time);
+  drawDetailedRoom(background.getContext('2d'),pet,clock,!!get('reduced')?.checked,time);
+  drawDetailedPortrait(portrait,pet.species,pet,clock,true,null,!!get('reduced')?.checked);
   const clip=get('pixel25d-clip').value;
   const pose=clip==='manual'?null:labClipPose(clip,clock);
   const articulated=articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:pose?.tilt??Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
