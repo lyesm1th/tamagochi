@@ -38,6 +38,24 @@ try{
  const capture=async(id,file)=>fs.writeFile(path.join(out,file),Buffer.from(await page.locator('#'+id).evaluate(c=>c.toDataURL('image/png').split(',')[1]),'base64'));
  // Transfer lossless PNG bytes rather than 442,368 JSON numbers per frame.
  const pixels=async()=>Buffer.from(await page.locator('#scene').evaluate(c=>c.toDataURL('image/png').split(',')[1]),'base64');
+ // Locate the changed pixels against the same frozen bare-headed frame, then
+ // crop enough of the surrounding actor to judge contact with the head/face.
+ // This is review evidence, not a geometric assertion that the fit is good.
+ const headCrop=async(bare,dressed)=>{
+  const b=await sharp(bare).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  const d=await sharp(dressed).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  assert.equal(b.info.width,d.info.width);assert.equal(b.info.height,d.info.height);
+  let minX=b.info.width,minY=b.info.height,maxX=-1,maxY=-1;
+  for(let y=0;y<b.info.height;y++)for(let x=0;x<b.info.width;x++){
+   const i=(y*b.info.width+x)*4;
+   if(b.data[i]!==d.data[i]||b.data[i+1]!==d.data[i+1]||b.data[i+2]!==d.data[i+2]||b.data[i+3]!==d.data[i+3]){
+    minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+   }
+  }
+  assert.ok(maxX>=minX&&maxY>=minY,'headwear must change pixels');
+  const size=100,left=Math.max(0,Math.min(b.info.width-size,Math.round((minX+maxX)/2-size/2))),top=Math.max(0,Math.min(b.info.height-size,minY-20));
+  return sharp(dressed).extract({left,top,width:size,height:size}).resize(200,200,{kernel:'nearest'}).png().toBuffer();
+ };
  await select('body','');
  // All 84 species/stage combinations use the actual browser renderer.
  for(const pet of species)for(const age of labAges){
@@ -60,16 +78,18 @@ try{
  const headwearAges=labAges.filter(age=>age!=='Яєчко');
  for(const pet of species){
   await select('species',pet.id);await select('body','');await select('neck','');await select('eyes','');
-  const tiles=[];
+  const tiles=[],closeups=[];
   for(const [row,age] of headwearAges.entries())for(const [col,head] of ['panama','crown'].entries())for(const [poseIndex,pose] of ['idle','bed'].entries()){
    await select('age',age);await select('head','');await select('item',pose==='bed'?'bed':'');await seek(pose==='bed'?3000:2000);
    const bare=await pixels();await select('head',head);await seek(pose==='bed'?3000:2000);const dressed=await pixels();
    assert.ok(!dressed.equals(bare),`${pet.id} ${age} ${head} ${pose}: headwear must render`);
    const tile=await sharp(dressed).resize(192,144,{kernel:'nearest'}).png().toBuffer();
    tiles.push({input:tile,left:(col*2+poseIndex)*192,top:row*144});
+   closeups.push({input:await headCrop(bare,dressed),left:(col*2+poseIndex)*200,top:row*200});
    headwearChecks.push({species:pet.id,age,head,pose});
   }
   await sharp({create:{width:768,height:headwearAges.length*144,channels:4,background:'#eee8da'}}).composite(tiles).png().toFile(path.join(out,`headwear-${pet.id}.png`));
+  await sharp({create:{width:800,height:headwearAges.length*200,channels:4,background:'#eee8da'}}).composite(closeups).png().toFile(path.join(out,`headwear-closeup-${pet.id}.png`));
  }
  await select('head','');await select('item','');
  console.log(`Captured ${headwearChecks.length} headwear scenes.`);
