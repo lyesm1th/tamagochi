@@ -102,7 +102,17 @@ export function enrichPose(s,pose,now=Date.now(),reduced=false){if(pose?._enrich
  if(mood==='springy'&&p.enriched?.point&&!p.interaction?.approaching)p.feet-=Math.max(0,Math.sin(now/400))*1.5;
  if(mood==='sleepy')p.scale*=.97;
  const active=p.interaction?.acting&&['play','jump','stretch','roll','dance','splash'].includes(p.interaction.kind)||p.enriched?.point;if(active){const gait=speciesMotions[s.species];p.enriched.gait=gait;if(gait==='hop'||gait==='earHop')p.feet-=Math.abs(Math.sin(now/240))*6;if(gait==='slide'){p.x=clamp(p.x+Math.sin(now/600)*6,40,152);p.scale*=.88;}if(gait==='hang'&&p.interaction?.item==='post'){p.feet=133;p.x=clamp(p.x,24,168);p.scale*=.55;}if(gait==='stomp')p.feet+=Math.abs(Math.sin(now/240))*2;}
- if(p.interaction?.acting&&!p.interaction?.approaching){const a=speciesRoomAccent(s.species,p.interaction.kind,p.interaction.item,now);p.x=clamp(p.x+a.x,20,172);p.feet=clamp(p.feet+a.feet,80,136);p.scale*=a.scale;}
+ if(p.interaction?.acting&&!p.interaction?.approaching){
+  const a=speciesRoomAccent(s.species,p.interaction.kind,p.interaction.item,now);
+  const feeling=p.interaction.emotionStyle;
+  // Emotional expression changes the intensity, never the intended object or route.
+  const weight=feeling==='comfort'?.35:feeling==='tired'?.2:feeling==='explore'?.8:1;
+  p.x=clamp(p.x+a.x*weight,20,172);
+  p.feet=clamp(p.feet+a.feet*weight,80,136);
+  p.scale*=a.scale;
+  if(feeling==='comfort'||feeling==='tired')p.scale*=.98;
+  p.enriched.emotionStyle=feeling||null;
+ }
  return p;
 }
 export function noteHomeScene(s,gap,now=Date.now()){
