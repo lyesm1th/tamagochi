@@ -36,18 +36,19 @@ try{
  const select=async(id,value)=>{await page.locator('#'+id).evaluate((el,value)=>{el.value=value;el.dispatchEvent(new Event('change'));},value);await tick();};
  const seek=async value=>{await page.locator('#time').evaluate((el,v)=>{el.value=String(v);el.dispatchEvent(new Event('input'));},value);await tick();};
  const capture=async(id,file)=>fs.writeFile(path.join(out,file),Buffer.from(await page.locator('#'+id).evaluate(c=>c.toDataURL('image/png').split(',')[1]),'base64'));
- const pixels=()=>page.locator('#scene').evaluate(c=>Array.from(c.getContext('2d').getImageData(0,0,384,288).data));
+ // Transfer lossless PNG bytes rather than 442,368 JSON numbers per frame.
+ const pixels=async()=>Buffer.from(await page.locator('#scene').evaluate(c=>c.toDataURL('image/png').split(',')[1]),'base64');
  await select('body','');
  // All 84 species/stage combinations use the actual browser renderer.
  for(const pet of species)for(const age of labAges){
   await select('species',pet.id);await select('age',age);await seek(2000);
-  const data=await pixels();assert.ok(data.some((v,i)=>i%4===3&&v>0));
-  await capture('scene',`${pet.id}-${labAges.indexOf(age)}.png`);
-  checks.push({species:pet.id,age,rgbaHash:createHash('sha256').update(Buffer.from(data)).digest('hex')});
+  const data=await pixels();assert.ok(data.length>1000,'room capture must contain scene detail');
+  await fs.writeFile(path.join(out,`${pet.id}-${labAges.indexOf(age)}.png`),data);
+  checks.push({species:pet.id,age,pngHash:createHash('sha256').update(Buffer.from(data)).digest('hex')});
  }
  console.log(`Rendered ${checks.length} species/stage frames.`);
  for(const pet of species){
-  const frames=checks.filter(c=>c.species===pet.id);assert.equal(new Set(frames.map(c=>c.rgbaHash)).size,6,pet.id+' stages must differ');
+  const frames=checks.filter(c=>c.species===pet.id);assert.equal(new Set(frames.map(c=>c.pngHash)).size,6,pet.id+' stages must differ');
   await select('species',pet.id);await select('age','Дорослий');await select('body','');await seek(2000);const naked=await pixels();
   for(const body of ['sweater','raincoat','pajamas']){await select('body',body);await seek(2000);assert.ok(!Buffer.from(await pixels()).equals(Buffer.from(naked)),pet.id+' '+body);outfitChecks.push({species:pet.id,body});}
   await select('body','');

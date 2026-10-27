@@ -27,7 +27,7 @@ Browser checks render all 14 species at all six ages, verify stage diversity and
 
 ## Reviewed correction
 
-Starting point: main `cd127d794d999ddd27bc0503977c67272389f56b` (PR #76). Local Git history for PRs #69–76 was inspected; the full GitHub PR API was unavailable in this machine.
+Starting point: main `cd127d794d999ddd27bc0503977c67272389f56b` (PR #76). Local Git history for PRs #69–76 was inspected. Initial GitHub API access was denied; access later recovered and PR #77 was created.
 
 The prior detailed room draw tested purchase ownership directly and ignored storage. Interactions already used `roomOwned`, so unit tests could pass while players still saw stored furniture. Sleeping and hiding also selected stored furniture. The fix uses the existing ownership resolver consistently, including the box and loose toy, and refuses sleeping/hiding placement on broken furniture.
 
