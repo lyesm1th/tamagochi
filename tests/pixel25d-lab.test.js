@@ -18,6 +18,6 @@ test('Pixel 2.5D reuses Detailed assets, has WebGL nearest-neighbor texture filt
  assert.match(source,/gl\.VERTEX_SHADER/);
  assert.doesNotMatch(source,/localStorage|\/api\/|fetch\(|PETS|\.put\(/);
  const worker=read('src/worker.js');
- assert.match(worker,/\^\\\/lab\/i);
+ assert.ok(worker.includes('if(/^\\/lab/i.test(assetPath))'));
  assert.match(worker,/OWNER_TELEGRAM_ID/);
 });
