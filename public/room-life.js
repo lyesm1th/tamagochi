@@ -91,7 +91,10 @@ export function roomSequenceStep(s,items,first,slot,now){
  const order=playfulness>=curiosity?candidates:[...candidates].reverse();
  // A favorite activity should not be cut short for a neutral one.
  const favorite=roomTaste(s,first)==='love';
- const next=order.find(id=>id!==first&&items.includes(id)&&roomTaste(s,id)!=='annoy'&&(!favorite||roomTaste(s,id)==='love'));
+ const allowed=id=>id!==first&&items.includes(id)&&roomTaste(s,id)!=='annoy'&&(!favorite||roomTaste(s,id)==='love');
+ // A practiced ritual can guide the second action, but never outrank an explicit favorite.
+ const habit=roomHabitOf(s,order.filter(allowed));
+ const next=habit?.item&&allowed(habit.item)?habit.item:order.find(allowed);
  return next?{item:next,at:halfway,originItem:first}:null;
 }
 // A soft, species-specific preference when there is no urgent need or loved object.
