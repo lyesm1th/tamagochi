@@ -1,5 +1,5 @@
 // Owner-only Pixel 2.5D experiment. Reuses the actual Detailed art, without changing a save.
-import {drawDetailedRoom,drawDetailedPortrait, detailedAnchors} from './detailed-renderer.js';
+import {drawDetailedRoom,drawDetailedPortrait, detailedAnchors,loadDetailedAssets} from './detailed-renderer.js';
 import {labPet} from './lab-state.js';
 import {articulatePortrait} from './lab-rig.js';
 import {labClipPose} from './lab-motion.js';
@@ -34,11 +34,13 @@ export function createPixel25D(canvas){
   layer(background,[-1,-1,2,2]);layer(portrait,[-.34+depth*.13,-.81+bob/144,.68,.83],yaw,depth,true);
  },destroy(){gl.deleteTexture(texture);gl.deleteBuffer(buffer);gl.deleteProgram(program);}};
 }
-export function mountPixel25DLab(){
+export async function mountPixel25DLab(){
  const target=document.getElementById('pixel25d-stage');if(!target)return;
  const status=document.getElementById('pixel25d-status');
  let engine;try{engine=createPixel25D(target);}catch(e){status.textContent='WebGL unavailable: '+e.message;return;}
  if(!engine){status.textContent='WebGL недоступний. Detailed залишається активним.';return;}
+ status.textContent='Завантаження Detailed-атласів для Pixel 2.5D…';
+ if(!await loadDetailedAssets()){status.textContent='Не вдалося завантажити Detailed-атласи.';engine.destroy();return;}
  const background=document.createElement('canvas'),portrait=document.createElement('canvas');
  background.width=384;background.height=288;portrait.width=128;portrait.height=128;
  const get=id=>document.getElementById(id);
@@ -49,6 +51,7 @@ export function mountPixel25DLab(){
   const time=1700000000000+clock;
   const pet=labPet(options,time);
   drawDetailedRoom(background.getContext('2d'),pet,clock,!!get('reduced')?.checked,time);
+  portrait.getContext('2d').clearRect(0,0,portrait.width,portrait.height);
   drawDetailedPortrait(portrait,pet.species,pet,clock,true,null,!!get('reduced')?.checked);
   const clip=get('pixel25d-clip').value;
   const pose=clip==='manual'?null:labClipPose(clip,clock);
