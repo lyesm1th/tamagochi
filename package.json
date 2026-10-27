@@ -13,13 +13,16 @@
     "test:sprites": "node --test tests/sprite-integrity.test.js",
     "check:visual-baseline": "node scripts/check-visual-baseline.mjs",
     "audit:modules": "node scripts/audit-unused-modules.mjs",
-    "visual:matrix": "node scripts/render-visual-evolution-matrix.mjs"
+    "visual:matrix": "node scripts/render-visual-evolution-matrix.mjs",
+    "test:graphic-qa": "node scripts/graphic-qa.mjs"
   },
   "devDependencies": {
     "@napi-rs/canvas": "1.0.13",
     "esbuild": "0.28.2",
     "miniflare": "5.20261019.2-beta",
+    "playwright": "1.58.2",
     "sharp": "0.34.5",
+    "three": "^0.180.0",
     "wrangler": "^4.0.0"
   }
 }
