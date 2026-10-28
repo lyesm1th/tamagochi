@@ -11,7 +11,7 @@ const cowPatch=(n,c)=>{const ell=(x,y,z,rx,ry,rz)=>((c[0]-x)/rx)**2+((c[1]-y)/ry
  return ell(-.43,1.27,.34,.30,.37,.35)||ell(.51,1.05,-.20,.37,.29,.30)||ell(-.18,1.54,-.38,.32,.27,.28);
 };
 const furTone=(ink,c)=>{if(!c)return ink;
- const grain=hash3(...c),d=grain>.86?18:grain<.15?-14:0;
+ const grain=hash3(...c),d=grain>.975?5:grain<.025?-5:0;
  if(!d)return ink;
  const hex=ink.replace('#','');const rgb=[0,2,4].map(k=>clamp(parseInt(hex.slice(k,k+2),16)+d,0,255).toString(16).padStart(2,'0'));
  return '#'+rgb.join('');
@@ -122,7 +122,7 @@ export function drawCow3D(canvas,pose={}){
   const center=f.v.reduce((v,p)=>[v[0]+p[0]/3,v[1]+p[1]/3],[0,0]);
   const base=rgb(f.ink),normal=f.normal||[0,0,1];
   const sunlight=Math.max(0,normal[0]*light[0]+normal[1]*light[1]+normal[2]*light[2]);
-  const shade=clamp(.79+sunlight*.29+Math.sin(center[0]*.43+center[1]*.36)*.025,.72,1.13);
+  const shade=clamp(Math.round((.82+sunlight*.23)*12)/12,.76,1.08);
   const r=base.map(n=>Math.round(clamp(n*shade,0,255)));
   ctx.fillStyle='rgb('+r.join(',')+')';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.closePath();ctx.fill();
  }
