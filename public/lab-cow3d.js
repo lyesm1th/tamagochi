@@ -4,6 +4,17 @@
 export const cow3DParts=Object.freeze(['body','head','muzzle','ears','horns','eyes','four legs','tail']);
 const palette={cream:'#f8e8c9',white:'#fff1da',brown:'#845039',dark:'#482b25',pink:'#ed9b9b',rose:'#bf6c75',hoof:'#50362d',horn:'#ecd5a2',eye:'#251d1a',shine:'#fff9ef'};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+// World-space textile-like pixel noise, stable under head turns and body animation.
+const hash3=(x,y,z)=>{const n=Math.sin(Math.floor(x*17)*127.1+Math.floor(y*17)*311.7+Math.floor(z*17)*74.7)*43758.5453;return n-Math.floor(n);};
+const cowPatch=(n,c)=>{const ell=(x,y,z,rx,ry,rz)=>((c[0]-x)/rx)**2+((c[1]-y)/ry)**2+((c[2]-z)/rz)**2<1;
+ return ell(-.43,1.27,.34,.30,.37,.35)||ell(.51,1.05,-.20,.37,.29,.30)||ell(-.18,1.54,-.38,.32,.27,.28);
+};
+const furTone=(ink,c)=>{if(!c)return ink;
+ const grain=hash3(...c),d=grain>.86?18:grain<.15?-14:0;
+ if(!d)return ink;
+ const hex=ink.replace('#','');const rgb=[0,2,4].map(k=>clamp(parseInt(hex.slice(k,k+2),16)+d,0,255).toString(16).padStart(2,'0'));
+ return '#'+rgb.join('');
+};
 const rad=n=>n*Math.PI/180;
 const vadd=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
 const spin=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return [p[0]*c+p[2]*s,p[1],-p[0]*s+p[2]*c];};
@@ -18,7 +29,7 @@ function sphere(parts,c,r,color,opts={}){
    const n=[(center[0]-c[0])/r[0],(center[1]-c[1])/r[1],(center[2]-c[2])/r[2]];
    let ink=color;
    if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
-   parts.push({points:p,normal:n,ink,part:opts.part||'body'});
+   parts.push({points:p,normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
 }
@@ -35,7 +46,7 @@ export function buildCow3D(pose={}){
  const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=Math.sin(t*.002)*.025;
  const walk=pose.action==='walk',wave=pose.action==='wave',sleep=pose.action==='sleep';
  const breath=1+Math.sin(t*.0025)*.018;
- sphere(tris,[0,1.12,0],[.84*breath,.69,.62],palette.cream,{part:'body',patch:(n,c)=>((c[0]<-.34&&c[2]>.05)||(c[0]>.40&&c[2]<-.12)||(c[1]>1.45&&c[0]<-.12))});
+ sphere(tris,[0,1.12,0],[.84*breath,.69,.62],palette.cream,{part:'body',patch:cowPatch});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
   const x=left?-.52:.52,z=front?.40:-.40;
@@ -46,8 +57,9 @@ export function buildCow3D(pose={}){
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
- sphere(head,[0,0,.07],[.65,.60,.57],palette.cream,{part:'head',patch:(n,c)=>c[1]>.1&&Math.abs(c[0])>.43});
- sphere(head,[0,-.19,.58],[.43,.285,.255],palette.pink,{part:'muzzle'});
+ sphere(head,[0,0,.07],[.65,.60,.57],palette.cream,{part:'head',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
+ sphere(head,[0,-.20,.57],[.47,.27,.29],palette.pink,{part:'muzzle'});
+ sphere(head,[0,-.40,.65],[.21,.055,.085],palette.rose,{part:'mouth'});
  for(const side of [-1,1]){
   sphere(head,[side*.56,.31,.09],[.34,.225,.16],palette.brown,{part:'ear'});
   sphere(head,[side*.57,.32,.20],[.24,.14,.06],palette.rose,{part:'innerEar'});
@@ -63,6 +75,7 @@ export function buildCow3D(pose={}){
   sphere(head,[side*.19,-.19,.814],[.065,.045,.018],palette.rose,{part:'nostril'});
  }
  sphere(head,[-.09,.54,.35],[.30,.17,.25],palette.white,{part:'fringe'});
+ sphere(head,[.06,.60,.29],[.19,.11,.19],palette.white,{part:'fringeDetail'});
  const neck=[0,1.66,.41];
  for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin(p,headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
@@ -75,11 +88,11 @@ export function buildCow3D(pose={}){
 function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 export function drawCow3D(canvas,pose={}){
  const ctx=canvas.getContext('2d');if(!ctx)return;
- const w=192,h=144;canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
+ const w=256,h=192;canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
  ctx.fillStyle='#e8dfcc';ctx.fillRect(0,0,w,h);
- ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,119,46,11,0,0,Math.PI*2);ctx.fill();
- const yaw=rad(Number(pose.yaw)||0),pitch=rad(13),scale=44;
- const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,112-y*scale*perspective,z];};
+ ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160,57,13,0,0,Math.PI*2);ctx.fill();
+ const yaw=rad(Number(pose.yaw)||0),pitch=rad(13),scale=58;
+ const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148-y*scale*perspective,z];};
  const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const light=[-.43,.71,.52];
  for(const f of faces){
