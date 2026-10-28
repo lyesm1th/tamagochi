@@ -1,0 +1,16 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {buildCow3D} from '../public/lab-cow3d.js';
+import {detailedCowPigment} from '../public/lab-cow3d-texture.js';
+test('Detailed texture pigment transfer gracefully falls back without browser atlas',()=>{
+ assert.equal(detailedCowPigment('body',[0,1,0],[0,0,1],'#f8e8c9'),'#f8e8c9');
+});
+test('3D head, body, blinking and rotation stay structurally intact',()=>{
+ const base=buildCow3D({headYaw:0});
+ const turned=buildCow3D({headYaw:32});
+ const a=new Set(base.map(f=>f.part));
+ for(const k of ['head','body','muzzle','eye','ear','horn','leg0','leg1','leg2','leg3'])assert.ok(a.has(k),k);
+ assert.notDeepEqual(base.find(f=>f.part==='head').points,turned.find(f=>f.part==='head').points);
+ assert.deepEqual(base.find(f=>f.part==='body').points,turned.find(f=>f.part==='body').points);
+ assert.ok(buildCow3D({blink:true}).some(f=>f.part==='lid'));
+});
