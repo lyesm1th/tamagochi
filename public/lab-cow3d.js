@@ -64,10 +64,10 @@ export function buildCow3D(pose={}){
  const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=Math.sin(t*.002)*.025;
  const walk=pose.action==='walk',wave=pose.action==='wave',sleep=pose.action==='sleep';
  const breath=1+Math.sin(t*.0025)*.018;
- sphere(tris,[0,1.07,-.23],[.67*breath,.53,.68],palette.cream,{part:'body',patch:cowPatch});
+ sphere(tris,[0,1.05,-.37],[.80*breath,.59,.78],palette.cream,{part:'body',patch:cowPatch});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
-  const x=left?-.43:.43,z=front?.38:-.46;
+  const x=left?-.49:.49,z=front?.28:-.66;
   const phase=t*.009+(left?0:Math.PI)+(front?0:Math.PI);
   const lift=walk?Math.max(0,Math.sin(phase))*.19:wave&&i===1?.25*Math.max(0,Math.sin(t*.008)):0;
   sphere(tris,[x,.43+lift,z],[.23,.32,.245],palette.cream,{part:'leg'+i});
@@ -97,12 +97,12 @@ export function buildCow3D(pose={}){
  sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
  sphere(head,[.06,.60,.29],[.21,.13,.20],palette.white,{part:'fringeDetail'});
  sphere(head,[-.25,.50,.46],[.12,.13,.14],'#fdf1d6',{part:'fringeLock'});
- const neck=[0,1.45,.52];
- for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin([p[0]*1.15,p[1]*1.09,p[2]*1.08],headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
+ const neck=[0,1.60,.27];
+ for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin([p[0]*1.03,p[1]*1.00,p[2]*1.02],headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
  const sway=Math.sin(t*.004)*.3;
- cylinder(tris,[0,1.12,-.67],[sway,1.34,-1.09],.10,.065,palette.cream,'tail');
- sphere(tris,[sway,1.34,-1.13],[.16,.18,.17],palette.brown,{part:'tailTuft'});
+ cylinder(tris,[0,1.12,-1.03],[sway,1.34,-1.40],.10,.065,palette.cream,'tail');
+ sphere(tris,[sway,1.34,-1.44],[.16,.18,.17],palette.brown,{part:'tailTuft'});
  const crouch=sleep?.39:1;
  return tris.map(tri=>({...tri,points:tri.points.map(p=>[p[0],p[1]*crouch,p[2]])}));
 }
