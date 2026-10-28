@@ -45,7 +45,7 @@ export function transferCowGrain(base,sampled){
  return '#'+a.map(n=>Math.round(clamp(n+adjustment,0,255)).toString(16).padStart(2,'0')).join('');
 }
 function sphere(parts,c,r,color,opts={}){
- const rows=opts.rows||20,cols=opts.cols||32;
+ const rows=opts.rows||16,cols=opts.cols||24; // enough for 2x–4x pixels, ~40% fewer triangles
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
   const point=(u,v)=>{const ph=v*Math.PI,th=u*Math.PI*2;
    const localY=Math.cos(ph);
@@ -88,7 +88,7 @@ export function buildCow3D(pose={}){
  const emotion=['happy','sad','angry'].includes(pose.emotion)?pose.emotion:'neutral';
  const headPitch=rad(clamp(Number(pose.headPitch)||0,-25,25));
  const breath=1+Math.sin(t*.0025)*(sleep?.008:.018);
- sphere(tris,[0,1.07,-.30],[.90*breath,.64,.80],coat,{part:'body',patch:cowPatch,patchColor:patch});
+ sphere(tris,[0,1.07,-.30],[ (reference?.92:.90)*breath,.64,.80],coat,{part:'body',patch:cowPatch,patchColor:patch});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
   const x=left?-.49:.49,z=front?.28:-.66;
@@ -171,7 +171,8 @@ export function buildCow3D(pose={}){
  if(!sleep)return tris;
  const angle=rad(-72),co=Math.cos(angle),si=Math.sin(angle);
  const rotate=p=>[p[0]*co-p[1]*si,p[0]*si+p[1]*co,p[2]];
- const bottom=Math.min(...tris.flatMap(tri=>tri.points.map(p=>rotate(p)[1])));
+ let bottom=Infinity;
+ for(const tri of tris)for(const p of tri.points)bottom=Math.min(bottom,rotate(p)[1]);
  return tris.map(tri=>({...tri,points:tri.points.map(p=>{const q=rotate(p);return [q[0],q[1]-bottom+.08,q[2]];}),normal:rotate(tri.normal)}));
 }
 function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
