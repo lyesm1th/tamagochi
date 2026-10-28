@@ -7,3 +7,13 @@ test('2.5D cow uses 2x chunky pixels with true low-res rendering',()=>{
  assert.equal(canvas.style.imageRendering,'pixelated');assert.equal(canvas.dataset.cow3dPixelScale,'2');
  assert.equal(ctx.imageSmoothingEnabled,false);
 });
+
+test('owner lab supports deliberately chunky 4x pixel art without smoothing',()=>{
+ const data=new Uint8ClampedArray(64*48*4);
+ const ctx={fillStyle:'',imageSmoothingEnabled:true,fillRect(){},beginPath(){},ellipse(){},fill(){},getImageData(x,y,w,h){assert.equal(w,64);assert.equal(h,48);return {data};},putImageData(){}};
+ const canvas={style:{},dataset:{},getContext(){return ctx}};
+ assert.ok(drawCow3D(canvas,{pixelScale:4,headYaw:25,yaw:30}));
+ assert.equal(canvas.width,64);assert.equal(canvas.height,48);
+ assert.equal(canvas.dataset.cow3dPixelScale,'4');
+ assert.equal(ctx.imageSmoothingEnabled,false);
+});
