@@ -96,31 +96,37 @@ try{
  // Real geometry QA in the existing private room; no flat billboard is used.
  await page.waitForFunction(()=>document.getElementById('cow3d-stage')?.dataset.cow3dReady==='true');
  await page.locator('#cow3d-play').uncheck();
- // The owner's approved Detailed reference must not silently regress back to
- // the old black-and-white appearance. Capture both designs for human review.
+ // The *lower* Detailed sprite is the approved original: black cap and flanks,
+ // creamy white face, pink muzzle, and happy expression. The upper cream cow
+ // was an earlier 3D attempt, retained separately for A/B inspection.
  await select('cow3d-design','reference');
  await select('cow3d-render-mode','locked');
- await select('cow3d-emotion','sad');
+ await select('cow3d-emotion','neutral');
  await select('cow3d-pixels','3');
  await select('cow3d-action','idle');
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input'));});await tick();
  const cowMatch=await page.locator('#cow3d-stage').evaluate(c=>{
   const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
-  let cream=0,pink=0,brown=0;
+  let cream=0,pink=0,charcoal=0;
   for(let i=0;i<data.length;i+=4){
    const [r,g,b]=[data[i],data[i+1],data[i+2]];
-   if(r-g>=11&&r-g<=20&&g-b>=24&&g-b<=42)cream++;
-   if(r>180&&g>=105&&g<=183&&b>=108&&b<=190&&Math.abs(g-b)<17)pink++;
-   if(r>=70&&r<=155&&g>=40&&g<=105&&b>=30&&b<=82&&r>g+28)brown++;
+   if(r>=196&&g>=180&&b>=158&&r>g&&g>=b&&r-b>=17)cream++;
+   if(r>=174&&g>=94&&g<=195&&b>=102&&b<=200&&r>g+25)pink++;
+   if(r<=88&&g<=88&&b<=97&&Math.abs(r-g)<20&&Math.abs(g-b)<20)charcoal++;
   }
-  return {cream,pink,brown,design:c.dataset.cow3dDesign,revision:c.dataset.cow3dRevision};
+  return {cream,pink,charcoal,design:c.dataset.cow3dDesign,revision:c.dataset.cow3dRevision,
+   material:c.dataset.cow3dMaterial,painted:Number(c.dataset.cow3dPaintedFurPixels||0)};
  });
  assert.equal(cowMatch.design,'reference');
- assert.equal(cowMatch.revision,'detailed-match-v2');
- assert.ok(cowMatch.cream>25,'3D cow must retain a cream coat rather than black/grey');
- assert.ok(cowMatch.pink>8,'wide reference pink muzzle must be visible');
- assert.ok(cowMatch.brown>6,'warm cocoa patches, horns and ear rims must be visible');
- await capture('cow3d-stage','cow-3d-detailed-match-front.png');
+ assert.equal(cowMatch.revision,'original-detailed-v3');
+ assert.equal(cowMatch.material,'original-detailed-surface');
+ assert.ok(cowMatch.cream>40,'reference head/chest must remain creamy ivory');
+ assert.ok(cowMatch.pink>8,'original snout and blush need a visible pink shade');
+ assert.ok(cowMatch.charcoal>25,'reference needs obvious dark forehead, ears and body flanks');
+ assert.ok(cowMatch.painted>15,'3D paint must actually cover depth-tested mesh pixels');
+ await capture('cow3d-stage','cow-3d-original-black-ivory-front.png');
+ await select('cow3d-design','cream');
+ await capture('cow3d-stage','cow-3d-previous-cream.png');
  await select('cow3d-design','legacy');
  await capture('cow3d-stage','cow-3d-legacy-front.png');
  await select('cow3d-design','reference');
@@ -129,7 +135,7 @@ try{
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='90';el.dispatchEvent(new Event('input'));});await tick();
  const sideCow=await cowFrame();
  assert.notEqual(frontCow,sideCow,'3D cow must have different geometry when viewed from side');
- await capture('cow3d-stage','cow-3d-side.png');
+ await capture('cow3d-stage','cow-3d-original-side.png');
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input'));});await tick();
  await page.locator('#cow3d-action').selectOption('blink');await page.locator('#cow3d-play').check();await tick();
  await capture('cow3d-stage','cow-3d-front.png');
