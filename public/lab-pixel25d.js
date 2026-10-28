@@ -4,7 +4,7 @@ import {labPet} from './lab-state.js';
 import {articulatePortrait} from './lab-rig.js';
 import {labClipPose} from './lab-motion.js';
 import {rigPoints} from './lab-rig.js';
-import {interactionPose} from './lab-interactions25d.js';
+import {interactionPose,animationLibrary} from './lab-interactions25d.js';
 import {referenceSpecies,drawReferenceRig} from './lab-reference-rig.js';
 const size=[384,288];
 export function createPixel25D(canvas){
@@ -48,6 +48,7 @@ export async function mountPixel25DLab(){
  background.width=384;background.height=288;portrait.width=128;portrait.height=128;
  const get=id=>document.getElementById(id);
  let clock=0,last=0,alive=true;
+ const syncTimeline=()=>{const action=get('pixel25d-interaction')?.value;const duration=animationLibrary[action]?.duration||3000;const timeline=get('pixel25d-time');timeline.max=String(duration);if(clock>=duration)clock=0;timeline.value=String(Math.round(clock));};
  const redraw=()=>{
   const options=Object.fromEntries(['species','age','body','head','neck','eyes','emotion','scenario','item','action','variant','condition','layout'].map(id=>[id,get(id)?.value]));
   options.sleeping=!!get('sleeping')?.checked;
@@ -71,13 +72,15 @@ export async function mountPixel25DLab(){
   status.textContent=(referenceEnabled?'CAT REFERENCE RIG · ':'')+'WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
  };
  for(const el of document.querySelectorAll('select,input'))el.addEventListener('change',redraw);
+ get('pixel25d-interaction')?.addEventListener('change',()=>{clock=0;syncTimeline();redraw();});
+ get('species')?.addEventListener('change',()=>{const cat=get('species').value===referenceSpecies;get('pixel25d-reference').checked=cat;redraw();});
  for(const id of ['pixel25d-yaw','pixel25d-depth','pixel25d-head','pixel25d-left-hand','pixel25d-right-hand'])get(id).addEventListener('input',redraw);
  get('pixel25d-refresh').addEventListener('click',redraw);
  get('pixel25d-time').addEventListener('input',()=>{clock=Number(get('pixel25d-time').value);redraw();});
- const tick=t=>{if(!alive)return;if(get('pixel25d-play').checked&&(get('pixel25d-clip').value!=='manual'||get('pixel25d-interaction')?.value!=='manual')){clock=(clock+Math.min(64,Math.max(0,t-(last||t))))%3000;get('pixel25d-time').value=String(Math.round(clock));redraw();}last=t;requestAnimationFrame(tick);};
+ const tick=t=>{if(!alive)return;if(get('pixel25d-play').checked&&(get('pixel25d-clip').value!=='manual'||get('pixel25d-interaction')?.value!=='manual')){clock=(clock+Math.min(64,Math.max(0,t-(last||t))))/Math.max(1,Number(get('pixel25d-time').max));clock=clock%1*Number(get('pixel25d-time').max);get('pixel25d-time').value=String(Math.round(clock));redraw();}last=t;requestAnimationFrame(tick);};
  requestAnimationFrame(tick);
  get('pixel25d-save').addEventListener('click',()=>{redraw();const link=document.createElement('a');link.download='pixel25d-'+get('species').value+'-'+get('age').value+'.png';link.href=target.toDataURL('image/png');link.click();});
- redraw();
+ syncTimeline();redraw();
  return {redraw,destroy:()=>{alive=false;engine.destroy();}};
 }
 if(typeof document!=='undefined'&&document.getElementById('pixel25d-stage'))window.addEventListener('load',()=>{mountPixel25DLab();});
