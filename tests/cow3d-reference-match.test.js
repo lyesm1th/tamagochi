@@ -68,7 +68,7 @@ test('owner-only lab selects frontal, smiling black-and-white reference design',
  assert.match(html,/value="reference" selected/);
  assert.match(html,/value="neutral" selected/);
  assert.match(html,/id="cow3d-yaw"[^>]*value="0"/);
- assert.match(html,/src="\/lab-cow3d\.js" data-revision="original-detailed-v3"/);
+ assert.match(html,/src="\/lab-cow3d\.js\?v=origv3" data-revision="original-detailed-v3"/);
 });
 
 test('3D reference view exposes version and integer pixel scale without smoothing',()=>{
