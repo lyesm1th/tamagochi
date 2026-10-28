@@ -1,6 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
+import {renderCowMeshPixels} from './lab-cow3d-raster.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment} from './lab-cow3d-texture.js';
 export const cow3DParts=Object.freeze(['body','head','muzzle','ears','horns','eyes','four legs','tail']);
 const palette={cream:'#f8e8c9',white:'#fff1da',brown:'#845039',dark:'#482b25',pink:'#ed9b9b',rose:'#bf6c75',hoof:'#50362d',horn:'#ecd5a2',eye:'#251d1a',shine:'#fff9ef'};
@@ -64,7 +65,7 @@ export function buildCow3D(pose={}){
  const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=Math.sin(t*.002)*.025;
  const walk=pose.action==='walk',wave=pose.action==='wave',sleep=pose.action==='sleep';
  const breath=1+Math.sin(t*.0025)*.018;
- sphere(tris,[0,1.05,-.37],[.80*breath,.59,.78],palette.cream,{part:'body',patch:cowPatch});
+ sphere(tris,[0,1.07,-.30],[.90*breath,.64,.80],palette.cream,{part:'body',patch:cowPatch});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
   const x=left?-.49:.49,z=front?.28:-.66;
@@ -97,7 +98,7 @@ export function buildCow3D(pose={}){
  sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
  sphere(head,[.06,.60,.29],[.21,.13,.20],palette.white,{part:'fringeDetail'});
  sphere(head,[-.25,.50,.46],[.12,.13,.14],'#fdf1d6',{part:'fringeLock'});
- const neck=[0,1.60,.27];
+ const neck=[0,1.65,.19];
  for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin([p[0]*1.03,p[1]*1.00,p[2]*1.02],headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
  const sway=Math.sin(t*.004)*.3;
@@ -115,35 +116,9 @@ export function drawCow3D(canvas,pose={}){
  const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148-y*scale*perspective,z];};
  const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
- const light=[-.43,.71,.52];
- for(const f of faces){
-  const [a,b,c]=f.v,ab=[b[0]-a[0],b[1]-a[1]],ac=[c[0]-a[0],c[1]-a[1]];
-  const area=ab[0]*ac[1]-ab[1]*ac[0];if(Math.abs(area)<.12)continue;
-  const center=f.v.reduce((v,p)=>[v[0]+p[0]/3,v[1]+p[1]/3],[0,0]);
-  const base=rgb(f.ink),normal=f.normal||[0,0,1];
-  const sunlight=Math.max(0,normal[0]*light[0]+normal[1]*light[1]+normal[2]*light[2]);
-  const shade=clamp(Math.round((.88+sunlight*.15)*8)/8,.82,1.08);
-  const r=base.map(n=>Math.round(clamp(n*shade,0,255)));
-  ctx.fillStyle='rgb('+r.join(',')+')';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.closePath();ctx.fill();
-  // Nearest-neighbor raster paint. Pixels sample positions across each projected
-  // triangle, rather than assigning one atlas color to the whole polygon.
-  if(cowDetailedTextureReady()&&f.texPoints&&['head','body'].includes(f.part)&&f.normal[2]>.20){
-   const minX=Math.max(0,Math.floor(Math.min(a[0],b[0],c[0]))),maxX=Math.min(w-1,Math.ceil(Math.max(a[0],b[0],c[0])));
-   const minY=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1]))),maxY=Math.min(h-1,Math.ceil(Math.max(a[1],b[1],c[1])));
-   const den=(b[1]-c[1])*(a[0]-c[0])+(c[0]-b[0])*(a[1]-c[1]);
-   if(Math.abs(den)<.001)continue;
-   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
-    const l0=((b[1]-c[1])*(x-c[0])+(c[0]-b[0])*(y-c[1]))/den;
-    const l1=((c[1]-a[1])*(x-c[0])+(a[0]-c[0])*(y-c[1]))/den;
-    const l2=1-l0-l1;
-    if(l0<0||l1<0||l2<0)continue;
-    const pos=[0,1,2].map(k=>f.texPoints[0][k]*l0+f.texPoints[1][k]*l1+f.texPoints[2][k]*l2);
-    const ink=detailedCowPigment(f.part,pos,[0,0,1],f.ink);
-    if(ink===f.ink)continue;
-    ctx.fillStyle=ink;ctx.fillRect(x,y,1,1);
-   }
-  }
- }
+ const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,textureReady:cowDetailedTextureReady()});
+ canvas.dataset.cow3dPainted=String(rendered.painted);
+ canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
  canvas.dataset.cow3dReady='true';
  canvas.dataset.cow3dTextured=String(cowDetailedTextureReady());
