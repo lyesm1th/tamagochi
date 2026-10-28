@@ -70,11 +70,11 @@ function cylinder(parts,start,end,r1,r2,color,part='tail'){
  }
 }
 export function buildCow3D(pose={}){
- const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=Math.sin(t*.002)*.025;
+ const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=pose.action==='sleep'?0:Math.sin(t*.002)*.025;
  const walk=pose.action==='walk',wave=pose.action==='wave',sleep=pose.action==='sleep';
  const emotion=['happy','sad','angry'].includes(pose.emotion)?pose.emotion:'neutral';
  const headPitch=rad(clamp(Number(pose.headPitch)||0,-25,25));
- const breath=1+Math.sin(t*.0025)*.018;
+ const breath=1+Math.sin(t*.0025)*(sleep?.008:.018);
  sphere(tris,[0,1.07,-.30],[.90*breath,.64,.80],palette.cream,{part:'body',patch:cowPatch});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
@@ -102,7 +102,7 @@ export function buildCow3D(pose={}){
   sphere(head,[side*.29,.11,.57],[.155,.17,.075],palette.dark,{part:'eyeBorder'});
   if(emotion==='angry')sphere(head,[side*.29,.32,.60],[.18,.038,.052],palette.dark,{part:'brow'});
   if(emotion==='sad')sphere(head,[side*.29,.29,.60],[.145,.029,.045],palette.brown,{part:'brow'});
-  if(!pose.blink){
+  if(!(pose.blink||sleep)){
    sphere(head,[side*.29,.11,.655],[.113,.135,.056],palette.eye,{part:'eye'});
    sphere(head,[side*.29-.045,.17,.706],[.032,.039,.014],palette.shine,{part:'sparkle'});
    sphere(head,[side*.29+.048,.063,.708],[.015,.017,.010],palette.shine,{part:'sparkleSmall'});
@@ -127,8 +127,12 @@ export function buildCow3D(pose={}){
  const sway=Math.sin(t*.004)*.3;
  cylinder(tris,[0,1.12,-1.03],[sway,1.34,-1.40],.10,.065,palette.cream,'tail');
  sphere(tris,[sway,1.34,-1.44],[.16,.18,.17],palette.brown,{part:'tailTuft'});
- const crouch=sleep?.39:1;
- return tris.map(tri=>({...tri,points:tri.points.map(p=>[p[0],p[1]*crouch,p[2]])}));
+ // Rigid recline: preserve actual 3D proportions of every part.
+ if(!sleep)return tris;
+ const angle=rad(-72),co=Math.cos(angle),si=Math.sin(angle);
+ const rotate=p=>[p[0]*co-p[1]*si,p[0]*si+p[1]*co,p[2]];
+ const bottom=Math.min(...tris.flatMap(tri=>tri.points.map(p=>rotate(p)[1])));
+ return tris.map(tri=>({...tri,points:tri.points.map(p=>{const q=rotate(p);return [q[0],q[1]-bottom+.08,q[2]];}),normal:rotate(tri.normal)}));
 }
 function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 export function drawCow3D(canvas,pose={}){
@@ -142,7 +146,7 @@ export function drawCow3D(canvas,pose={}){
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
  const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,
-  textureReady:cowDetailedTextureReady(),outlineWidth:pixelScale===2?2:1,protectFeatures:pose.renderMode==='locked'});
+  textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked',outlineWidth:pixelScale===2?2:1,protectFeatures:pose.renderMode==='locked',stablePalette:pose.renderMode==='locked'});
  canvas.dataset.cow3dPixelScale=String(pixelScale);
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
@@ -150,20 +154,21 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
  canvas.dataset.cow3dReady='true';
- canvas.dataset.cow3dTextured=String(cowDetailedTextureReady());
+ canvas.dataset.cow3dTextured=String(cowDetailedTextureReady()&&pose.renderMode!=='locked');
+ canvas.dataset.cow3dSleeping=String(pose.action==='sleep');
  return faces.length;
 }
 export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
- let playing=false,last=0,time=0,lastPaint=-1000;
+ let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
  const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{renderMode:get('cow3d-render-mode').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent=(cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode'])get(id).addEventListener('input',render);
  canvas.addEventListener('click',()=>{const choice=get('cow3d-emotion');choice.value=choice.value==='happy'?'neutral':'happy';render();});
  get('cow3d-save').addEventListener('click',()=>{render();const a=root.createElement('a');a.download='cow-3d-owner-lab.png';a.href=canvas.toDataURL('image/png');a.click();});
  function tick(now){time+=playing?Math.min(60,Math.max(0,now-(last||now))):0;last=now;
-  if(playing&&now-lastPaint>=(get('cow3d-render-mode').value==='locked'?100:90)&&canvas.isConnected&&!canvas.closest('[hidden]')){render();lastPaint=now;}
+  if(playing&&now-lastPaint>=(get('cow3d-render-mode').value==='locked'?100:90)&&canvas.isConnected&&!canvas.closest('[hidden]')){const signature=[get('cow3d-action').value,get('cow3d-render-mode').value,get('cow3d-pixels').value,Math.floor(time/100)].join(':');if(signature!==lastSignature){render();lastSignature=signature;}lastPaint=now;}
   requestAnimationFrame(tick);}
  render();
  loadCowDetailedTexture().then(()=>{render();drawCowDetailedReference(get('cow3d-reference'));});
