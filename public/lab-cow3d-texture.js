@@ -20,36 +20,31 @@ export function loadCowDetailedTexture(){
  });
  return loading;
 }
-export function detailedCowPixel(part,position,normal){
- if(!texture)return null;
- // Only front-facing geometry uses the original front-view painting.
- // The flank and back retain procedural 3D coat, not stretched face pixels.
- if(normal[2]<.35||!['head','body','leg0','leg1','leg2','leg3'].includes(part))return null;
- let u,v;
- if(part==='head'){
-  u=.5+position[0]/2.10;
-  v=.35-position[1]/2.50;
- }else if(part==='body'){
-  u=.5+position[0]/2.3;
-  v=.78-(position[1]-1.1)/2.2;
- }else{
-  u=.5+position[0]/2.15;
-  v=.91-(position[1]-.5)/1.25;
- }
- const x=Math.max(0,Math.min(texture.width-1,Math.round(u*(texture.width-1))));
- const y=Math.max(0,Math.min(texture.height-1,Math.round(v*(texture.height-1))));
- // Median-sized pixel blocks keep the sprite grain visible on the curved polygon mesh.
- const i=(y*texture.width+x)*4,alpha=texture.data[i+3];
- if(alpha<180)return null;
- const [r,g,b]=[texture.data[i],texture.data[i+1],texture.data[i+2]];
- // Ignore nearly neutral transparent-mat artefacts, preserving the authentic palette.
- return '#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
+// Local anatomy-space planar UV, anchored to each mesh part rather than the
+// camera or the rotating world-space vertices. The source is the real Detailed atlas.
+export function cowPartUV(part,point){
+ if(part==='head')return [.5+point[0]/2.10,.35-point[1]/2.50];
+ if(part==='body')return [.5+point[0]/2.3,.78-(point[1]-1.1)/2.2];
+ return [.5+point[0]/2.15,.91-(point[1]-.5)/1.25];
 }
-
+export function sampleCowAtlasUV(part,uv,normal){
+ if(!texture||normal[2]<.28||!['head','body','leg0','leg1','leg2','leg3'].includes(part))return null;
+ const u=Math.max(0,Math.min(1,uv[0])),v=Math.max(0,Math.min(1,uv[1]));
+ const x=Math.round(u*(texture.width-1)),y=Math.round(v*(texture.height-1));
+ const i=(y*texture.width+x)*4;
+ if(texture.data[i+3]<180)return null;
+ return '#'+[0,1,2].map(k=>texture.data[i+k].toString(16).padStart(2,'0')).join('');
+}
+export function detailedCowPixel(part,position,normal){
+ return sampleCowAtlasUV(part,cowPartUV(part,position),normal);
+}
 // A deterministic atlas-to-mesh paint pass. Preserve source pixels as discrete
 // pigment families instead of reducing the entire Detailed artwork to brightness.
 export function detailedCowPigment(part,position,normal,base){
- const sampled=detailedCowPixel(part,position,normal);
+ return detailedCowPigmentUV(part,cowPartUV(part,position),normal,base);
+}
+export function detailedCowPigmentUV(part,uv,normal,base){
+ const sampled=sampleCowAtlasUV(part,uv,normal);
  if(!sampled)return base;
  const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
  const [r,g,b]=rgb(sampled),[br,bg,bb]=rgb(base);
