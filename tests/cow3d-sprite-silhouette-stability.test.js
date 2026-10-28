@@ -15,6 +15,8 @@ test('the approved original has a sculpted chibi head significantly wider than i
  assert.ok(width(original,'head')>width(cream,'head')*1.07,'head sculpt must be physically wider, not recolored');
  assert.ok(width(original,'body')<width(cream,'body')*.96,'torso must be narrower than the old cream mesh');
  assert.ok(height(original,'leg0')<height(original,'body')*.60);
+ const outer=(id)=>Math.max(...vertices(original,id).map(p=>Math.abs(p[0])));
+ assert.ok(outer('ear')>outer('head')*1.12,'ears must visibly extend past newly enlarged cheeks');
  assert.ok(vertices(original,'head').length>500&&vertices(original,'body').length>500);
 });
 
