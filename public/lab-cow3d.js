@@ -63,7 +63,7 @@ function sphere(parts,c,r,color,opts={}){
     // Full depth is retained for 360° yaw and independent head movement.
     const sy=Math.cos(ph),sx=Math.sin(ph)*Math.cos(th),sz=Math.sin(ph)*Math.sin(th);
     const round=(q,p)=>Math.sign(q)*Math.pow(Math.abs(q),p);
-    const cheeks=1+.18*Math.exp(-Math.pow((sy+.24)/.31,2));
+    const cheeks=1+.22*Math.exp(-Math.pow((sy+.24)/.31,2));
     const narrowTop=1-.14*Math.exp(-Math.pow((sy-.83)/.23,2));
     return [c[0]+r[0]*round(sx,.83)*cheeks*narrowTop,
       c[1]+r[1]*round(sy,.94),
@@ -149,7 +149,7 @@ export function buildCow3D(pose={}){
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
- sphere(head,[0,.02,.07],authentic?[.87,.72,.63]:reference?[.76,.67,.60]:[.75,.66,.60],coat,
+ sphere(head,[0,.02,.07],authentic?[.94,.72,.63]:reference?[.76,.67,.60]:[.75,.66,.60],coat,
   {part:'head',shape:authentic?'spriteHead':'skull',solidInk:authentic&&locked});
  if(reference){
   // The reference muzzle is a broad pink, softly squared snout, not a tiny
