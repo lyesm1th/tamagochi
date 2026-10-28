@@ -45,3 +45,18 @@ export function detailedCowPixel(part,position,normal){
  // Ignore nearly neutral transparent-mat artefacts, preserving the authentic palette.
  return '#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
 }
+
+export function drawCowDetailedReference(canvas){
+ if(!canvas||!texture)return false;
+ const c=canvas.getContext('2d');
+ canvas.width=256;canvas.height=192;
+ c.clearRect(0,0,256,192);c.imageSmoothingEnabled=false;
+ c.fillStyle='#e8dfcc';c.fillRect(0,0,256,192);
+ const scale=Math.min(150/texture.width,155/texture.height);
+ const w=Math.round(texture.width*scale),h=Math.round(texture.height*scale);
+ const raw=document.createElement('canvas');raw.width=texture.width;raw.height=texture.height;
+ raw.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(texture.data),texture.width,texture.height),0,0);
+ c.drawImage(raw,Math.round((256-w)/2),Math.round(176-h),w,h);
+ canvas.dataset.cowDetailedReference='true';
+ return true;
+}
