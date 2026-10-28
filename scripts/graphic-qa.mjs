@@ -125,6 +125,10 @@ try{
  assert.ok(cowMatch.charcoal>25,'reference needs obvious dark forehead, ears and body flanks');
  assert.ok(cowMatch.painted>15,'3D paint must actually cover depth-tested mesh pixels');
  const originalFrame=await page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
+ // Higher native resolution shows the actual Detailed-style eyes and cheeks.
+ await select('cow3d-pixels','2');
+ await capture('cow3d-stage','cow-3d-sprite-silhouette-x2.png');
+ await select('cow3d-pixels','3');
  await capture('cow3d-stage','cow-3d-original-black-ivory-front.png');
  await select('cow3d-design','cream');
  const creamFrame=await page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
