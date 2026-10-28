@@ -71,6 +71,21 @@ try{
  await select('species','dino');await select('item','bed');await select('condition','intact');await seek(3000);await page.locator('#capture').click();await seek(4000);await page.locator('#compare').click();assert.doesNotMatch(await page.locator('#difference').textContent(),/Змінено 0 /);
  await capture('scene','dino-teen-bed.png');
  await capture('comparison','frame-difference.png');
+ // Exercise the same private WebGL canvas with the reference cat and garment controls.
+ await select('species','cat');await select('age','Дорослий');
+ await page.waitForFunction(()=>document.getElementById('pixel25d-stage')?.dataset.labRendered==='true',{timeout:15000});
+ await page.locator('#pixel25d-reference').check();await select('pixel25d-interaction','greet');
+ await page.locator('#pixel25d-play').check();await tick();
+ const first25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
+ await page.locator('#pixel25d-play').uncheck();
+ await page.locator('#pixel25d-time').evaluate(el=>{el.value='550';el.dispatchEvent(new Event('input'));});await tick();
+ const second25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
+ assert.notEqual(first25,second25,'reference 2.5D greet pose must change pixels');
+ await capture('pixel25d-stage','reference-cat-greeting-25d.png');
+ await select('body','sweater');await tick();
+ assert.match(await page.locator('#pixel25d-attachments').textContent(),/body→body/);
+ await page.locator('#pixel25d-blink').check();await tick();
+ await capture('pixel25d-stage','reference-cat-blink-25d.png');
  await page.locator('#guides').check();await tick();await page.screenshot({path:path.join(out,'lab-mobile.png'),fullPage:true});
  for(let group=0;group<2;group++){
   const tiles=[];
