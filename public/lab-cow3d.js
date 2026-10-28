@@ -221,8 +221,15 @@ export function drawCow3D(canvas,pose={}){
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160/pixelScale,57/pixelScale,13/pixelScale,0,0,Math.PI*2);ctx.fill();
  const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54/pixelScale;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
- const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const authentic=pose.designStyle!=='legacy'&&pose.designStyle!=='cream';
+ // Hide the coarse 3D beads used by the earlier model for mouth/nostrils:
+ // tiny features are now inked onto the actual curved snout and cheeks.
+ // Build still retains each true head part for rig tests and future variants.
+ const paintedFacialParts=new Set(['mouth','nostril','muzzleHighlight','eyeBorder','blush']);
+ const faces=buildCow3D(pose).filter(tri=>!authentic||!paintedFacialParts.has(tri.part))
+  .map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),
+   ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,
+   z:v.reduce((sum,q)=>sum+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,
   materialPigment:authentic?paintOriginalCowSurface:null,
   textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
