@@ -122,7 +122,7 @@ export function buildCow3D(pose={}){
   // Frown in the supplied reference: centre higher than corners.
   for(let i=-2;i<=2;i++){
    const sad=emotion==='sad',happy=emotion==='happy';
-   const y=authentic?(sad?-.49-Math.abs(i)*.018:emotion==='angry'?-.48:-.53+Math.abs(i)*.029):
+   const y=authentic?(sad?-.49-Math.abs(i)*.018:emotion==='angry'?-.48:happy?-.55+Math.abs(i)*.035:-.53+Math.abs(i)*.029):
      sad?-.46-Math.abs(i)*.026:happy?-.51+Math.abs(i)*.026:emotion==='angry'?-.45:-.48;
    sphere(head,[i*.072,y,authentic?.955:.945],[.046,.023,.027],colors.ink,{part:'mouth',rows:12,cols:20});
   }
@@ -178,14 +178,22 @@ export function buildCow3D(pose={}){
  // A chocolate cheek marking below the left edge of the snout is an iconic
  // part of the approved sprite, not a camera-facing black-and-white texture.
  if(reference&&!authentic)sphere(head,[-.66,-.43,.48],[.17,.16,.14],patch,{part:'cheekMark'});
- const neck=[0,1.65,.19];
+ const neck=[0,authentic?1.56:1.65,.19];
  // Pitch is applied in the local head frame before the independent yaw.
  const tilt=p=>[p[0],p[1]*Math.cos(headPitch)-p[2]*Math.sin(headPitch),p[1]*Math.sin(headPitch)+p[2]*Math.cos(headPitch)];
  for(const tri of head)tris.push({...tri,normal:spin(tilt(tri.normal),headYaw),points:tri.points.map(p=>vadd(spin(tilt([p[0]*1.03,p[1],p[2]*1.02]),headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
  const sway=Math.sin(t*.004)*.3;
- cylinder(tris,[0,1.12,-1.03],[sway,1.34,-1.40],.10,.065,palette.cream,'tail');
- sphere(tris,[sway,1.34,-1.44],[.16,.18,.17],patch,{part:'tailTuft'});
+ if(authentic){
+  // The original sprite has a visible curved tail at its left, with a dark
+  // tuft. It stays volumetric and follows the body during sleep/rotation.
+  cylinder(tris,[-.82,.70,-.40],[-1.09,.63+sway*.10,-.31],.095,.068,coat,'tail');
+  cylinder(tris,[-1.09,.63+sway*.10,-.31],[-1.25,.84+sway*.12,-.28],.068,.048,coat,'tail');
+  sphere(tris,[-1.24,.88+sway*.12,-.27],[.16,.23,.15],patch,{part:'tailTuft'});
+ }else{
+  cylinder(tris,[0,1.12,-1.03],[sway,1.34,-1.40],.10,.065,palette.cream,'tail');
+  sphere(tris,[sway,1.34,-1.44],[.16,.18,.17],patch,{part:'tailTuft'});
+ }
  // Rigid recline: preserve actual 3D proportions of every part.
  if(!sleep)return tris;
  const angle=rad(-72),co=Math.cos(angle),si=Math.sin(angle);
@@ -223,6 +231,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dPainted=String(rendered.painted);
  canvas.dataset.cow3dOutlinePixels=String(rendered.outlined);
  canvas.dataset.cow3dDetailOutlinePixels=String(rendered.detailOutlined);
+ canvas.dataset.cow3dPaintedFurPixels=String(rendered.materialPixels);
  canvas.dataset.cow3dOutlineStyle=pose.renderMode==='locked'&&pose.outlines!=='soft'?'detailed':'soft';
  canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
