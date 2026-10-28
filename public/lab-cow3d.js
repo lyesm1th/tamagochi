@@ -120,6 +120,7 @@ export function drawCow3D(canvas,pose={}){
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,textureReady:cowDetailedTextureReady()});
  canvas.dataset.cow3dPixelScale=String(pixelScale);
  canvas.dataset.cow3dPainted=String(rendered.painted);
+ canvas.dataset.cow3dOutlinePixels=String(rendered.outlined);
  canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
  canvas.dataset.cow3dReady='true';
