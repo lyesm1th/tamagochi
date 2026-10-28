@@ -4,7 +4,7 @@
 // These solid pigment regions live in the cow's local 3D coordinates, so the
 // markings remain attached during head turns, sleep, and full-body rotations.
 export const originalCowPigments=Object.freeze({
- coat:'#faefdb',shadow:'#e9dbc7',patch:'#303039',patchLight:'#46434a',
+ coat:'#faefdb',shadow:'#e9dbc7',patch:'#39353e',patchLight:'#55505a',
  muzzle:'#f1b5aa',muzzleLight:'#f6c3b7',innerEar:'#ee9ba3',
  blush:'#f4aba8',horn:'#f0b66e',hornLight:'#ffce85',
  ink:'#201b20',hoof:'#2a2930',eye:'#151519',shine:'#fffefa'
