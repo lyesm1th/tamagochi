@@ -154,7 +154,7 @@ export function buildCow3D(pose={}){
     sphere(head,[side*.29,.315,.67],authentic?[.21,.046,.055]:[.238,.054,.060],patch,{part:'brow'});
    if(!(pose.blink||sleep)){
     sphere(head,[side*(authentic?.33:.285),.091,.732],authentic?[.107,.135,.054]:[.100,.136,.051],authentic?colors.eye:palette.eye,{part:'eye'});
-    sphere(head,[side*(authentic?.33:.285)-.038,.147,.80],[.034,.039,.014],authentic?colors.shine:palette.shine,{part:'sparkle'});
+    sphere(head,[side*(authentic?.33:.285)-(authentic?side*.035:.038),.147,authentic?.817:.80],[.037,.041,.017],authentic?colors.shine:palette.shine,{part:'sparkle'});
     sphere(head,[side*(authentic?.33:.285)+.040,.052,.797],[.013,.015,.010],authentic?colors.shine:palette.shine,{part:'sparkleSmall'});
    }else sphere(head,[side*(authentic?.33:.285),.09,.735],[.139,.025,.035],colors.ink,{part:'lid'});
    sphere(head,[side*(authentic?.18:.275),-.255,1.000],authentic?[.037,.034,.020]:[.058,.045,.026],colors.ink,{part:'nostril'});
