@@ -246,7 +246,12 @@ export function mountCow3DLab(root=document){
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
  const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v3 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
- for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design'])get(id).addEventListener('input',render);
+ for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design']){
+  const control=get(id);
+  // Ranges draw live on input; dropdowns draw once on change. This avoids
+  // two expensive full-mesh paints for each native select interaction.
+  control.addEventListener(control.tagName==='SELECT'?'change':'input',render);
+ }
  canvas.addEventListener('click',()=>{const choice=get('cow3d-emotion');choice.value=choice.value==='happy'?'neutral':'happy';render();});
  get('cow3d-save').addEventListener('click',()=>{render();const a=root.createElement('a');a.download='cow-3d-owner-lab.png';a.href=canvas.toDataURL('image/png');a.click();});
  function tick(now){time+=playing?Math.min(60,Math.max(0,now-(last||now))):0;last=now;
