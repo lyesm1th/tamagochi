@@ -124,12 +124,17 @@ try{
  assert.ok(cowMatch.pink>8,'original snout and blush need a visible pink shade');
  assert.ok(cowMatch.charcoal>25,'reference needs obvious dark forehead, ears and body flanks');
  assert.ok(cowMatch.painted>15,'3D paint must actually cover depth-tested mesh pixels');
+ const originalFrame=await page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
  await capture('cow3d-stage','cow-3d-original-black-ivory-front.png');
  await select('cow3d-design','cream');
+ const creamFrame=await page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
+ assert.notEqual(originalFrame,creamFrame,'approved original coat must visibly differ from previous cream paint');
+ assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dDesign),'cream');
  await capture('cow3d-stage','cow-3d-previous-cream.png');
  await select('cow3d-design','legacy');
  await capture('cow3d-stage','cow-3d-legacy-front.png');
  await select('cow3d-design','reference');
+ assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dDesign),'reference');
  const cowFrame=()=>page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
  const frontCow=await cowFrame();
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='90';el.dispatchEvent(new Event('input'));});await tick();
