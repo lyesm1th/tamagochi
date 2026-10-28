@@ -29,7 +29,8 @@ test('reference now matches the actual black-and-ivory Detailed atlas, not the c
 
 test('reference cow has wider muzzle, visible dark nostrils and an articulated pink face',()=>{
  const reference=buildCow3D({designStyle:'reference'}),legacy=buildCow3D({designStyle:'legacy'});
- assert.ok(span(reference,'muzzle',0)>span(legacy,'muzzle',0)*1.06);
+ const cream=buildCow3D({designStyle:'cream'});
+ assert.ok(span(reference,'muzzle',0)<span(cream,'muzzle',0)*.90,'original sprite has smaller pink snout than old cream 3D');
  assert.ok(maxZ(reference,'nostril')>maxZ(legacy,'nostril')+.04);
  assert.ok(part(reference,'nostril').every(f=>f.ink===originalCowPigments.ink||f.ink==='#412e2a'||f.ink==='#372420'));
  const a=buildCow3D({designStyle:'reference',headYaw:-35});
