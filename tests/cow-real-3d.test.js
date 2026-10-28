@@ -25,6 +25,6 @@ test('cow animation includes geometry, four feet, eye blink and sleeping squash'
 });
 test('3D laboratory is restricted to existing owner lab and keeps real game mode untouched',()=>{
  for(const id of ['cow3d-stage','cow3d-yaw','cow3d-head','cow3d-action','cow3d-status'])assert.match(source,new RegExp('id="'+id+'"'));
- assert.match(source,/src="\/lab-cow3d\.js"/);
+ assert.match(source,/src="\/lab-cow3d\.js\?v=origv3"/);
  assert.doesNotMatch(readFileSync(new URL('../public/graphics-mode.js',import.meta.url),'utf8'),/cow3d/i);
 });

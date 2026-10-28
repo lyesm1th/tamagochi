@@ -1,9 +1,9 @@
 // Owner-only pixel rasterizer: one depth-tested pixel wins, including eyes,
 // horns and authentic Detailed pigment. No overpainting across mesh layers.
-export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false,stablePalette=false,detailOutlines=false}){
+export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false,stablePalette=false,detailOutlines=false,materialPigment=null}){
  const image=ctx.getImageData(0,0,width,height);
  const pixels=image.data,depth=new Float32Array(width*height).fill(-Infinity);
- let painted=0,textured=0;
+ let painted=0,textured=0,materialPixels=0;
  const mask=new Uint8Array(width*height),parts=new Array(width*height);
  for(const face of faces){
   const [a,b,c]=face.v;
@@ -30,6 +30,15 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
     const uv=[0,1].map(k=>face.uv[0][k]*l0+face.uv[1][k]*l1+face.uv[2][k]*l2);
     ink=uvPigment(face.part,uv,normal,color);
     if(ink!==color)textured++;
+   }
+   if(materialPigment&&face.texPoints?.length===3){
+    // Local mesh coordinates are evaluated after depth selection, but *before*
+    // projection coloring. The same painted patch follows the articulated
+    // head and never floats as a screen-space overlay.
+    const local=[0,1,2].map(k=>face.texPoints[0][k]*l0+face.texPoints[1][k]*l1+face.texPoints[2][k]*l2);
+    const paintedInk=materialPigment(face.part,local,face.normal,ink);
+    if(paintedInk!==ink)materialPixels++;
+    ink=paintedInk;
    }
    const p=index*4;
    for(let k=0;k<3;k++)pixels[p+k]=Math.round(Math.max(0,Math.min(255,parseInt(ink.slice(1+k*2,3+k*2),16)*shade)));
@@ -88,5 +97,5 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
   }
  }
  ctx.putImageData(image,0,0);
- return {painted,textured,outlined,detailOutlined};
+ return {painted,textured,outlined,detailOutlined,materialPixels};
 }
