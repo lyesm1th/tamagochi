@@ -85,6 +85,8 @@ try{
  await select('body','sweater');await tick();
  assert.match(await page.locator('#pixel25d-attachments').textContent(),/body→body/);
  await page.locator('#pixel25d-blink').check();await tick();
+ const closed25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
+ assert.notEqual(closed25,sweater25,'closed eyelids must visibly change WebGL pixels');
  await capture('pixel25d-stage','reference-cat-blink-25d.png');
  await page.locator('#guides').check();await tick();await page.screenshot({path:path.join(out,'lab-mobile.png'),fullPage:true});
  for(let group=0;group<2;group++){
