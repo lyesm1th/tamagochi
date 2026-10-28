@@ -23,9 +23,9 @@ export function paintOriginalCowSurface(part,p,normal,base){
   const back=z<.06&&(y>.04||Math.abs(x)>.56);
   const cap=z>.08&&(
    (y>.36&&Math.abs(x)>.19)||
-   (x<-.36&&y>-.14&&y<.46&&oval(x,y,-.51,.20,.37,.47))||
-   (x>.43&&y>.10&&oval(x,y,.57,.30,.35,.43))||
-   (Math.abs(x)>.67&&y>-.14)
+   (x<-.38&&y>.075&&y<.47&&oval(x,y,-.54,.28,.34,.35))||
+   (x>.47&&y>.19&&oval(x,y,.59,.33,.33,.34))||
+   (Math.abs(x)>.68&&y>.055)
   );
   const centreForelock=Math.abs(x)<.17&&y>.39;
   return (back||cap)&&!centreForelock?originalCowPigments.patch:base;
