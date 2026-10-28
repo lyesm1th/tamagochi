@@ -104,7 +104,7 @@ export function buildCow3D(pose={}){
   // The reference muzzle is a broad pink, softly squared snout, not a tiny
   // round button. Shape and micro-features are volumetric and turn with head.
   sphere(head,[0,-.30,.68],[.66,.255,.29],detailedCowColors.muzzle,{part:'muzzle',shape:'muzzle'});
-  sphere(head,[0,-.24,.946],[.49,.105,.025],detailedCowColors.muzzleLight,{part:'muzzleHighlight'});
+  sphere(head,[0,-.24,.976],[.49,.105,.025],detailedCowColors.muzzleLight,{part:'muzzleHighlight'});
   // Frown in the supplied reference: centre higher than corners.
   for(let i=-2;i<=2;i++){
    const sad=emotion==='sad',happy=emotion==='happy';
@@ -135,7 +135,7 @@ export function buildCow3D(pose={}){
     sphere(head,[side*.285+.040,.052,.785],[.013,.015,.010],palette.shine,{part:'sparkleSmall'});
    }else sphere(head,[side*.285,.09,.735],[.139,.025,.035],detailedCowColors.ink,{part:'lid'});
    sphere(head,[side*.275,-.255,1.000],[.058,.045,.026],detailedCowColors.ink,{part:'nostril'});
-   if(emotion==='sad')sphere(head,[side*.46,-.105,.757],[.046,.126,.040],detailedCowColors.tear,{part:'tear'});
+   if(emotion==='sad')sphere(head,[side*.47,-.045,.83],[.045,.125,.038],detailedCowColors.tear,{part:'tear'});
   }else{
    sphere(head,[side*.29,.11,.57],[.155,.17,.075],palette.dark,{part:'eyeBorder'});
    if(emotion==='angry')sphere(head,[side*.29,.32,.60],[.18,.038,.052],palette.dark,{part:'brow'});
@@ -180,13 +180,16 @@ export function drawCow3D(canvas,pose={}){
  pose=pixelLockedPose(pose);
  const pixelScale=[2,3,4].includes(Number(pose.pixelScale))?Number(pose.pixelScale):2,w=Math.round(256/pixelScale),h=Math.round(192/pixelScale);canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
  canvas.style.imageRendering='pixelated';
+ // Fractional CSS upscaling at ×3 (85→768) makes pixel columns uneven.
+ // Prefer an integer nearest-neighbor factor (85→765) on wide screens.
+ canvas.style.width=(w*Math.max(1,Math.round(768/w)))+'px';
  ctx.fillStyle='#e8dfcc';ctx.fillRect(0,0,w,h);
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160/pixelScale,57/pixelScale,13/pixelScale,0,0,Math.PI*2);ctx.fill();
  const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54/pixelScale;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
  const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,
-  textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked',
+  textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
   outlineWidth:(pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1,
   protectFeatures:pose.renderMode==='locked',stablePalette:pose.renderMode==='locked',
   detailOutlines:pose.renderMode==='locked'&&pose.outlines!=='soft'});
@@ -201,7 +204,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
  canvas.dataset.cow3dReady='true';
- canvas.dataset.cow3dTextured=String(cowDetailedTextureReady()&&pose.renderMode!=='locked');
+ canvas.dataset.cow3dTextured=String(cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy');
  canvas.dataset.cow3dSleeping=String(pose.action==='sleep');
  return faces.length;
 }
@@ -209,7 +212,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v2 · '+(cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v2 · '+(canvas.dataset.cow3dDesign==='reference'?'Палітра оригіналу · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design'])get(id).addEventListener('input',render);
  canvas.addEventListener('click',()=>{const choice=get('cow3d-emotion');choice.value=choice.value==='happy'?'neutral':'happy';render();});
