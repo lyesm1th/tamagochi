@@ -77,12 +77,12 @@ export function buildCow3D(pose={}){
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
  sphere(head,[0,.02,.07],[.75,.66,.60],palette.cream,{part:'head',shape:'skull'});
- sphere(head,[0,-.29,.62],[.57,.245,.27],palette.pink,{part:'muzzle'});
+ sphere(head,[0,-.30,.62],[.60,.26,.29],palette.pink,{part:'muzzle'});
  sphere(head,[0,-.24,.84],[.43,.15,.055],'#f4b0a9',{part:'muzzleHighlight'});
  sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
  for(const side of [-1,1]){
-  sphere(head,[side*.74,.28,.03],[.42,.19,.16],palette.brown,{part:'ear'});
-  sphere(head,[side*.76,.28,.18],[.30,.11,.065],palette.rose,{part:'innerEar'});
+  sphere(head,[side*.75,.26,.03],[.44,.17,.14],palette.brown,{part:'ear'});
+  sphere(head,[side*.77,.26,.18],[.32,.095,.065],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
   sphere(head,[side*.49,-.24,.47],[.15,.10,.08],palette.pink,{part:'cheek'});
   sphere(head,[side*.29,.11,.57],[.155,.17,.075],palette.dark,{part:'eyeBorder'});
@@ -93,11 +93,15 @@ export function buildCow3D(pose={}){
   }else{
    sphere(head,[side*.29,.11,.657],[.14,.025,.031],palette.dark,{part:'lid'});
   }
-  sphere(head,[side*.24,-.28,.902],[.055,.035,.018],palette.rose,{part:'nostril'});
+  sphere(head,[side*.25,-.28,.916],[.055,.035,.018],palette.rose,{part:'nostril'});
  }
+ // Layered sculpted forehead tufts remain independent 3D geometry.
  sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
  sphere(head,[.06,.60,.29],[.21,.13,.20],palette.white,{part:'fringeDetail'});
  sphere(head,[-.25,.50,.46],[.12,.13,.14],'#fdf1d6',{part:'fringeLock'});
+ // Curved coat patches are shallow volumetric surfaces, not screen-space decals.
+ sphere(head,[-.49,.34,.48],[.19,.19,.08],palette.brown,{part:'foreheadMark'});
+ sphere(head,[.48,.39,.42],[.15,.17,.07],palette.brown,{part:'foreheadMark'});
  const neck=[0,1.65,.19];
  for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin([p[0]*1.03,p[1]*1.00,p[2]*1.02],headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
