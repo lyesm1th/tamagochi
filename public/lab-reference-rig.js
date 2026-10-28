@@ -33,8 +33,13 @@ export function drawReferenceRig(source,points,pose={},showJoints=false){
   const p=points[name];if(!p||!a[name])continue;
   const radius=Math.max(5,Math.round(w*.08)),x=Math.round(p.x),y=Math.round(p.y);
   const sx=Math.max(0,x-radius),sy=Math.max(0,y-radius),sw=Math.min(radius*2,w-sx),sh=Math.min(radius*2,h-sy);
+  // Round masked paw cutout instead of rotating a rectangular block of torso pixels.
+  const paw=document.createElement('canvas');paw.width=sw;paw.height=sh;
+  const pc=paw.getContext('2d');pc.imageSmoothingEnabled=false;
+  pc.save();pc.beginPath();pc.ellipse(sw/2,sh/2,sw*.49,sh*.49,0,0,Math.PI*2);pc.clip();
+  pc.drawImage(source,sx,sy,sw,sh,0,0,sw,sh);pc.restore();
   ctx.save();ctx.translate(x,y);ctx.rotate(a[name]*Math.PI/180);
-  ctx.drawImage(source,sx,sy,sw,sh,sx-x,sy-y,sw,sh);ctx.restore();
+  ctx.drawImage(paw,sx-x,sy-y);ctx.restore();
  }
  if(a.blink&&points.eyes){
   // Eye strip closes at the eyes anchor, using pixel-art nearest-neighbour sampling.
