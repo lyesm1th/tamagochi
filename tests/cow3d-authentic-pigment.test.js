@@ -23,3 +23,10 @@ test('each polygon provides UV-local coordinates for per-pixel 3D raster paintin
   assert.equal(face.texPoints[0].length,3);
  }
 });
+
+test('Detailed pixel raster uses exact one-pixel sampling rather than bleeding 2x2 stamps',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const source=readFileSync(new URL('../public/lab-cow3d.js',import.meta.url),'utf8');
+ assert.match(source,/ctx\.fillRect\(x,y,1,1\)/);
+ assert.doesNotMatch(source,/ctx\.fillRect\(x,y,2,2\)/);
+});

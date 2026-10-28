@@ -128,11 +128,11 @@ export function drawCow3D(canvas,pose={}){
   // Nearest-neighbor raster paint. Pixels sample positions across each projected
   // triangle, rather than assigning one atlas color to the whole polygon.
   if(cowDetailedTextureReady()&&f.texPoints&&['head','body'].includes(f.part)&&f.normal[2]>.20){
-   const minX=Math.max(0,Math.floor(Math.min(a[0],b[0],c[0])/2)*2),maxX=Math.min(w-1,Math.ceil(Math.max(a[0],b[0],c[0])/2)*2);
-   const minY=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1])/2)*2),maxY=Math.min(h-1,Math.ceil(Math.max(a[1],b[1],c[1])/2)*2);
+   const minX=Math.max(0,Math.floor(Math.min(a[0],b[0],c[0]))),maxX=Math.min(w-1,Math.ceil(Math.max(a[0],b[0],c[0])));
+   const minY=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1]))),maxY=Math.min(h-1,Math.ceil(Math.max(a[1],b[1],c[1])));
    const den=(b[1]-c[1])*(a[0]-c[0])+(c[0]-b[0])*(a[1]-c[1]);
    if(Math.abs(den)<.001)continue;
-   for(let y=minY;y<=maxY;y+=2)for(let x=minX;x<=maxX;x+=2){
+   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
     const l0=((b[1]-c[1])*(x-c[0])+(c[0]-b[0])*(y-c[1]))/den;
     const l1=((c[1]-a[1])*(x-c[0])+(a[0]-c[0])*(y-c[1]))/den;
     const l2=1-l0-l1;
@@ -140,7 +140,7 @@ export function drawCow3D(canvas,pose={}){
     const pos=[0,1,2].map(k=>f.texPoints[0][k]*l0+f.texPoints[1][k]*l1+f.texPoints[2][k]*l2);
     const ink=detailedCowPigment(f.part,pos,[0,0,1],f.ink);
     if(ink===f.ink)continue;
-    ctx.fillStyle=ink;ctx.fillRect(x,y,2,2);
+    ctx.fillStyle=ink;ctx.fillRect(x,y,1,1);
    }
   }
  }

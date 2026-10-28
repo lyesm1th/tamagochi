@@ -27,11 +27,11 @@ export function detailedCowPixel(part,position,normal){
  if(normal[2]<.35||!['head','body','leg0','leg1','leg2','leg3'].includes(part))return null;
  let u,v;
  if(part==='head'){
-  u=.5+position[0]/1.42;
-  v=.34-position[1]/1.45;
+  u=.5+position[0]/2.10;
+  v=.35-position[1]/2.50;
  }else if(part==='body'){
-  u=.5+position[0]/2.0;
-  v=.73-(position[1]-1.1)/2.1;
+  u=.5+position[0]/2.3;
+  v=.78-(position[1]-1.1)/2.2;
  }else{
   u=.5+position[0]/2.15;
   v=.91-(position[1]-.5)/1.25;
@@ -61,7 +61,7 @@ export function detailedCowPigment(part,position,normal,base){
  const light=(r+g+b)/3;
  // Apply actual warm pigment where the artwork has strong brown coat markings.
  if(light<185 && ['head','body'].includes(part))return '#906342';
- const delta=Math.max(-12,Math.min(12,Math.round((light-208)*.22)));
+ const delta=Math.max(-20,Math.min(18,Math.round((light-208)*.35)));
  return '#'+[br,bg,bb].map(v=>Math.max(0,Math.min(255,v+delta)).toString(16).padStart(2,'0')).join('');
 }
 export function drawCowDetailedReference(canvas){
