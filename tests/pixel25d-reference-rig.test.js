@@ -25,3 +25,11 @@ test('head yaw is independent of sprite tilt and blink is explicit',()=>{
  assert.match(renderer,/yaw:referenceEnabled\?0:/);
  assert.match(renderer,/headYaw:actionPose\?\.headYaw/);
 });
+
+test('head yaw avoids destructive clearRect and clips to anatomical head mask',()=>{
+ const source=read('public/lab-reference-rig.js');
+ assert.match(source,/mc\.ellipse\(x,cy,rx,ry/);
+ assert.match(source,/ctx\.ellipse\(x,cy,rx,ry/);
+ assert.doesNotMatch(source,/ctx\.clearRect/);
+ assert.match(source,/ctx\.imageSmoothingEnabled=false/);
+});
