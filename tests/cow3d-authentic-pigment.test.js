@@ -14,3 +14,12 @@ test('3D head, body, blinking and rotation stay structurally intact',()=>{
  assert.deepEqual(base.find(f=>f.part==='body').points,turned.find(f=>f.part==='body').points);
  assert.ok(buildCow3D({blink:true}).some(f=>f.part==='lid'));
 });
+
+test('each polygon provides UV-local coordinates for per-pixel 3D raster painting',()=>{
+ const triangles=buildCow3D({headYaw:33});
+ for(const part of ['head','body']){
+  const face=triangles.find(f=>f.part===part);
+  assert.equal(face.texPoints.length,3);
+  assert.equal(face.texPoints[0].length,3);
+ }
+});
