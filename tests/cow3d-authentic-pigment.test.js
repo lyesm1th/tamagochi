@@ -24,9 +24,10 @@ test('each polygon provides UV-local coordinates for per-pixel 3D raster paintin
  }
 });
 
-test('Detailed pixel raster uses exact one-pixel sampling rather than bleeding 2x2 stamps',async()=>{
+test('Detailed pixel raster uses a depth-tested output buffer, never 2x2 overpaint',async()=>{
  const {readFileSync}=await import('node:fs');
- const source=readFileSync(new URL('../public/lab-cow3d.js',import.meta.url),'utf8');
- assert.match(source,/ctx\.fillRect\(x,y,1,1\)/);
- assert.doesNotMatch(source,/ctx\.fillRect\(x,y,2,2\)/);
+ const source=readFileSync(new URL('../public/lab-cow3d-raster.js',import.meta.url),'utf8');
+ assert.match(source,/ctx\.putImageData\(image,0,0\)/);
+ assert.match(source,/if\(z<=depth\[index\]\)continue/);
+ assert.doesNotMatch(source,/fillRect\(x,y,2,2\)/);
 });
