@@ -117,14 +117,20 @@ export function buildCow3D(pose={}){
  if(reference){
   // The reference muzzle is a broad pink, softly squared snout, not a tiny
   // round button. Shape and micro-features are volumetric and turn with head.
-  sphere(head,[0,-.30,.68],authentic?[.655,.24,.285]:[.66,.255,.29],colors.muzzle,{part:'muzzle',shape:'muzzle'});
-  sphere(head,[0,-.24,.976],authentic?[.40,.085,.022]:[.49,.105,.025],colors.muzzleLight,{part:'muzzleHighlight'});
+  sphere(head,[0,-.30,.68],authentic?[.53,.24,.285]:[.66,.255,.29],colors.muzzle,{part:'muzzle',shape:'muzzle'});
+  sphere(head,[0,-.24,.976],authentic?[.22,.068,.020]:[.49,.105,.025],colors.muzzleLight,{part:'muzzleHighlight'});
   // Frown in the supplied reference: centre higher than corners.
   for(let i=-2;i<=2;i++){
    const sad=emotion==='sad',happy=emotion==='happy';
    const y=authentic?(sad?-.49-Math.abs(i)*.018:emotion==='angry'?-.48:happy?-.55+Math.abs(i)*.035:-.53+Math.abs(i)*.029):
      sad?-.46-Math.abs(i)*.026:happy?-.51+Math.abs(i)*.026:emotion==='angry'?-.45:-.48;
-   sphere(head,[i*.072,y,authentic?.955:.945],[.046,.023,.027],colors.ink,{part:'mouth',rows:12,cols:20});
+   const mouthX=i*(authentic?.050:.072);
+   const mx=mouthX/.53,my=(y+.30)/.24;
+   // Put the thin original smile directly onto the curved snout, not
+   // floating in front of it as a thick black stripe.
+   const mouthZ=authentic?.68+.285*Math.sqrt(Math.max(.025,1-mx*mx-my*my))+.024:.945;
+   sphere(head,[mouthX,y,mouthZ],authentic?[.029,.022,.020]:[.046,.023,.027],
+     colors.ink,{part:'mouth',rows:12,cols:20});
   }
  }else{
   sphere(head,[0,-.30,.62],[.60,.26,.29],palette.pink,{part:'muzzle'});
@@ -143,15 +149,15 @@ export function buildCow3D(pose={}){
   if(reference){
    // Tall narrow eyes, pronounced cocoa eyebrows and visible tears restore
    // the recognisable expression of the original Detailed reference.
-   sphere(head,[side*.285,.095,.65],authentic?[.169,.185,.090]:[.147,.174,.081],colors.ink,{part:'eyeBorder'});
+   sphere(head,[side*(authentic?.33:.285),.095,.65],authentic?[.143,.160,.078]:[.147,.174,.081],colors.ink,{part:'eyeBorder'});
    if(!authentic||emotion==='sad'||emotion==='angry')
     sphere(head,[side*.29,.315,.67],authentic?[.21,.046,.055]:[.238,.054,.060],patch,{part:'brow'});
    if(!(pose.blink||sleep)){
-    sphere(head,[side*.285,.091,.732],authentic?[.125,.154,.056]:[.100,.136,.051],authentic?colors.eye:palette.eye,{part:'eye'});
-    sphere(head,[side*.285-.038,.147,.80],[.033,.040,.014],authentic?colors.shine:palette.shine,{part:'sparkle'});
-    sphere(head,[side*.285+.040,.052,.797],[.013,.015,.010],authentic?colors.shine:palette.shine,{part:'sparkleSmall'});
-   }else sphere(head,[side*.285,.09,.735],[.139,.025,.035],colors.ink,{part:'lid'});
-   sphere(head,[side*.275,-.255,1.000],[.058,.045,.026],colors.ink,{part:'nostril'});
+    sphere(head,[side*(authentic?.33:.285),.091,.732],authentic?[.107,.135,.054]:[.100,.136,.051],authentic?colors.eye:palette.eye,{part:'eye'});
+    sphere(head,[side*(authentic?.33:.285)-.038,.147,.80],[.034,.039,.014],authentic?colors.shine:palette.shine,{part:'sparkle'});
+    sphere(head,[side*(authentic?.33:.285)+.040,.052,.797],[.013,.015,.010],authentic?colors.shine:palette.shine,{part:'sparkleSmall'});
+   }else sphere(head,[side*(authentic?.33:.285),.09,.735],[.139,.025,.035],colors.ink,{part:'lid'});
+   sphere(head,[side*(authentic?.18:.275),-.255,1.000],authentic?[.037,.034,.020]:[.058,.045,.026],colors.ink,{part:'nostril'});
    if(emotion==='sad')sphere(head,[side*.47,-.045,.83],[.045,.125,.038],colors.tear||'#60b2d7',{part:'tear'});
   }else{
    sphere(head,[side*.29,.11,.57],[.155,.17,.075],palette.dark,{part:'eyeBorder'});
