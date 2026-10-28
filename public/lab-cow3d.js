@@ -47,7 +47,7 @@ function sphere(parts,c,r,color,opts={}){
    let ink=color;
    if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
    if(['body','head','leg0','leg1','leg2','leg3'].includes(opts.part))ink=detailedCowPigment(opts.part,center,n,ink);
-   parts.push({points:p,normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
+   parts.push({points:p,texPoints:p,normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
 }
@@ -114,7 +114,7 @@ export function drawCow3D(canvas,pose={}){
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160,57,13,0,0,Math.PI*2);ctx.fill();
  const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148-y*scale*perspective,z];};
- const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
+ const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const light=[-.43,.71,.52];
  for(const f of faces){
   const [a,b,c]=f.v,ab=[b[0]-a[0],b[1]-a[1]],ac=[c[0]-a[0],c[1]-a[1]];
@@ -125,9 +125,28 @@ export function drawCow3D(canvas,pose={}){
   const shade=clamp(Math.round((.88+sunlight*.15)*8)/8,.82,1.08);
   const r=base.map(n=>Math.round(clamp(n*shade,0,255)));
   ctx.fillStyle='rgb('+r.join(',')+')';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.closePath();ctx.fill();
+  // Nearest-neighbor raster paint. Pixels sample positions across each projected
+  // triangle, rather than assigning one atlas color to the whole polygon.
+  if(cowDetailedTextureReady()&&f.texPoints&&['head','body'].includes(f.part)&&f.normal[2]>.20){
+   const minX=Math.max(0,Math.floor(Math.min(a[0],b[0],c[0])/2)*2),maxX=Math.min(w-1,Math.ceil(Math.max(a[0],b[0],c[0])/2)*2);
+   const minY=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1])/2)*2),maxY=Math.min(h-1,Math.ceil(Math.max(a[1],b[1],c[1])/2)*2);
+   const den=(b[1]-c[1])*(a[0]-c[0])+(c[0]-b[0])*(a[1]-c[1]);
+   if(Math.abs(den)<.001)continue;
+   for(let y=minY;y<=maxY;y+=2)for(let x=minX;x<=maxX;x+=2){
+    const l0=((b[1]-c[1])*(x-c[0])+(c[0]-b[0])*(y-c[1]))/den;
+    const l1=((c[1]-a[1])*(x-c[0])+(a[0]-c[0])*(y-c[1]))/den;
+    const l2=1-l0-l1;
+    if(l0<0||l1<0||l2<0)continue;
+    const pos=[0,1,2].map(k=>f.texPoints[0][k]*l0+f.texPoints[1][k]*l1+f.texPoints[2][k]*l2);
+    const ink=detailedCowPigment(f.part,pos,[0,0,1],f.ink);
+    if(ink===f.ink)continue;
+    ctx.fillStyle=ink;ctx.fillRect(x,y,2,2);
+   }
+  }
  }
  canvas.dataset.cow3dFaces=String(faces.length);
  canvas.dataset.cow3dReady='true';
+ canvas.dataset.cow3dTextured=String(cowDetailedTextureReady());
  return faces.length;
 }
 export function mountCow3DLab(root=document){
