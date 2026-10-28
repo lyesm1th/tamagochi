@@ -19,6 +19,16 @@ const furTone=(ink,c)=>{if(!c)return ink;
 const rad=n=>n*Math.PI/180;
 const vadd=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
 const spin=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return [p[0]*c+p[2]*s,p[1],-p[0]*s+p[2]*c];};
+// Preserve anatomy-specific painted color; the real Detailed atlas contributes only
+// small local brightness variations. Its eyes/outline pixels must never become fur.
+export function transferCowGrain(base,sampled){
+ if(!sampled)return base;
+ const parse=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+ const a=parse(base),b=parse(sampled);
+ const l=(x)=>x[0]*.299+x[1]*.587+x[2]*.114;
+ const adjustment=clamp((l(b)-145)*.12,-13,13);
+ return '#'+a.map(n=>Math.round(clamp(n+adjustment,0,255)).toString(16).padStart(2,'0')).join('');
+}
 function sphere(parts,c,r,color,opts={}){
  const rows=opts.rows||20,cols=opts.cols||32;
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
@@ -28,8 +38,9 @@ function sphere(parts,c,r,color,opts={}){
    const p=tri.map(k=>pts[k]);
    const center=p.reduce((a,q)=>vadd(a,q),[0,0,0]).map(x=>x/3);
    const n=[(center[0]-c[0])/r[0],(center[1]-c[1])/r[1],(center[2]-c[2])/r[2]];
-   let ink=detailedCowPixel(opts.part||'body',center,n)||color;
-   if(opts.patch&&opts.patch(n,center)&&!cowDetailedTextureReady())ink=opts.patchColor||palette.brown;
+   let ink=color;
+   if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
+   if(['body','head','leg0','leg1','leg2','leg3'].includes(opts.part))ink=transferCowGrain(ink,detailedCowPixel(opts.part,center,n));
    parts.push({points:p,normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
