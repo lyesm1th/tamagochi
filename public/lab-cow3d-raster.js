@@ -1,6 +1,6 @@
 // Owner-only pixel rasterizer: one depth-tested pixel wins, including eyes,
 // horns and authentic Detailed pigment. No overpainting across mesh layers.
-export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false,stablePalette=false}){
+export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false,stablePalette=false,detailOutlines=false}){
  const image=ctx.getImageData(0,0,width,height);
  const pixels=image.data,depth=new Float32Array(width*height).fill(-Infinity);
  let painted=0,textured=0;
@@ -36,48 +36,57 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
    pixels[p+3]=255;depth[index]=z;mask[index]=1;parts[index]=face.part;painted++;
   }
  }
- // Pixel-art contour: outer ink and restrained contact seams, drawn from the
- // final depth-tested visible part IDs, not polygon edges (no triangle grid).
- let outlined=0;
+ // Depth-tested part IDs, not mesh triangle edges, define each ink line.
+ // This prevents the wireframe/shimmer effect during articulated rotations.
+ let outlined=0,detailOutlined=0;
  const edgeInk=[57,35,31],seamInk=[106,65,52];
- const seamParts=new Set(['muzzle','ear','innerEar','horn','hoof0','hoof1','hoof2','hoof3','eyeBorder','cheek','mouth','tailTuft','brow','foreheadMark']);
- // Facial features retain their natural palette; a generic seam pass must not
- // recolor eye highlights, pupils, nostrils, tear drops, or the mouth itself.
+ const detailInk=[70,41,35],softDetailInk=[90,57,47];
  const protectedParts=new Set(['eye','sparkle','sparkleSmall','nostril','tear','lid','mouth']);
+ const seamParts=new Set(['muzzle','ear','innerEar','horn','hoof0','hoof1','hoof2','hoof3','eyeBorder','cheek','mouth','tailTuft','brow','foreheadMark']);
+ // Each detail owns the higher rank. Ink is placed on the neighboring LOWER
+ // rank surface, preserving the muzzle, eyes, horns and original detail pixels.
+ const rank=part=>{
+  if(part==='body')return 1;
+  if(part==='head'||part==='tail'||/^leg[0-3]$/.test(part))return 2;
+  if(part==='ear'||part==='fringe'||/^hoof[0-3]$/.test(part))return 3;
+  if(['innerEar','muzzle','horn','cheek','eyeBorder','foreheadMark','tailTuft','fringeDetail'].includes(part))return 4;
+  if(['muzzleHighlight','fringeLock','brow'].includes(part))return 5;
+  return protectedParts.has(part)?6:0;
+ };
+ const colorPixel=(i,ink)=>{const p=i*4;pixels[p]=ink[0];pixels[p+1]=ink[1];pixels[p+2]=ink[2];pixels[p+3]=255;outlined++;};
  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
   const i=y*width+x;
   if(!mask[i])continue;
   const adjacent=[i-1,i+1,i-width,i+width];
   const outer=adjacent.some(j=>!mask[j]);
-  const seam=!outer&&seamParts.has(parts[i])&&adjacent.some(j=>mask[j]&&parts[j]!==parts[i]);
-  if(!outer&&!seam)continue;
-  if(protectFeatures&&protectedParts.has(parts[i]))continue;
-  const ink=outer?edgeInk:seamInk;
-  const p=i*4;
-  pixels[p]=ink[0];pixels[p+1]=ink[1];pixels[p+2]=ink[2];
-  outlined++;
+  const protectedFeature=protectFeatures&&protectedParts.has(parts[i]);
+  if(outer){if(!protectedFeature)colorPixel(i,edgeInk);continue;}
+  if(detailOutlines&&!protectedParts.has(parts[i])){
+   const currentRank=rank(parts[i]);
+   // Only visible anatomy boundaries are inked. Flat coat triangles remain
+   // continuous, and there is no per-polygon outlining or temporal dithering.
+   const details=adjacent.filter(j=>mask[j]&&parts[j]!==parts[i]&&rank(parts[j])>currentRank&&rank(parts[j])>=3);
+   if(details.length){
+    colorPixel(i,details.some(j=>rank(parts[j])>=4)?detailInk:softDetailInk);
+    detailOutlined++;continue;
+   }
+  }
+  const seam=!detailOutlines&&seamParts.has(parts[i])&&adjacent.some(j=>mask[j]&&parts[j]!==parts[i]);
+  if(seam&&!protectedFeature)colorPixel(i,seamInk);
  }
- // Fill one-pixel exterior ring only where background is visible. This keeps
- // the silhouette crisp without enlarging or hiding facial details.
+ // Draw silhouette outside the model without erasing anatomy. Both rings are
+ // computed from the original depth mask, not from the already-painted ink.
+ const outside=new Uint8Array(width*height);
  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
   const i=y*width+x;if(mask[i])continue;
-  if(![i-1,i+1,i-width,i+width].some(j=>mask[j]))continue;
-  const p=i*4;pixels[p]=edgeInk[0];pixels[p+1]=edgeInk[1];pixels[p+2]=edgeInk[2];pixels[p+3]=255;outlined++;
+  if([i-1,i+1,i-width,i+width].some(j=>mask[j])){outside[i]=1;colorPixel(i,edgeInk);}
  }
- // At ×2 add a second *external* contour ring. Never paint over the
- // source geometry or face: eyes and the silhouette remain readable.
  if(outlineWidth>=2){
-  const outside=new Uint8Array(width*height);
-  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
-   const i=y*width+x;if(mask[i])continue;
-   if([i-1,i+1,i-width,i+width].some(j=>mask[j]))outside[i]=1;
-  }
   for(let y=2;y<height-2;y++)for(let x=2;x<width-2;x++){
    const i=y*width+x;if(mask[i]||outside[i])continue;
-   if(![i-1,i+1,i-width,i+width].some(j=>outside[j]))continue;
-   const p=i*4;pixels[p]=edgeInk[0];pixels[p+1]=edgeInk[1];pixels[p+2]=edgeInk[2];pixels[p+3]=255;outlined++;
+   if([i-1,i+1,i-width,i+width].some(j=>outside[j]))colorPixel(i,edgeInk);
   }
  }
  ctx.putImageData(image,0,0);
- return {painted,textured,outlined};
+ return {painted,textured,outlined,detailOutlined};
 }
