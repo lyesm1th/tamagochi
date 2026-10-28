@@ -1,7 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=spritev4';
+import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=profilev5';
 import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
@@ -34,6 +34,14 @@ const furTone=(ink,c)=>{if(!c)return ink;
  const hex=ink.replace('#','');const rgb=[0,2,4].map(k=>clamp(parseInt(hex.slice(k,k+2),16)+d,0,255).toString(16).padStart(2,'0'));
  return '#'+rgb.join('');
 };
+// The original Detailed cow has a rounded brow and jaw, not the V-shaped
+// lower cheeks or pinched forehead of the previous procedural head.
+export function originalCowHeadProfile(sy){
+ const cheek=1+.17*Math.exp(-Math.pow((sy+.20)/.38,2));
+ const temples=1-.105*Math.exp(-Math.pow((sy-.79)/.25,2));
+ const jaw=1-.045*Math.exp(-Math.pow((sy+.88)/.20,2));
+ return cheek*temples*jaw;
+}
 const rad=n=>n*Math.PI/180;
 const vadd=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
 const spin=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return [p[0]*c+p[2]*s,p[1],-p[0]*s+p[2]*c];};
@@ -63,11 +71,10 @@ function sphere(parts,c,r,color,opts={}){
     // Full depth is retained for 360° yaw and independent head movement.
     const sy=Math.cos(ph),sx=Math.sin(ph)*Math.cos(th),sz=Math.sin(ph)*Math.sin(th);
     const round=(q,p)=>Math.sign(q)*Math.pow(Math.abs(q),p);
-    const cheeks=1+.22*Math.exp(-Math.pow((sy+.24)/.31,2));
-    const narrowTop=1-.14*Math.exp(-Math.pow((sy-.83)/.23,2));
-    return [c[0]+r[0]*round(sx,.83)*cheeks*narrowTop,
-      c[1]+r[1]*round(sy,.94),
-      c[2]+r[2]*round(sz,.88)];
+    const profile=originalCowHeadProfile(sy);
+    return [c[0]+r[0]*round(sx,.72)*profile,
+      c[1]+r[1]*round(sy,.89),
+      c[2]+r[2]*round(sz,.82)];
    }
    if(opts.shape==='spriteBody'){
     // Tiny pear-shaped plush torso below a dominant head. The top tapers into
@@ -272,13 +279,15 @@ export function drawCow3D(canvas,pose={}){
   textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
   outlineWidth:(pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1,
   protectFeatures:pose.renderMode==='locked',stablePalette:pose.renderMode==='locked',
-  detailOutlines:pose.renderMode==='locked'&&pose.outlines!=='soft'});
+  detailOutlines:pose.renderMode==='locked'&&pose.outlines!=='soft',
+  adaptiveOutlines:authentic&&pose.renderMode==='locked'});
  canvas.dataset.cow3dPixelScale=String(pixelScale);
  canvas.dataset.cow3dDesign=pose.designStyle==='legacy'?'legacy':pose.designStyle==='cream'?'cream':'reference';
  canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
  canvas.dataset.cow3dMotion=pose.renderMode==='locked'?'rigid-keyframes-8fps':'continuous';
  canvas.dataset.cow3dPoseFrame=String(Math.round((Number(pose.time)||0)/125));
- canvas.dataset.cow3dRevision='sprite-silhouette-v4';
+ canvas.dataset.cow3dRevision='head-palette-v5';
+ canvas.dataset.cow3dOutlinePalette=authentic&&pose.renderMode==='locked'?'reference-adaptive':'classic';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
  canvas.dataset.cow3dOutlinePixels=String(rendered.outlined);
@@ -296,7 +305,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v4 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v5 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design']){
   const control=get(id);
