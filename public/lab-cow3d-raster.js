@@ -1,5 +1,27 @@
 // Owner-only pixel rasterizer: one depth-tested pixel wins, including eyes,
 // horns and authentic Detailed pigment. No overpainting across mesh layers.
+// Remove isolated one-pixel material flecks without averaging RGB values,
+// antialiasing, softening edges, or touching pupils/nostrils/contour pixels.
+// The winning *whole* palette color replaces a lone unstable surface pixel.
+export function cleanFurSpeckles(pixels,mask,parts,width,height){
+ const original=new Uint8ClampedArray(pixels), eligible=new Set(['head','body']);
+ let cleaned=0;
+ for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
+  const i=y*width+x,part=parts[i];if(!mask[i]||!eligible.has(part))continue;
+  const adjacent=[i-1,i+1,i-width,i+width,i-width-1,i-width+1,i+width-1,i+width+1];
+  if(adjacent.some(j=>!mask[j]||parts[j]!==part))continue;
+  const counts=new Map();
+  for(const j of adjacent){const off=j*4,key=(original[off]<<16)|(original[off+1]<<8)|original[off+2];
+   counts.set(key,(counts.get(key)||0)+1);}
+  let major=0,count=0;
+  for(const [color,n]of counts)if(n>count){major=color;count=n;}
+  if(count<7)continue;
+  const p=i*4,old=(original[p]<<16)|(original[p+1]<<8)|original[p+2];
+  if(old!==major){pixels[p]=(major>>16)&255;pixels[p+1]=(major>>8)&255;pixels[p+2]=major&255;cleaned++;}
+ }
+ return cleaned;
+}
+
 export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false,stablePalette=false,detailOutlines=false,materialPigment=null}){
  const image=ctx.getImageData(0,0,width,height);
  const pixels=image.data,depth=new Float32Array(width*height).fill(-Infinity);
@@ -14,7 +36,11 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
   const minY=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1])));
   const maxY=Math.min(height-1,Math.ceil(Math.max(a[1],b[1],c[1])));
   const normal=face.normal||[0,0,1],sun=Math.max(0,-normal[0]*.43+normal[1]*.71+normal[2]*.52);
-  const shade=stablePalette?Math.max(.84,Math.min(1.04,Math.round((.88+sun*.15)*4)/4)):Math.max(.82,Math.min(1.08,Math.round((.88+sun*.15)*8)/8));
+  // In the original Detailed style, lighting is defined by the finite palette.
+  // Per-triangle moving highlights were causing a boil of bright/dark pixels.
+  const shade=stablePalette&&materialPigment?1:
+    stablePalette?Math.max(.84,Math.min(1.04,Math.round((.88+sun*.15)*4)/4)):
+    Math.max(.82,Math.min(1.08,Math.round((.88+sun*.15)*8)/8));
   const allowTexture=textureReady&&face.uv&&['head','body'].includes(face.part)&&normal[2]>.20;
   const color=face.ink;
   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
@@ -45,6 +71,8 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
    pixels[p+3]=255;depth[index]=z;mask[index]=1;parts[index]=face.part;painted++;
   }
  }
+ const cleanedPixels=stablePalette&&materialPigment?
+  cleanFurSpeckles(pixels,mask,parts,width,height):0;
  // Depth-tested part IDs, not mesh triangle edges, define each ink line.
  // This prevents the wireframe/shimmer effect during articulated rotations.
  let outlined=0,detailOutlined=0;
@@ -97,5 +125,5 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
   }
  }
  ctx.putImageData(image,0,0);
- return {painted,textured,outlined,detailOutlined,materialPixels};
+ return {painted,textured,outlined,detailOutlined,materialPixels,cleanedPixels};
 }
