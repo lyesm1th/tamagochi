@@ -100,7 +100,7 @@ export function buildCow3D(pose={}){
  const emotion=['happy','sad','angry'].includes(pose.emotion)?pose.emotion:'neutral';
  const headPitch=rad(clamp(Number(pose.headPitch)||0,-25,25));
  const breath=1+Math.sin(t*.0025)*(sleep?.008:.018);
- sphere(tris,[0,1.07,-.30],[ (reference?.92:.90)*breath,authentic?.68:.64,.80],coat,
+ sphere(tris,[0,1.07,-.30],[ (authentic?.97:reference?.92:.90)*breath,authentic?.68:.64,.80],coat,
   {part:'body',patch:authentic?undefined:cowPatch,patchColor:patch,shape:authentic?'toyBody':undefined});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
