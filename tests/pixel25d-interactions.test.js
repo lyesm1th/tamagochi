@@ -16,3 +16,11 @@ test('deterministic and bounded rig poses expose garment and room anchors',()=>{
  }
  assert.equal(interactionAnimations.mirror,'mirror');
 });
+
+test('every clip exposes at least one reachable blink frame unless blinking is disabled',()=>{
+ for(const [name,clip] of Object.entries(animationLibrary)){
+  const p=interactionPose(name,clip.duration-60);
+  assert.equal(p.blink,clip.blink,name);
+  assert.ok(p.contacts.bed&&p.contacts.floor,name);
+ }
+});
