@@ -23,10 +23,18 @@ export function drawReferenceRig(source,points,pose={},showJoints=false){
   mc.save();mc.beginPath();mc.ellipse(x,cy,rx,ry,0,0,Math.PI*2);
   mc.clip();mc.drawImage(source,0,0);mc.restore();
   const k=1-.22*Math.abs(a.headYaw)/30;
+  // Reconstruct a modest side silhouette from the existing eye-side pixel strip.
+  // This provides a synthetic cheek volume, not a claimed authentic unseen view.
+  const cheek=document.createElement('canvas');cheek.width=Math.max(2,Math.round(rx*.22));cheek.height=Math.max(2,Math.round(ry*.7));
+  const cc=cheek.getContext('2d');cc.imageSmoothingEnabled=false;
+  const fromX=a.headYaw>0?Math.max(0,x-rx):Math.min(w-cheek.width,x+rx-cheek.width);
+  cc.drawImage(source,fromX,Math.max(0,cy-Math.round(ry*.35)),cheek.width,cheek.height,0,0,cheek.width,cheek.height);
   const shift=Math.round(Math.sin(a.headYaw*Math.PI/180)*w*.035);
   ctx.save();ctx.beginPath();ctx.ellipse(x,cy,rx,ry,0,0,Math.PI*2);ctx.clip();
   // Keep the underlying source instead of deleting head pixels: no transparent seams.
   ctx.drawImage(mask,0,0,w,h,Math.round(x*(1-k))+shift,0,Math.round(w*k),h);
+  const sideX=a.headYaw>0?x+Math.round(rx*k*.80):x-Math.round(rx*k*.95);
+  ctx.drawImage(cheek,sideX,Math.round(cy-ry*.35),Math.max(2,Math.round(cheek.width*Math.abs(a.headYaw)/30)),cheek.height);
   ctx.restore();
  }
  for(const name of ['leftHand','rightHand']){
