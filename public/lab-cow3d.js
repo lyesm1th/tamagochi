@@ -78,11 +78,11 @@ export function buildCow3D(pose={}){
   sphere(head,[side*.57,.32,.20],[.24,.14,.06],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
   sphere(head,[side*.46,-.22,.48],[.19,.13,.12],palette.pink,{part:'cheek'});
-  sphere(head,[side*.25,.085,.59],[.205,.235,.105],palette.dark,{part:'eyeBorder'});
+  sphere(head,[side*.25,.085,.59],[.175,.19,.087],palette.dark,{part:'eyeBorder'});
   if(!pose.blink){
-   sphere(head,[side*.25,.085,.677],[.155,.18,.074],palette.eye,{part:'eye'});
-   sphere(head,[side*.25-.055,.165,.741],[.050,.055,.022],palette.shine,{part:'sparkle'});
-   sphere(head,[side*.25+.055,.02,.743],[.023,.025,.013],palette.shine,{part:'sparkleSmall'});
+   sphere(head,[side*.25,.085,.677],[.132,.155,.070],palette.eye,{part:'eye'});
+   sphere(head,[side*.25-.055,.165,.741],[.038,.045,.019],palette.shine,{part:'sparkle'});
+   sphere(head,[side*.25+.055,.02,.743],[.018,.021,.013],palette.shine,{part:'sparkleSmall'});
   }else{
    sphere(head,[side*.25,.095,.674],[.159,.030,.040],palette.dark,{part:'lid'});
   }
