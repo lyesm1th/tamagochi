@@ -73,7 +73,7 @@ try{
  await capture('comparison','frame-difference.png');
  // Exercise the same private WebGL canvas with the reference cat and garment controls.
  await select('species','cat');await select('age','Дорослий');
- await page.waitForFunction(()=>document.getElementById('pixel25d-stage')?.dataset.labRendered==='true',{timeout:15000});
+ await page.waitForFunction(()=>document.getElementById('pixel25d-stage')?.dataset.labRendered==='true',null,{timeout:15000});
  await page.locator('#pixel25d-reference').check();await select('pixel25d-interaction','greet');
  await page.locator('#pixel25d-play').check();await tick();
  const first25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
