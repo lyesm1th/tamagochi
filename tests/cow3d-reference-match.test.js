@@ -2,27 +2,36 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildCow3D,drawCow3D,detailedCowColors} from '../public/lab-cow3d.js';
+import {originalCowPigments,paintOriginalCowSurface} from '../public/lab-cow3d-paint.js';
 
 const part=(mesh,id)=>mesh.filter(tri=>tri.part===id);
 const span=(mesh,id,axis)=>{const p=part(mesh,id).flatMap(f=>f.points.map(v=>v[axis]));return Math.max(...p)-Math.min(...p);};
 const maxZ=(mesh,id)=>Math.max(...part(mesh,id).flatMap(f=>f.points.map(p=>p[2])));
 
-test('Detailed Match uses cream/chocolate/rose pigments instead of old black-white atlas',()=>{
- const reference=buildCow3D({designStyle:'reference',emotion:'sad'});
- const legacy=buildCow3D({designStyle:'legacy',emotion:'sad'});
- assert.ok(part(reference,'head').some(f=>f.ink===detailedCowColors.coat));
- assert.ok(part(reference,'ear').some(f=>f.ink===detailedCowColors.patch));
- assert.ok(part(reference,'muzzle').some(f=>f.ink===detailedCowColors.muzzle));
- assert.ok(part(reference,'tear').some(f=>f.ink===detailedCowColors.tear));
- assert.ok(part(reference,'cheekMark').length>0);
- assert.equal(part(legacy,'cheekMark').length,0);
+test('reference now matches the actual black-and-ivory Detailed atlas, not the cream 3D preview',()=>{
+ const reference=buildCow3D({designStyle:'reference',emotion:'neutral'});
+ const cream=buildCow3D({designStyle:'cream',emotion:'sad'});
+ const legacy=buildCow3D({designStyle:'legacy'});
+ assert.ok(part(reference,'head').some(f=>f.ink===originalCowPigments.coat));
+ assert.ok(part(reference,'ear').some(f=>f.ink===originalCowPigments.patch));
+ assert.ok(part(reference,'muzzle').some(f=>f.ink===originalCowPigments.muzzle));
+ assert.ok(part(reference,'blush').some(f=>f.ink===originalCowPigments.blush));
+ assert.ok(part(reference,'tailTuft').some(f=>f.ink===originalCowPigments.patch));
+ assert.ok(part(reference,'hoof0').some(f=>f.ink===originalCowPigments.hoof));
+ assert.ok(part(reference,'eye').some(f=>f.ink===originalCowPigments.eye));
+ assert.equal(part(reference,'cheekMark').length,0);
+ assert.equal(part(reference,'foreheadMark').length,0);
+ assert.ok(part(cream,'head').some(f=>f.ink===detailedCowColors.coat));
+ assert.ok(part(cream,'cheekMark').length>0);
+ assert.ok(part(legacy,'foreheadMark').length>0);
+ assert.equal(part(reference,'tear').length,0,'original smiling cow has no tears by default');
 });
 
 test('reference cow has wider muzzle, visible dark nostrils and an articulated pink face',()=>{
  const reference=buildCow3D({designStyle:'reference'}),legacy=buildCow3D({designStyle:'legacy'});
  assert.ok(span(reference,'muzzle',0)>span(legacy,'muzzle',0)*1.06);
  assert.ok(maxZ(reference,'nostril')>maxZ(legacy,'nostril')+.04);
- assert.ok(part(reference,'nostril').every(f=>f.ink===detailedCowColors.ink||f.ink==='#412e2a'||f.ink==='#372420'));
+ assert.ok(part(reference,'nostril').every(f=>f.ink===originalCowPigments.ink||f.ink==='#412e2a'||f.ink==='#372420'));
  const a=buildCow3D({designStyle:'reference',headYaw:-35});
  const b=buildCow3D({designStyle:'reference',headYaw:35});
  assert.notDeepEqual(part(a,'muzzle')[0].points,part(b,'muzzle')[0].points);
@@ -53,13 +62,13 @@ test('reference keeps proper side horns, hooves and lying-down anatomy across ro
  }
 });
 
-test('owner-only lab selects frontal, sad reference comparison and cache-busted script',()=>{
+test('owner-only lab selects frontal, smiling black-and-white reference design',()=>{
  const html=readFileSync(new URL('../public/lab.html',import.meta.url),'utf8');
  assert.match(html,/id="cow3d-design"/);
  assert.match(html,/value="reference" selected/);
- assert.match(html,/value="sad" selected/);
+ assert.match(html,/value="neutral" selected/);
  assert.match(html,/id="cow3d-yaw"[^>]*value="0"/);
- assert.match(html,/src="\/lab-cow3d\.js" data-revision="detailed-match-v2"/);
+ assert.match(html,/src="\/lab-cow3d\.js" data-revision="original-detailed-v3"/);
 });
 
 test('3D reference view exposes version and integer pixel scale without smoothing',()=>{
@@ -69,10 +78,13 @@ test('3D reference view exposes version and integer pixel scale without smoothin
  const canvas={style:{},dataset:{},getContext(){return ctx}};
  drawCow3D(canvas,{pixelScale:3,designStyle:'reference',renderMode:'locked',emotion:'sad',outlines:'detailed'});
  assert.equal(canvas.dataset.cow3dDesign,'reference');
- assert.equal(canvas.dataset.cow3dRevision,'detailed-match-v2');
+ assert.equal(canvas.dataset.cow3dRevision,'original-detailed-v3');
+ assert.equal(canvas.dataset.cow3dMaterial,'original-detailed-surface');
  assert.equal(canvas.dataset.cow3dTextured,'false');
  assert.equal(canvas.style.width,'765px');
  assert.equal(ctx.imageSmoothingEnabled,false);
+ drawCow3D(canvas,{pixelScale:3,designStyle:'cream',renderMode:'locked'});
+ assert.equal(canvas.dataset.cow3dDesign,'cream');
  drawCow3D(canvas,{pixelScale:3,designStyle:'legacy',renderMode:'locked'});
  assert.equal(canvas.dataset.cow3dDesign,'legacy');
 });
