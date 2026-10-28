@@ -4,10 +4,10 @@
 // These solid pigment regions live in the cow's local 3D coordinates, so the
 // markings remain attached during head turns, sleep, and full-body rotations.
 export const originalCowPigments=Object.freeze({
- coat:'#fff2df',shadow:'#eedcc8',patch:'#2d2a30',patchLight:'#414047',
- muzzle:'#f3a4ac',muzzleLight:'#f8bbc0',innerEar:'#ed99a1',
- blush:'#f3a1a5',horn:'#eeb567',hornLight:'#ffcf86',
- ink:'#241c22',hoof:'#302c30',eye:'#1e1c21',shine:'#fffefa'
+ coat:'#faefdb',shadow:'#e9dbc7',patch:'#303039',patchLight:'#46434a',
+ muzzle:'#f1b5aa',muzzleLight:'#f6c3b7',innerEar:'#ee9ba3',
+ blush:'#f4aba8',horn:'#f0b66e',hornLight:'#ffce85',
+ ink:'#201b20',hoof:'#2a2930',eye:'#151519',shine:'#fffefa'
 });
 
 const snap=(value,step)=>Math.round(value/step)*step;
