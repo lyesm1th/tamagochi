@@ -54,10 +54,13 @@ export function detailedCowPigmentUV(part,uv,normal,base){
  // Eyes, shadows and outlines in the original atlas must not become coat markings.
  if(dark||pink||!warm)return base;
  const light=(r+g+b)/3;
- // Apply actual warm pigment where the artwork has strong brown coat markings.
- if(light<185 && ['head','body'].includes(part))return '#906342';
- const delta=Math.max(-20,Math.min(18,Math.round((light-208)*.35)));
- return '#'+[br,bg,bb].map(v=>Math.max(0,Math.min(255,v+delta)).toString(16).padStart(2,'0')).join('');
+ // Chunky, hand-picked Detailed coat palette. No continuous brown gradients:
+ // preserve a few legible ink/cream/shadow ramps and the original patch map.
+ if(light<177&&['head','body'].includes(part))return '#815039';
+ if(light<193&&['head','body'].includes(part))return '#9f6749';
+ if(light<210)return '#dcc49f';
+ if(light<232)return '#f0d8b1';
+ return '#f9e9c9';
 }
 export function drawCowDetailedReference(canvas){
  if(!canvas||!texture)return false;
