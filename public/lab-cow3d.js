@@ -291,6 +291,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
  canvas.dataset.cow3dOutlinePixels=String(rendered.outlined);
+ canvas.dataset.cow3dCharcoalRimPixels=String(rendered.adaptiveDarkOutlined);
  canvas.dataset.cow3dDetailOutlinePixels=String(rendered.detailOutlined);
  canvas.dataset.cow3dPaintedFurPixels=String(rendered.materialPixels);
  canvas.dataset.cow3dOutlineStyle=pose.renderMode==='locked'&&pose.outlines!=='soft'?'detailed':'soft';
