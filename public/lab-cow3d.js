@@ -1,6 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
+import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady} from './lab-cow3d-texture.js';
 export const cow3DParts=Object.freeze(['body','head','muzzle','ears','horns','eyes','four legs','tail']);
 const palette={cream:'#f8e8c9',white:'#fff1da',brown:'#845039',dark:'#482b25',pink:'#ed9b9b',rose:'#bf6c75',hoof:'#50362d',horn:'#ecd5a2',eye:'#251d1a',shine:'#fff9ef'};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -18,6 +19,16 @@ const furTone=(ink,c)=>{if(!c)return ink;
 const rad=n=>n*Math.PI/180;
 const vadd=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
 const spin=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return [p[0]*c+p[2]*s,p[1],-p[0]*s+p[2]*c];};
+// Preserve anatomy-specific painted color; the real Detailed atlas contributes only
+// small local brightness variations. Its eyes/outline pixels must never become fur.
+export function transferCowGrain(base,sampled){
+ if(!sampled)return base;
+ const parse=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+ const a=parse(base),b=parse(sampled);
+ const l=(x)=>x[0]*.299+x[1]*.587+x[2]*.114;
+ const adjustment=clamp((l(b)-145)*.12,-13,13);
+ return '#'+a.map(n=>Math.round(clamp(n+adjustment,0,255)).toString(16).padStart(2,'0')).join('');
+}
 function sphere(parts,c,r,color,opts={}){
  const rows=opts.rows||20,cols=opts.cols||32;
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
@@ -29,6 +40,7 @@ function sphere(parts,c,r,color,opts={}){
    const n=[(center[0]-c[0])/r[0],(center[1]-c[1])/r[1],(center[2]-c[2])/r[2]];
    let ink=color;
    if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
+   if(['body','head','leg0','leg1','leg2','leg3'].includes(opts.part))ink=transferCowGrain(ink,detailedCowPixel(opts.part,center,n));
    parts.push({points:p,normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
@@ -116,7 +128,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000;
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Справжня 3D-геометрія · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent=(cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ '3D-геометрія · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-action'])get(id).addEventListener('input',render);
  get('cow3d-save').addEventListener('click',()=>{render();const a=root.createElement('a');a.download='cow-3d-owner-lab.png';a.href=canvas.toDataURL('image/png');a.click();});
@@ -124,6 +136,7 @@ export function mountCow3DLab(root=document){
   if(playing&&now-lastPaint>=90&&canvas.isConnected&&!canvas.closest('[hidden]')){render();lastPaint=now;}
   requestAnimationFrame(tick);}
  render();
+ loadCowDetailedTexture().then(()=>render());
  requestAnimationFrame(tick);return {render};
 }
 if(typeof document!=='undefined'&&document.getElementById('cow3d-stage'))window.addEventListener('load',()=>mountCow3DLab());
