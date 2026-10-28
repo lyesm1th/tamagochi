@@ -1,6 +1,6 @@
 // Owner-only pixel rasterizer: one depth-tested pixel wins, including eyes,
 // horns and authentic Detailed pigment. No overpainting across mesh layers.
-export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady}){
+export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1}){
  const image=ctx.getImageData(0,0,width,height);
  const pixels=image.data,depth=new Float32Array(width*height).fill(-Infinity);
  let painted=0,textured=0;
@@ -59,6 +59,20 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
   const i=y*width+x;if(mask[i])continue;
   if(![i-1,i+1,i-width,i+width].some(j=>mask[j]))continue;
   const p=i*4;pixels[p]=edgeInk[0];pixels[p+1]=edgeInk[1];pixels[p+2]=edgeInk[2];pixels[p+3]=255;outlined++;
+ }
+ // At ×2 add a second *external* contour ring. Never paint over the
+ // source geometry or face: eyes and the silhouette remain readable.
+ if(outlineWidth>=2){
+  const outside=new Uint8Array(width*height);
+  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
+   const i=y*width+x;if(mask[i])continue;
+   if([i-1,i+1,i-width,i+width].some(j=>mask[j]))outside[i]=1;
+  }
+  for(let y=2;y<height-2;y++)for(let x=2;x<width-2;x++){
+   const i=y*width+x;if(mask[i]||outside[i])continue;
+   if(![i-1,i+1,i-width,i+width].some(j=>outside[j]))continue;
+   const p=i*4;pixels[p]=edgeInk[0];pixels[p+1]=edgeInk[1];pixels[p+2]=edgeInk[2];pixels[p+3]=255;outlined++;
+  }
  }
  ctx.putImageData(image,0,0);
  return {painted,textured,outlined};
