@@ -64,6 +64,8 @@ function cylinder(parts,start,end,r1,r2,color,part='tail'){
 export function buildCow3D(pose={}){
  const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=Math.sin(t*.002)*.025;
  const walk=pose.action==='walk',wave=pose.action==='wave',sleep=pose.action==='sleep';
+ const emotion=['happy','sad','angry'].includes(pose.emotion)?pose.emotion:'neutral';
+ const headPitch=rad(clamp(Number(pose.headPitch)||0,-25,25));
  const breath=1+Math.sin(t*.0025)*.018;
  sphere(tris,[0,1.07,-.30],[.90*breath,.64,.80],palette.cream,{part:'body',patch:cowPatch});
  for(let i=0;i<4;i++){
@@ -79,13 +81,19 @@ export function buildCow3D(pose={}){
  sphere(head,[0,.02,.07],[.75,.66,.60],palette.cream,{part:'head',shape:'skull'});
  sphere(head,[0,-.30,.62],[.60,.26,.29],palette.pink,{part:'muzzle'});
  sphere(head,[0,-.24,.84],[.43,.15,.055],'#f4b0a9',{part:'muzzleHighlight'});
- sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
+ // The expression belongs to the articulated head, not to the camera.
+ if(emotion==='happy')sphere(head,[0,-.43,.68],[.21,.075,.060],palette.rose,{part:'mouth'});
+ else if(emotion==='sad')sphere(head,[0,-.48,.68],[.15,.041,.059],palette.rose,{part:'mouth'});
+ else if(emotion==='angry')sphere(head,[0,-.40,.68],[.19,.028,.053],palette.dark,{part:'mouth'});
+ else sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
  for(const side of [-1,1]){
   sphere(head,[side*.75,.26,.03],[.44,.17,.14],palette.brown,{part:'ear'});
   sphere(head,[side*.77,.26,.18],[.32,.095,.065],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
   sphere(head,[side*.49,-.24,.47],[.15,.10,.08],palette.pink,{part:'cheek'});
   sphere(head,[side*.29,.11,.57],[.155,.17,.075],palette.dark,{part:'eyeBorder'});
+  if(emotion==='angry')sphere(head,[side*.29,.32,.60],[.18,.038,.052],palette.dark,{part:'brow'});
+  if(emotion==='sad')sphere(head,[side*.29,.29,.60],[.145,.029,.045],palette.brown,{part:'brow'});
   if(!pose.blink){
    sphere(head,[side*.29,.11,.655],[.113,.135,.056],palette.eye,{part:'eye'});
    sphere(head,[side*.29-.045,.17,.706],[.032,.039,.014],palette.shine,{part:'sparkle'});
@@ -94,6 +102,7 @@ export function buildCow3D(pose={}){
    sphere(head,[side*.29,.11,.657],[.14,.025,.031],palette.dark,{part:'lid'});
   }
   sphere(head,[side*.25,-.28,.916],[.055,.035,.018],palette.rose,{part:'nostril'});
+  if(emotion==='sad')sphere(head,[side*.42,-.05,.67],[.035,.095,.028],'#74b8d5',{part:'tear'});
  }
  // Layered sculpted forehead tufts remain independent 3D geometry.
  sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
@@ -103,7 +112,9 @@ export function buildCow3D(pose={}){
  sphere(head,[-.49,.34,.48],[.19,.19,.08],palette.brown,{part:'foreheadMark'});
  sphere(head,[.48,.39,.42],[.15,.17,.07],palette.brown,{part:'foreheadMark'});
  const neck=[0,1.65,.19];
- for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin([p[0]*1.03,p[1]*1.00,p[2]*1.02],headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
+ // Pitch is applied in the local head frame before the independent yaw.
+ const tilt=p=>[p[0],p[1]*Math.cos(headPitch)-p[2]*Math.sin(headPitch),p[1]*Math.sin(headPitch)+p[2]*Math.cos(headPitch)];
+ for(const tri of head)tris.push({...tri,normal:spin(tilt(tri.normal),headYaw),points:tri.points.map(p=>vadd(spin(tilt([p[0]*1.03,p[1],p[2]*1.02]),headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
  const sway=Math.sin(t*.004)*.3;
  cylinder(tris,[0,1.12,-1.03],[sway,1.34,-1.40],.10,.065,palette.cream,'tail');
@@ -135,9 +146,10 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000;
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent=(cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ '3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent=(cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ '3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
- for(const id of ['cow3d-yaw','cow3d-head','cow3d-action','cow3d-pixels'])get(id).addEventListener('input',render);
+ for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels'])get(id).addEventListener('input',render);
+ canvas.addEventListener('click',()=>{const choice=get('cow3d-emotion');choice.value=choice.value==='happy'?'neutral':'happy';render();});
  get('cow3d-save').addEventListener('click',()=>{render();const a=root.createElement('a');a.download='cow-3d-owner-lab.png';a.href=canvas.toDataURL('image/png');a.click();});
  function tick(now){time+=playing?Math.min(60,Math.max(0,now-(last||now))):0;last=now;
   if(playing&&now-lastPaint>=90&&canvas.isConnected&&!canvas.closest('[hidden]')){render();lastPaint=now;}
