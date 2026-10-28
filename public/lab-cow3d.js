@@ -77,23 +77,23 @@ export function buildCow3D(pose={}){
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
  sphere(head,[0,.02,.07],[.75,.66,.60],palette.cream,{part:'head',shape:'skull',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
- sphere(head,[0,-.27,.63],[.52,.27,.32],palette.pink,{part:'muzzle'});
- sphere(head,[0,-.21,.81],[.38,.18,.07],'#f4b0a9',{part:'muzzleHighlight'});
- sphere(head,[0,-.40,.65],[.21,.055,.085],palette.rose,{part:'mouth'});
+ sphere(head,[0,-.29,.62],[.57,.245,.27],palette.pink,{part:'muzzle'});
+ sphere(head,[0,-.24,.84],[.43,.15,.055],'#f4b0a9',{part:'muzzleHighlight'});
+ sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
  for(const side of [-1,1]){
   sphere(head,[side*.74,.28,.03],[.42,.19,.16],palette.brown,{part:'ear'});
   sphere(head,[side*.76,.28,.18],[.30,.11,.065],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
-  sphere(head,[side*.46,-.22,.48],[.19,.13,.12],palette.pink,{part:'cheek'});
-  sphere(head,[side*.25,.085,.59],[.175,.19,.087],palette.dark,{part:'eyeBorder'});
+  sphere(head,[side*.49,-.24,.47],[.15,.10,.08],palette.pink,{part:'cheek'});
+  sphere(head,[side*.29,.11,.57],[.155,.17,.075],palette.dark,{part:'eyeBorder'});
   if(!pose.blink){
-   sphere(head,[side*.25,.085,.677],[.132,.155,.070],palette.eye,{part:'eye'});
-   sphere(head,[side*.25-.055,.165,.741],[.038,.045,.019],palette.shine,{part:'sparkle'});
-   sphere(head,[side*.25+.055,.02,.743],[.018,.021,.013],palette.shine,{part:'sparkleSmall'});
+   sphere(head,[side*.29,.11,.655],[.113,.135,.056],palette.eye,{part:'eye'});
+   sphere(head,[side*.29-.045,.17,.706],[.032,.039,.014],palette.shine,{part:'sparkle'});
+   sphere(head,[side*.29+.048,.063,.708],[.015,.017,.010],palette.shine,{part:'sparkleSmall'});
   }else{
-   sphere(head,[side*.25,.095,.674],[.159,.030,.040],palette.dark,{part:'lid'});
+   sphere(head,[side*.29,.11,.657],[.14,.025,.031],palette.dark,{part:'lid'});
   }
-  sphere(head,[side*.19,-.19,.814],[.065,.045,.018],palette.rose,{part:'nostril'});
+  sphere(head,[side*.24,-.28,.902],[.055,.035,.018],palette.rose,{part:'nostril'});
  }
  sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
  sphere(head,[.06,.60,.29],[.21,.13,.20],palette.white,{part:'fringeDetail'});
