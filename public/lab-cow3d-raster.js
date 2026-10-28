@@ -1,6 +1,6 @@
 // Owner-only pixel rasterizer: one depth-tested pixel wins, including eyes,
 // horns and authentic Detailed pigment. No overpainting across mesh layers.
-export function renderCowMeshPixels(ctx,faces,{width,height,pigment,textureReady}){
+export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady}){
  const image=ctx.getImageData(0,0,width,height);
  const pixels=image.data,depth=new Float32Array(width*height).fill(-Infinity);
  let painted=0,textured=0;
@@ -14,7 +14,7 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,textureReady
   const maxY=Math.min(height-1,Math.ceil(Math.max(a[1],b[1],c[1])));
   const normal=face.normal||[0,0,1],sun=Math.max(0,-normal[0]*.43+normal[1]*.71+normal[2]*.52);
   const shade=Math.max(.82,Math.min(1.08,Math.round((.88+sun*.15)*8)/8));
-  const allowTexture=textureReady&&face.texPoints&&['head','body'].includes(face.part)&&normal[2]>.20;
+  const allowTexture=textureReady&&face.uv&&['head','body'].includes(face.part)&&normal[2]>.20;
   const color=face.ink;
   for(let y=minY;y<=maxY;y++)for(let x=minX;x<=maxX;x++){
    const px=x+.5,py=y+.5;
@@ -26,8 +26,8 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,textureReady
    if(z<=depth[index])continue;
    let ink=color;
    if(allowTexture){
-    const pos=[0,1,2].map(k=>face.texPoints[0][k]*l0+face.texPoints[1][k]*l1+face.texPoints[2][k]*l2);
-    ink=pigment(face.part,pos,normal,color);
+    const uv=[0,1].map(k=>face.uv[0][k]*l0+face.uv[1][k]*l1+face.uv[2][k]*l2);
+    ink=uvPigment(face.part,uv,normal,color);
     if(ink!==color)textured++;
    }
    const p=index*4;

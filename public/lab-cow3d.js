@@ -2,7 +2,7 @@
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
 import {renderCowMeshPixels} from './lab-cow3d-raster.js';
-import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment} from './lab-cow3d-texture.js';
+import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 export const cow3DParts=Object.freeze(['body','head','muzzle','ears','horns','eyes','four legs','tail']);
 const palette={cream:'#f8e8c9',white:'#fff1da',brown:'#845039',dark:'#482b25',pink:'#ed9b9b',rose:'#bf6c75',hoof:'#50362d',horn:'#ecd5a2',eye:'#251d1a',shine:'#fff9ef'};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -47,8 +47,8 @@ function sphere(parts,c,r,color,opts={}){
    const n=[(center[0]-c[0])/r[0],(center[1]-c[1])/r[1],(center[2]-c[2])/r[2]];
    let ink=color;
    if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
-   if(['body','head','leg0','leg1','leg2','leg3'].includes(opts.part))ink=detailedCowPigment(opts.part,center,n,ink);
-   parts.push({points:p,texPoints:p,normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
+   // Pigment is now sampled only by per-pixel UV rasterizer, never baked as flat triangle colors.
+   parts.push({points:p,texPoints:p,uv:p.map(q=>cowPartUV(opts.part||'body',q)),normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
 }
@@ -76,7 +76,7 @@ export function buildCow3D(pose={}){
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
- sphere(head,[0,.02,.07],[.75,.66,.60],palette.cream,{part:'head',shape:'skull',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
+ sphere(head,[0,.02,.07],[.75,.66,.60],palette.cream,{part:'head',shape:'skull'});
  sphere(head,[0,-.29,.62],[.57,.245,.27],palette.pink,{part:'muzzle'});
  sphere(head,[0,-.24,.84],[.43,.15,.055],'#f4b0a9',{part:'muzzleHighlight'});
  sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
@@ -115,8 +115,8 @@ export function drawCow3D(canvas,pose={}){
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160,57,13,0,0,Math.PI*2);ctx.fill();
  const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148-y*scale*perspective,z];};
- const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
- const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,textureReady:cowDetailedTextureReady()});
+ const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
+ const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,textureReady:cowDetailedTextureReady()});
  canvas.dataset.cow3dPainted=String(rendered.painted);
  canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
