@@ -1,6 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
+import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady} from './lab-cow3d-texture.js';
 export const cow3DParts=Object.freeze(['body','head','muzzle','ears','horns','eyes','four legs','tail']);
 const palette={cream:'#f8e8c9',white:'#fff1da',brown:'#845039',dark:'#482b25',pink:'#ed9b9b',rose:'#bf6c75',hoof:'#50362d',horn:'#ecd5a2',eye:'#251d1a',shine:'#fff9ef'};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -27,8 +28,8 @@ function sphere(parts,c,r,color,opts={}){
    const p=tri.map(k=>pts[k]);
    const center=p.reduce((a,q)=>vadd(a,q),[0,0,0]).map(x=>x/3);
    const n=[(center[0]-c[0])/r[0],(center[1]-c[1])/r[1],(center[2]-c[2])/r[2]];
-   let ink=color;
-   if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
+   let ink=detailedCowPixel(opts.part||'body',center,n)||color;
+   if(opts.patch&&opts.patch(n,center)&&!cowDetailedTextureReady())ink=opts.patchColor||palette.brown;
    parts.push({points:p,normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
@@ -116,7 +117,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000;
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Справжня 3D-геометрія · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent=(cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ '3D-геометрія · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-action'])get(id).addEventListener('input',render);
  get('cow3d-save').addEventListener('click',()=>{render();const a=root.createElement('a');a.download='cow-3d-owner-lab.png';a.href=canvas.toDataURL('image/png');a.click();});
@@ -124,6 +125,7 @@ export function mountCow3DLab(root=document){
   if(playing&&now-lastPaint>=90&&canvas.isConnected&&!canvas.closest('[hidden]')){render();lastPaint=now;}
   requestAnimationFrame(tick);}
  render();
+ loadCowDetailedTexture().then(()=>render());
  requestAnimationFrame(tick);return {render};
 }
 if(typeof document!=='undefined'&&document.getElementById('cow3d-stage'))window.addEventListener('load',()=>mountCow3DLab());
