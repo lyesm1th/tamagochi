@@ -17,3 +17,14 @@ test('owner lab supports deliberately chunky 4x pixel art without smoothing',()=
  assert.equal(canvas.dataset.cow3dPixelScale,'4');
  assert.equal(ctx.imageSmoothingEnabled,false);
 });
+
+test('intermediate 3x pixel mode preserves the full stage aspect ratio and no smoothing',()=>{
+ const data=new Uint8ClampedArray(85*64*4);
+ const ctx={fillStyle:'',imageSmoothingEnabled:true,fillRect(){},beginPath(){},ellipse(){},fill(){},
+  getImageData(x,y,w,h){assert.equal(w,85);assert.equal(h,64);return {data};},putImageData(){}};
+ const canvas={style:{},dataset:{},getContext(){return ctx}};
+ assert.ok(drawCow3D(canvas,{pixelScale:3,headYaw:15}));
+ assert.equal(canvas.width,85);assert.equal(canvas.height,64);
+ assert.equal(canvas.dataset.cow3dPixelScale,'3');
+ assert.equal(ctx.imageSmoothingEnabled,false);
+});
