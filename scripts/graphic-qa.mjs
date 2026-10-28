@@ -118,13 +118,17 @@ try{
    material:c.dataset.cow3dMaterial,painted:Number(c.dataset.cow3dPaintedFurPixels||0)};
  });
  assert.equal(cowMatch.design,'reference');
- assert.equal(cowMatch.revision,'original-detailed-v3');
+ assert.equal(cowMatch.revision,'sprite-silhouette-v4');
  assert.equal(cowMatch.material,'original-detailed-surface');
  assert.ok(cowMatch.cream>40,'reference head/chest must remain creamy ivory');
  assert.ok(cowMatch.pink>8,'original snout and blush need a visible pink shade');
  assert.ok(cowMatch.charcoal>25,'reference needs obvious dark forehead, ears and body flanks');
  assert.ok(cowMatch.painted>15,'3D paint must actually cover depth-tested mesh pixels');
  const originalFrame=await page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
+ // Higher native resolution shows the actual Detailed-style eyes and cheeks.
+ await select('cow3d-pixels','2');
+ await capture('cow3d-stage','cow-3d-sprite-silhouette-x2.png');
+ await select('cow3d-pixels','3');
  await capture('cow3d-stage','cow-3d-original-black-ivory-front.png');
  await select('cow3d-design','cream');
  const creamFrame=await page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
@@ -137,6 +141,31 @@ try{
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dDesign),'reference');
  const cowFrame=()=>page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
  const frontCow=await cowFrame();
+ // Static poses must be pixel-identical even while the animation clock runs.
+ // A screenshot-by-screenshot match catches the former "melting" pixel effect.
+ await page.locator('#cow3d-play').check();
+ await page.waitForTimeout(560);
+ const staticA=await cowFrame();
+ await page.waitForTimeout(440);
+ const staticB=await cowFrame();
+ assert.equal(staticA,staticB,'Sprite-Locked idle pixels must not drift, shimmer, or blend');
+ assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dMotion),'rigid-keyframes-8fps');
+ await page.locator('#cow3d-play').uncheck();
+ await capture('cow3d-stage','cow-3d-sprite-locked-idle.png');
+ // Only feet may change across locked walking frames. The head, pupils, horn
+ // and markings must not warp as the steps advance.
+ await page.locator('#cow3d-action').selectOption('walk');
+ await page.locator('#cow3d-play').check();
+ const sample=(x,y,w,h)=>page.locator('#cow3d-stage').evaluate((c,area)=>
+  Array.from(c.getContext('2d').getImageData(...area).data),[x,y,w,h]);
+ await page.waitForTimeout(170);
+ const faceWalkA=await sample(16,6,52,19),feetWalkA=await sample(18,39,50,20);
+ await page.waitForTimeout(170);
+ const faceWalkB=await sample(16,6,52,19),feetWalkB=await sample(18,39,50,20);
+ assert.deepEqual(faceWalkA,faceWalkB,'locked walking must not reshape the face each frame');
+ assert.notDeepEqual(feetWalkA,feetWalkB,'locked walking must visibly advance leg poses');
+ await page.locator('#cow3d-play').uncheck();
+ await page.locator('#cow3d-action').selectOption('idle');
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='90';el.dispatchEvent(new Event('input'));});await tick();
  const sideCow=await cowFrame();
  assert.notEqual(frontCow,sideCow,'3D cow must have different geometry when viewed from side');
