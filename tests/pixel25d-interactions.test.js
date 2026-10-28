@@ -24,3 +24,11 @@ test('every clip exposes at least one reachable blink frame unless blinking is d
   assert.ok(p.contacts.bed&&p.contacts.floor,name);
  }
 });
+
+test('interaction preview uses the selected clip duration and auto-selects reference cat',async()=>{
+ const {readFileSync}=await import('node:fs');
+ const source=readFileSync(new URL('../public/lab-pixel25d.js',import.meta.url),'utf8');
+ assert.match(source,/animationLibrary\[action\]\?\.duration\|\|3000/);
+ assert.match(source,/get\('pixel25d-reference'\)\.checked=cat/);
+});
+
