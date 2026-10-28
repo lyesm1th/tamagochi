@@ -137,6 +137,17 @@ try{
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dDesign),'reference');
  const cowFrame=()=>page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
  const frontCow=await cowFrame();
+ // Static poses must be pixel-identical even while the animation clock runs.
+ // A screenshot-by-screenshot match catches the former "melting" pixel effect.
+ await page.locator('#cow3d-play').check();
+ await page.waitForTimeout(560);
+ const staticA=await cowFrame();
+ await page.waitForTimeout(440);
+ const staticB=await cowFrame();
+ assert.equal(staticA,staticB,'Sprite-Locked idle pixels must not drift, shimmer, or blend');
+ assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dMotion),'rigid-keyframes-8fps');
+ await page.locator('#cow3d-play').uncheck();
+ await capture('cow3d-stage','cow-3d-sprite-locked-idle.png');
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='90';el.dispatchEvent(new Event('input'));});await tick();
  const sideCow=await cowFrame();
  assert.notEqual(frontCow,sideCow,'3D cow must have different geometry when viewed from side');
