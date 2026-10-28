@@ -76,7 +76,7 @@ function sphere(parts,c,r,color,opts={}){
    let ink=color;
    if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
    // Pigment is now sampled only by per-pixel UV rasterizer, never baked as flat triangle colors.
-   parts.push({points:p,texPoints:p,uv:p.map(q=>cowPartUV(opts.part||'body',q)),normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
+   parts.push({points:p,texPoints:p,uv:p.map(q=>cowPartUV(opts.part||'body',q)),normal:n,ink:['eye','eyeBorder','sparkle','sparkleSmall','nostril','mouth','blush','tear','lid','muzzle','muzzleHighlight'].includes(opts.part)?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
 }
