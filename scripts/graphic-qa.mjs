@@ -82,7 +82,12 @@ try{
  const second25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
  assert.notEqual(first25,second25,'reference 2.5D greet pose must change pixels');
  await capture('pixel25d-stage','reference-cat-greeting-25d.png');
+ await select('pixel25d-interaction','manual');await page.locator('#pixel25d-blink').uncheck();
+ await select('body','');await tick();
+ const naked25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
  await select('body','sweater');await tick();
+ const sweater25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
+ assert.notEqual(naked25,sweater25,'cat sweater must alter visible WebGL pixels');
  assert.match(await page.locator('#pixel25d-attachments').textContent(),/body→body/);
  await page.locator('#pixel25d-blink').check();await tick();
  const closed25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
