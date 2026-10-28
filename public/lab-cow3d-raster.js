@@ -1,6 +1,6 @@
 // Owner-only pixel rasterizer: one depth-tested pixel wins, including eyes,
 // horns and authentic Detailed pigment. No overpainting across mesh layers.
-export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1}){
+export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false}){
  const image=ctx.getImageData(0,0,width,height);
  const pixels=image.data,depth=new Float32Array(width*height).fill(-Infinity);
  let painted=0,textured=0;
@@ -40,7 +40,10 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
  // final depth-tested visible part IDs, not polygon edges (no triangle grid).
  let outlined=0;
  const edgeInk=[57,35,31],seamInk=[106,65,52];
- const seamParts=new Set(['muzzle','ear','innerEar','horn','hoof0','hoof1','hoof2','hoof3','eyeBorder','cheek','mouth','tailTuft']);
+ const seamParts=new Set(['muzzle','ear','innerEar','horn','hoof0','hoof1','hoof2','hoof3','eyeBorder','cheek','mouth','tailTuft','brow','foreheadMark']);
+ // Facial features retain their natural palette; a generic seam pass must not
+ // recolor eye highlights, pupils, nostrils, tear drops, or the mouth itself.
+ const protectedParts=new Set(['eye','sparkle','sparkleSmall','nostril','tear','lid','mouth']);
  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
   const i=y*width+x;
   if(!mask[i])continue;
@@ -48,6 +51,7 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
   const outer=adjacent.some(j=>!mask[j]);
   const seam=!outer&&seamParts.has(parts[i])&&adjacent.some(j=>mask[j]&&parts[j]!==parts[i]);
   if(!outer&&!seam)continue;
+  if(protectFeatures&&protectedParts.has(parts[i]))continue;
   const ink=outer?edgeInk:seamInk;
   const p=i*4;
   pixels[p]=ink[0];pixels[p+1]=ink[1];pixels[p+2]=ink[2];
