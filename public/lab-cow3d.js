@@ -110,13 +110,15 @@ export function buildCow3D(pose={}){
 function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 export function drawCow3D(canvas,pose={}){
  const ctx=canvas.getContext('2d');if(!ctx)return;
- const w=256,h=192;canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
+ const pixelScale=2,w=256/pixelScale,h=192/pixelScale;canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
+ canvas.style.imageRendering='pixelated';
  ctx.fillStyle='#e8dfcc';ctx.fillRect(0,0,w,h);
- ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160,57,13,0,0,Math.PI*2);ctx.fill();
- const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54;
- const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148-y*scale*perspective,z];};
+ ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160/pixelScale,57/pixelScale,13/pixelScale,0,0,Math.PI*2);ctx.fill();
+ const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54/pixelScale;
+ const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
  const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,textureReady:cowDetailedTextureReady()});
+ canvas.dataset.cow3dPixelScale=String(pixelScale);
  canvas.dataset.cow3dPainted=String(rendered.painted);
  canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
