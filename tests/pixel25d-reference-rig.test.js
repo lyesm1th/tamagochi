@@ -6,7 +6,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('first detailed pixel rig is restricted to reference cat and limited joint angles',()=>{
  assert.equal(referenceSpecies,'cat');
  assert.deepEqual(referenceJoints,['head','leftHand','rightHand','eyes']);
- assert.deepEqual(referencePose({head:100,leftHand:-88,rightHand:12}),{head:30,leftHand:-30,rightHand:12});
+ assert.deepEqual(referencePose({head:100,leftHand:-88,rightHand:12}),{head:30,headYaw:0,leftHand:-30,rightHand:12,blink:false});
 });
 test('new rig remains entirely in owner-only lab, never a player graphics mode',()=>{
  const html=read('public/lab.html'),src=read('public/lab-pixel25d.js'),mode=read('public/graphics-mode.js');
