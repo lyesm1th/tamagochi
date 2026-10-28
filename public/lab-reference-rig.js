@@ -13,12 +13,20 @@ export function drawReferenceRig(source,points,pose={},showJoints=false){
  ctx.drawImage(source,0,0);
  const seam=Math.max(1,Math.min(h-1,Math.round(points.pivot.y)));
  if(a.headYaw){
-  // Experimental quarter-turn proxy: head-only horizontal compression with pivot offset.
-  // It does not invent side/back-face textures. Deformity is tracked as a visual limitation.
-  const k=1-.22*Math.abs(a.headYaw)/30,dx=(1-k)*w*.5+Math.sin(a.headYaw*Math.PI/180)*w*.035;
-  ctx.save();ctx.beginPath();ctx.rect(0,0,w,seam);ctx.clip();
-  ctx.clearRect(0,0,w,seam);
-  ctx.drawImage(source,0,0,w,seam,Math.round(dx),0,Math.round(w*k),seam);
+  // Rounded alpha cutout localizes the motion to the head, preserving the original body,
+  // garments and room outside the silhouette. True unseen side textures remain future art.
+  const x=Math.round(points.pivot.x),ey=Math.round(points.eyes?.y??seam*.55);
+  const rx=Math.round(w*.34),ry=Math.max(10,Math.round(seam*.53));
+  const cy=Math.round((ey+seam)/2)-Math.round(ry*.15);
+  const mask=document.createElement('canvas');mask.width=w;mask.height=h;
+  const mc=mask.getContext('2d');mc.imageSmoothingEnabled=false;
+  mc.save();mc.beginPath();mc.ellipse(x,cy,rx,ry,0,0,Math.PI*2);
+  mc.clip();mc.drawImage(source,0,0);mc.restore();
+  const k=1-.22*Math.abs(a.headYaw)/30;
+  const shift=Math.round(Math.sin(a.headYaw*Math.PI/180)*w*.035);
+  ctx.save();ctx.beginPath();ctx.ellipse(x,cy,rx,ry,0,0,Math.PI*2);ctx.clip();
+  // Keep the underlying source instead of deleting head pixels: no transparent seams.
+  ctx.drawImage(mask,0,0,w,h,Math.round(x*(1-k))+shift,0,Math.round(w*k),h);
   ctx.restore();
  }
  for(const name of ['leftHand','rightHand']){
