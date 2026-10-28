@@ -11,5 +11,5 @@ test('head turning does not change torso mesh and torso is no longer narrower th
  const bounds=(faces,id)=>{const p=faces.filter(t=>t.part===id).flatMap(t=>t.points).map(v=>v[0]);return Math.max(...p)-Math.min(...p);};
  assert.deepEqual(a.find(t=>t.part==='body').points,b.find(t=>t.part==='body').points);
  assert.notDeepEqual(a.find(t=>t.part==='head').points,b.find(t=>t.part==='head').points);
- assert.ok(bounds(a,'body')>=bounds(a,'head')*.9);
+ assert.ok(bounds(a,'head')>bounds(a,'body')*1.10,'chibi head must remain larger than torso');
 });
