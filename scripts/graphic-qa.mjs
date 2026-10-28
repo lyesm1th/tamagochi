@@ -107,19 +107,25 @@ try{
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input'));});await tick();
  const cowMatch=await page.locator('#cow3d-stage').evaluate(c=>{
   const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
-  let cream=0,pink=0,charcoal=0;
+  let cream=0,pink=0,charcoal=0,darkRim=0,roseRim=0;
   for(let i=0;i<data.length;i+=4){
    const [r,g,b]=[data[i],data[i+1],data[i+2]];
    if(r>=196&&g>=180&&b>=158&&r>g&&g>=b&&r-b>=17)cream++;
    if(r>=174&&g>=94&&g<=195&&b>=102&&b<=200&&r>g+25)pink++;
    if(r<=88&&g<=88&&b<=97&&Math.abs(r-g)<20&&Math.abs(g-b)<20)charcoal++;
+   if(r===18&&g===17&&b===25)darkRim++;
+   if(r===110&&g===55&&b===68)roseRim++;
   }
-  return {cream,pink,charcoal,design:c.dataset.cow3dDesign,revision:c.dataset.cow3dRevision,
+  return {cream,pink,charcoal,darkRim,roseRim,outlinePalette:c.dataset.cow3dOutlinePalette,
+   borderPixels:Number(c.dataset.cow3dCharcoalRimPixels||0),design:c.dataset.cow3dDesign,revision:c.dataset.cow3dRevision,
    material:c.dataset.cow3dMaterial,painted:Number(c.dataset.cow3dPaintedFurPixels||0)};
  });
  assert.equal(cowMatch.design,'reference');
  assert.equal(cowMatch.revision,'head-palette-v5');
  assert.equal(cowMatch.material,'original-detailed-surface');
+ assert.equal(cowMatch.outlinePalette,'reference-adaptive');
+ assert.ok(cowMatch.darkRim>8&&cowMatch.borderPixels>8,'original charcoal fur must have a visibly darker border');
+ assert.ok(cowMatch.roseRim>3,'pink muzzle must have its own rose shadow outline');
  assert.ok(cowMatch.cream>40,'reference head/chest must remain creamy ivory');
  assert.ok(cowMatch.pink>8,'original snout and blush need a visible pink shade');
  assert.ok(cowMatch.charcoal>25,'reference needs obvious dark forehead, ears and body flanks');
@@ -128,6 +134,7 @@ try{
  // Higher native resolution shows the actual Detailed-style eyes and cheeks.
  await select('cow3d-pixels','2');
  await capture('cow3d-stage','cow-3d-sprite-silhouette-x2.png');
+ await capture('cow3d-stage','cow-3d-head-palette-v5-x2.png');
  await select('cow3d-pixels','3');
  await capture('cow3d-stage','cow-3d-original-black-ivory-front.png');
  await select('cow3d-design','cream');
