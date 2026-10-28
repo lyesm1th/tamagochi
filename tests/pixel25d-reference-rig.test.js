@@ -15,3 +15,13 @@ test('new rig remains entirely in owner-only lab, never a player graphics mode',
  assert.match(src,/pet\.species===referenceSpecies/);
  assert.doesNotMatch(mode,/referenceRig|pixel25d/i);
 });
+
+test('head yaw is independent of sprite tilt and blink is explicit',()=>{
+ const pose=referencePose({headYaw:90,head:12,blink:true});
+ assert.equal(pose.headYaw,30);assert.equal(pose.head,12);assert.equal(pose.blink,true);
+ assert.equal(referencePose({blink:false}).blink,false);
+ const html=read('public/lab.html'),renderer=read('public/lab-pixel25d.js');
+ assert.match(html,/id="pixel25d-blink"/);
+ assert.match(renderer,/yaw:referenceEnabled\?0:/);
+ assert.match(renderer,/headYaw:actionPose\?\.headYaw/);
+});
