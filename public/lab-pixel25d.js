@@ -60,12 +60,13 @@ export async function mountPixel25DLab(){
   const pose=clip==='manual'?null:labClipPose(clip,clock);
   const actionName=get('pixel25d-interaction')?.value||'manual';
   const actionPose=actionName==='manual'?null:interactionPose(actionName,clock);
-  const articulated=articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:pose?.tilt??Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
   const referenceEnabled=get('pixel25d-reference')?.checked&&pet.species===referenceSpecies;
+  const articulated=referenceEnabled?portrait:articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:pose?.tilt??Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
   const finalPortrait=referenceEnabled?drawReferenceRig(articulated,rigPoints(pet.species,pet.portraitStage,articulated.width,articulated.height),{
-   headYaw:actionPose?.headYaw??Number(get('pixel25d-yaw').value),blink:actionPose?.blink??(get('pixel25d-blink')?.checked||false),leftHand:actionPose?.leftHand??Number(get('pixel25d-left-hand').value),rightHand:actionPose?.rightHand??Number(get('pixel25d-right-hand').value)},get('pixel25d-rig').checked):articulated;
+   headYaw:actionPose?.headYaw??Number(get('pixel25d-yaw').value),blink:(actionPose?.blink||get('pixel25d-blink')?.checked||false),leftHand:actionPose?.leftHand??Number(get('pixel25d-left-hand').value),rightHand:actionPose?.rightHand??Number(get('pixel25d-right-hand').value)},get('pixel25d-rig').checked):articulated;
   engine.render(background,finalPortrait,{yaw:referenceEnabled?0:(actionPose?.headYaw??pose?.yaw??Number(get('pixel25d-yaw').value))*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100,bob:actionPose?.bob??pose?.bob??0});
   const anchors=detailedAnchors(pet.species,pet.portraitStage);
+  target.dataset.labRendered='true';
   get('pixel25d-yaw-output').textContent=get('pixel25d-yaw').value+'°';
   status.textContent=(referenceEnabled?'CAT REFERENCE RIG · ':'')+'WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
  };
