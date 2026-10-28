@@ -33,3 +33,10 @@ test('head yaw avoids destructive clearRect and clips to anatomical head mask',(
  assert.doesNotMatch(source,/ctx\.clearRect/);
  assert.match(source,/ctx\.imageSmoothingEnabled=false/);
 });
+
+test('blink uses independent lids and reconstructed side-cheek strip',()=>{
+ const code=read('public/lab-reference-rig.js');
+ assert.match(code,/for\(const x of \[center-offset,center\+offset\]\)/);
+ assert.match(code,/ctx\.drawImage\(eyelid,left,top\)/);
+ assert.match(code,/ctx\.drawImage\(cheek,sideX/);
+});
