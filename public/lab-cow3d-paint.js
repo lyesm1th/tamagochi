@@ -18,7 +18,25 @@ const oval=(x,y,cx,cy,rx,ry)=>((x-cx)/rx)**2+((y-cy)/ry)**2<1;
 export function paintOriginalCowSurface(part,p,normal,base){
  if(!p||p.length!==3)return base;
  const x=snap(p[0],.052),y=snap(p[1],.052),z=p[2];
+ if(part==='muzzle'){
+  // Actual Detailed facial markings are painted onto the raised pink 3D
+  // muzzle, not built from floating dark balls that merge at ×3 resolution.
+  // All coordinates belong to the articulated head's local anatomy.
+  if(z<.82)return base;
+  if(oval(x,y,-.16,-.255,.044,.041)||oval(x,y,.16,-.255,.044,.041))
+   return originalCowPigments.ink;
+  const smileX=Math.abs(x);
+  const smileY=-.455+.070*(smileX/.195)**2;
+  if(smileX<=.195&&Math.abs(y-smileY)<.031)
+   return originalCowPigments.ink;
+  if(z>.88&&oval(x,y,-.19,-.16,.20,.045))
+   return originalCowPigments.muzzleLight;
+  return base;
+ }
  if(part==='head'){
+  // Pink cheeks belong to the ivory face surface: stable in 3D rotation.
+  if(z>.27&&(oval(x,y,-.52,-.235,.17,.13)||oval(x,y,.52,-.235,.17,.13)))
+   return originalCowPigments.blush;
   // Wide charcoal crown, asymmetric side bangs, ivory central forelock.
   const back=z<.06&&(y>.04||Math.abs(x)>.56);
   const cap=z>.08&&(
