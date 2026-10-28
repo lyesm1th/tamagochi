@@ -46,6 +46,24 @@ export function detailedCowPixel(part,position,normal){
  return '#'+[r,g,b].map(n=>n.toString(16).padStart(2,'0')).join('');
 }
 
+// A deterministic atlas-to-mesh paint pass. Preserve source pixels as discrete
+// pigment families instead of reducing the entire Detailed artwork to brightness.
+export function detailedCowPigment(part,position,normal,base){
+ const sampled=detailedCowPixel(part,position,normal);
+ if(!sampled)return base;
+ const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+ const [r,g,b]=rgb(sampled),[br,bg,bb]=rgb(base);
+ const warm=r>g*1.05&&g>b*1.06;
+ const dark=(r+g+b)/3<123;
+ const pink=r>g*1.24&&b>g*.75;
+ // Eyes, shadows and outlines in the original atlas must not become coat markings.
+ if(dark||pink||!warm)return base;
+ const light=(r+g+b)/3;
+ // Apply actual warm pigment where the artwork has strong brown coat markings.
+ if(light<185 && ['head','body'].includes(part))return '#906342';
+ const delta=Math.max(-12,Math.min(12,Math.round((light-208)*.22)));
+ return '#'+[br,bg,bb].map(v=>Math.max(0,Math.min(255,v+delta)).toString(16).padStart(2,'0')).join('');
+}
 export function drawCowDetailedReference(canvas){
  if(!canvas||!texture)return false;
  const c=canvas.getContext('2d');
