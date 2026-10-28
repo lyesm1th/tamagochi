@@ -50,14 +50,21 @@ export function drawReferenceRig(source,points,pose={},showJoints=false){
   ctx.drawImage(paw,sx-x,sy-y);ctx.restore();
  }
  if(a.blink&&points.eyes){
-  // Eye strip closes at the eyes anchor, using pixel-art nearest-neighbour sampling.
-  const eyeY=Math.round(points.eyes.y),halfW=Math.round(w*.25),x=Math.round(points.eyes.x);
-  const y=Math.max(0,eyeY-2),x0=Math.max(0,x-halfW),sw=Math.min(w-x0,halfW*2);
-  if(sw>0&&y+4<h){
-   const closed=document.createElement('canvas');closed.width=sw;closed.height=4;
-   const c=closed.getContext('2d');c.imageSmoothingEnabled=false;
-   c.drawImage(out,x0,Math.max(0,y-6),sw,1,0,1,sw,2);
-   ctx.drawImage(closed,x0,y);
+  // Two discrete pixel eyelids instead of stretching an entire face-width strip.
+  const eye=points.eyes,cy=Math.round(eye.y),center=Math.round(eye.x);
+  const offset=Math.max(5,Math.round(w*.105)),ew=Math.max(3,Math.round(w*.085));
+  for(const x of [center-offset,center+offset]){
+   const left=Math.max(0,Math.round(x-ew/2)),top=Math.max(0,cy-3);
+   const width=Math.min(ew,w-left),height=Math.min(6,h-top);
+   if(width<=0||height<=0)continue;
+   const eyelid=document.createElement('canvas');eyelid.width=width;eyelid.height=height;
+   const ec=eyelid.getContext('2d');ec.imageSmoothingEnabled=false;
+   // Nearby brow fur supplies authentic palette pixels for the closed-lid region.
+   ec.drawImage(out,left,Math.max(0,top-4),width,1,0,0,width,height);
+   ctx.drawImage(eyelid,left,top);
+   // Dark narrow crease in the original pixel-art palette.
+   ctx.save();ctx.globalAlpha=.7;ctx.fillStyle='#59453d';
+   ctx.fillRect(left+1,cy,Math.max(1,width-2),1);ctx.restore();
   }
  }
  if(showJoints){
