@@ -37,7 +37,7 @@ function sphere(parts,c,r,color,opts={}){
    const localY=Math.cos(ph);
    // Anatomically sculpted skull instead of a generic ellipsoid:
    // broad cheek mass below the eyes, slimmer forehead and round jaw.
-   const contour=opts.shape==='skull'?1+.20*Math.exp(-Math.pow((localY+.30)/.38,2))-.11*Math.exp(-Math.pow((localY-.77)/.26,2)):1;
+   const contour=opts.shape==='skull'?1+.34*Math.exp(-Math.pow((localY+.30)/.38,2))-.16*Math.exp(-Math.pow((localY-.77)/.26,2)):1;
    const faceDepth=opts.shape==='skull'?.10*Math.exp(-Math.pow((localY+.20)/.48,2)):0;
    return [c[0]+r[0]*contour*Math.sin(ph)*Math.cos(th),c[1]+r[1]*Math.cos(ph),c[2]+(r[2]+faceDepth)*Math.sin(ph)*Math.sin(th)];};
   const pts=[point(i/cols,j/rows),point((i+1)/cols,j/rows),point((i+1)/cols,(j+1)/rows),point(i/cols,(j+1)/rows)];
