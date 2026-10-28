@@ -3,6 +3,8 @@ import {drawDetailedRoom,drawDetailedPortrait, detailedAnchors,loadDetailedAsset
 import {labPet} from './lab-state.js';
 import {articulatePortrait} from './lab-rig.js';
 import {labClipPose} from './lab-motion.js';
+import {rigPoints} from './lab-rig.js';
+import {referenceSpecies,drawReferenceRig} from './lab-reference-rig.js';
 const size=[384,288];
 export function createPixel25D(canvas){
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:true});
@@ -56,13 +58,16 @@ export async function mountPixel25DLab(){
   const clip=get('pixel25d-clip').value;
   const pose=clip==='manual'?null:labClipPose(clip,clock);
   const articulated=articulatePortrait(portrait,pet.species,pet.portraitStage,{tilt:pose?.tilt??Number(get('pixel25d-head').value),showRig:get('pixel25d-rig').checked});
-  engine.render(background,articulated,{yaw:(pose?.yaw??Number(get('pixel25d-yaw').value))*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100,bob:pose?.bob||0});
+  const referenceEnabled=get('pixel25d-reference')?.checked&&pet.species===referenceSpecies;
+  const finalPortrait=referenceEnabled?drawReferenceRig(articulated,rigPoints(pet.species,pet.portraitStage,articulated.width,articulated.height),{
+   leftHand:Number(get('pixel25d-left-hand').value),rightHand:Number(get('pixel25d-right-hand').value)},get('pixel25d-rig').checked):articulated;
+  engine.render(background,finalPortrait,{yaw:(pose?.yaw??Number(get('pixel25d-yaw').value))*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100,bob:pose?.bob||0});
   const anchors=detailedAnchors(pet.species,pet.portraitStage);
   get('pixel25d-yaw-output').textContent=get('pixel25d-yaw').value+'°';
-  status.textContent='WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
+  status.textContent=(referenceEnabled?'CAT REFERENCE RIG · ':'')+'WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
  };
  for(const el of document.querySelectorAll('select,input'))el.addEventListener('change',redraw);
- for(const id of ['pixel25d-yaw','pixel25d-depth','pixel25d-head'])get(id).addEventListener('input',redraw);
+ for(const id of ['pixel25d-yaw','pixel25d-depth','pixel25d-head','pixel25d-left-hand','pixel25d-right-hand'])get(id).addEventListener('input',redraw);
  get('pixel25d-refresh').addEventListener('click',redraw);
  get('pixel25d-time').addEventListener('input',()=>{clock=Number(get('pixel25d-time').value);redraw();});
  const tick=t=>{if(!alive)return;if(get('pixel25d-play').checked&&get('pixel25d-clip').value!=='manual'){clock=(clock+Math.min(64,Math.max(0,t-(last||t))))%3000;get('pixel25d-time').value=String(Math.round(clock));redraw();}last=t;requestAnimationFrame(tick);};
