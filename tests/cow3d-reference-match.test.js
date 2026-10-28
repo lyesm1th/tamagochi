@@ -59,7 +59,7 @@ test('owner-only lab selects frontal, sad reference comparison and cache-busted 
  assert.match(html,/value="reference" selected/);
  assert.match(html,/value="sad" selected/);
  assert.match(html,/id="cow3d-yaw"[^>]*value="0"/);
- assert.match(html,/lab-cow3d\.js\?v=detailed-match-v2/);
+ assert.match(html,/src="\/lab-cow3d\.js" data-revision="detailed-match-v2"/);
 });
 
 test('3D reference view exposes version and integer pixel scale without smoothing',()=>{
