@@ -58,14 +58,14 @@ export function buildCow3D(pose={}){
  const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=Math.sin(t*.002)*.025;
  const walk=pose.action==='walk',wave=pose.action==='wave',sleep=pose.action==='sleep';
  const breath=1+Math.sin(t*.0025)*.018;
- sphere(tris,[0,1.12,0],[.84*breath,.69,.62],palette.cream,{part:'body',patch:cowPatch});
+ sphere(tris,[0,1.07,-.10],[.69*breath,.60,.69],palette.cream,{part:'body',patch:cowPatch});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
-  const x=left?-.52:.52,z=front?.40:-.40;
+  const x=left?-.43:.43,z=front?.38:-.46;
   const phase=t*.009+(left?0:Math.PI)+(front?0:Math.PI);
   const lift=walk?Math.max(0,Math.sin(phase))*.19:wave&&i===1?.25*Math.max(0,Math.sin(t*.008)):0;
-  sphere(tris,[x,.59+lift,z],[.25,.46,.24],palette.cream,{part:'leg'+i});
-  sphere(tris,[x,.23+lift,z+.02],[.25,.16,.25],palette.hoof,{part:'hoof'+i});
+  sphere(tris,[x,.43+lift,z],[.23,.32,.245],palette.cream,{part:'leg'+i});
+  sphere(tris,[x,.18+lift,z+.02],[.245,.13,.255],palette.hoof,{part:'hoof'+i});
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
@@ -78,11 +78,11 @@ export function buildCow3D(pose={}){
   sphere(head,[side*.57,.32,.20],[.24,.14,.06],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
   sphere(head,[side*.46,-.22,.48],[.19,.13,.12],palette.pink,{part:'cheek'});
-  sphere(head,[side*.25,.085,.59],[.205,.235,.105],palette.dark,{part:'eyeBorder'});
+  sphere(head,[side*.25,.085,.59],[.175,.19,.087],palette.dark,{part:'eyeBorder'});
   if(!pose.blink){
-   sphere(head,[side*.25,.085,.677],[.155,.18,.074],palette.eye,{part:'eye'});
-   sphere(head,[side*.25-.055,.165,.741],[.050,.055,.022],palette.shine,{part:'sparkle'});
-   sphere(head,[side*.25+.055,.02,.743],[.023,.025,.013],palette.shine,{part:'sparkleSmall'});
+   sphere(head,[side*.25,.085,.677],[.132,.155,.070],palette.eye,{part:'eye'});
+   sphere(head,[side*.25-.055,.165,.741],[.038,.045,.019],palette.shine,{part:'sparkle'});
+   sphere(head,[side*.25+.055,.02,.743],[.018,.021,.013],palette.shine,{part:'sparkleSmall'});
   }else{
    sphere(head,[side*.25,.095,.674],[.159,.030,.040],palette.dark,{part:'lid'});
   }
@@ -91,12 +91,12 @@ export function buildCow3D(pose={}){
  sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
  sphere(head,[.06,.60,.29],[.21,.13,.20],palette.white,{part:'fringeDetail'});
  sphere(head,[-.25,.50,.46],[.12,.13,.14],'#fdf1d6',{part:'fringeLock'});
- const neck=[0,1.66,.41];
- for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin(p,headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
+ const neck=[0,1.48,.49];
+ for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin([p[0]*1.20,p[1]*1.12,p[2]*1.07],headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
  const sway=Math.sin(t*.004)*.3;
- cylinder(tris,[0,1.20,-.58],[sway,1.44,-1.05],.10,.065,palette.cream,'tail');
- sphere(tris,[sway,1.44,-1.09],[.16,.18,.17],palette.brown,{part:'tailTuft'});
+ cylinder(tris,[0,1.12,-.67],[sway,1.34,-1.09],.10,.065,palette.cream,'tail');
+ sphere(tris,[sway,1.34,-1.13],[.16,.18,.17],palette.brown,{part:'tailTuft'});
  const crouch=sleep?.39:1;
  return tris.map(tri=>({...tri,points:tri.points.map(p=>[p[0],p[1]*crouch,p[2]])}));
 }
@@ -106,7 +106,7 @@ export function drawCow3D(canvas,pose={}){
  const w=256,h=192;canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
  ctx.fillStyle='#e8dfcc';ctx.fillRect(0,0,w,h);
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160,57,13,0,0,Math.PI*2);ctx.fill();
- const yaw=rad(Number(pose.yaw)||0),pitch=rad(13),scale=58;
+ const yaw=rad(Number(pose.yaw)||0),pitch=rad(10),scale=54;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148-y*scale*perspective,z];};
  const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const light=[-.43,.71,.52];
