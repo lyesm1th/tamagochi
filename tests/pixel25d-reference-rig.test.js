@@ -5,7 +5,7 @@ import {referenceSpecies,referenceJoints,referencePose} from '../public/lab-refe
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('first detailed pixel rig is restricted to reference cat and limited joint angles',()=>{
  assert.equal(referenceSpecies,'cat');
- assert.deepEqual(referenceJoints,['head','leftHand','rightHand']);
+ assert.deepEqual(referenceJoints,['head','leftHand','rightHand','eyes']);
  assert.deepEqual(referencePose({head:100,leftHand:-88,rightHand:12}),{head:30,leftHand:-30,rightHand:12});
 });
 test('new rig remains entirely in owner-only lab, never a player graphics mode',()=>{
