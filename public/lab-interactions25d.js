@@ -30,9 +30,10 @@ export function interactionPose(name,time=0){
  const clip=animationLibrary[name]||animationLibrary.idle;
  const phase=2*Math.PI*((Math.max(0,time)%clip.duration)/clip.duration);
  const wave=Math.sin(phase),pulse=(1-Math.cos(phase))/2;
- const blink=clip.blink&&((Math.max(0,time)%4700)>=4540);
+ const blink=clip.blink&&((Math.max(0,time)%clip.duration)>=clip.duration-120);
  return {headYaw:clip.head*wave,leftHand:clip.hand*wave,
  rightHand:-clip.hand*wave,bob:clip.bob*pulse,blink,
  garmentAnchors:Object.freeze(['head','eyes','neck','body','leftHand','rightHand']),
- roomAnchors:Object.freeze(['floor','bed','mirror','toy'])};
+ roomAnchors:Object.freeze(['floor','bed','mirror','toy']),
+ contacts:Object.freeze({floor:{x:0,y:1},bed:{x:0,y:.72},mirror:{x:.28,y:.55},toy:{x:-.2,y:.76}})};
 }
