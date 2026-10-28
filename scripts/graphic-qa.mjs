@@ -93,6 +93,18 @@ try{
  const closed25=await page.locator('#pixel25d-stage').evaluate(c=>c.toDataURL('image/png'));
  assert.notEqual(closed25,sweater25,'closed eyelids must visibly change WebGL pixels');
  await capture('pixel25d-stage','reference-cat-blink-25d.png');
+ // Real geometry QA in the existing private room; no flat billboard is used.
+ await page.waitForFunction(()=>document.getElementById('cow3d-stage')?.dataset.cow3dReady==='true');
+ await page.locator('#cow3d-play').uncheck();
+ const cowFrame=()=>page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
+ const frontCow=await cowFrame();
+ await page.locator('#cow3d-yaw').evaluate(el=>{el.value='90';el.dispatchEvent(new Event('input'));});await tick();
+ const sideCow=await cowFrame();
+ assert.notEqual(frontCow,sideCow,'3D cow must have different geometry when viewed from side');
+ await capture('cow3d-stage','cow-3d-side.png');
+ await page.locator('#cow3d-yaw').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input'));});await tick();
+ await page.locator('#cow3d-action').selectOption('blink');await page.locator('#cow3d-play').check();await tick();
+ await capture('cow3d-stage','cow-3d-front.png');
  await page.locator('#guides').check();await tick();await page.screenshot({path:path.join(out,'lab-mobile.png'),fullPage:true});
  for(let group=0;group<2;group++){
   const tiles=[];
