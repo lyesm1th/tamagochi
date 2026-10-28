@@ -118,7 +118,7 @@ try{
    material:c.dataset.cow3dMaterial,painted:Number(c.dataset.cow3dPaintedFurPixels||0)};
  });
  assert.equal(cowMatch.design,'reference');
- assert.equal(cowMatch.revision,'original-detailed-v3');
+ assert.equal(cowMatch.revision,'sprite-silhouette-v4');
  assert.equal(cowMatch.material,'original-detailed-surface');
  assert.ok(cowMatch.cream>40,'reference head/chest must remain creamy ivory');
  assert.ok(cowMatch.pink>8,'original snout and blush need a visible pink shade');
