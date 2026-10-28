@@ -71,7 +71,7 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
     detailOutlined++;continue;
    }
   }
-  const seam=seamParts.has(parts[i])&&adjacent.some(j=>mask[j]&&parts[j]!==parts[i]);
+  const seam=!detailOutlines&&seamParts.has(parts[i])&&adjacent.some(j=>mask[j]&&parts[j]!==parts[i]);
   if(seam&&!protectedFeature)colorPixel(i,seamInk);
  }
  // Draw silhouette outside the model without erasing anatomy. Both rings are
