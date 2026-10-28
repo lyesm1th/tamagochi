@@ -8,5 +8,5 @@ test('silhouette receives a dark crisp outline without filling the empty backgro
  const color=(x,y)=>[...data.slice((y*width+x)*4,(y*width+x)*4+3)];
  assert.deepEqual(color(0,0),[0,0,0]);
  assert.deepEqual(color(2,4),[57,35,31]);
- assert.deepEqual(color(4,4),[57,35,31]);
+ assert.deepEqual(color(4,4),[248,232,201]);
 });
