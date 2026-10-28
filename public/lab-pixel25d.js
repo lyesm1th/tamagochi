@@ -6,6 +6,7 @@ import {labClipPose} from './lab-motion.js';
 import {rigPoints} from './lab-rig.js';
 import {interactionPose,animationLibrary} from './lab-interactions25d.js';
 import {referenceSpecies,drawReferenceRig} from './lab-reference-rig.js';
+import {catAttachmentGraph,attachWardrobe,roomContact} from './lab-attachments25d.js';
 const size=[384,288];
 export function createPixel25D(canvas){
  const gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:true});
@@ -67,6 +68,8 @@ export async function mountPixel25DLab(){
    headYaw:actionPose?.headYaw??Number(get('pixel25d-yaw').value),blink:(actionPose?.blink||get('pixel25d-blink')?.checked||false),leftHand:actionPose?.leftHand??Number(get('pixel25d-left-hand').value),rightHand:actionPose?.rightHand??Number(get('pixel25d-right-hand').value)},get('pixel25d-rig').checked):articulated;
   engine.render(background,finalPortrait,{yaw:referenceEnabled?0:(actionPose?.headYaw??pose?.yaw??Number(get('pixel25d-yaw').value))*Math.PI/180,depth:Number(get('pixel25d-depth').value)/100,bob:actionPose?.bob??pose?.bob??0});
   const anchors=detailedAnchors(pet.species,pet.portraitStage);
+  const attachmentStatus=get('pixel25d-attachments');
+  if(attachmentStatus)attachmentStatus.textContent=referenceEnabled?(()=>{const graph=catAttachmentGraph(pet.portraitStage,{headYaw:actionPose?.headYaw??Number(get('pixel25d-yaw').value),leftHand:actionPose?.leftHand,rightHand:actionPose?.rightHand});const clothes=attachWardrobe(pet.cozy?.wearing||{},graph);const contact=roomContact(actionName,graph);return 'Одяг: '+(clothes.map(x=>x.slot+'→'+x.joint).join(', ')||'немає')+' · Контакт із кімнатою: '+contact.target+' ('+contact.anchor.x.toFixed(2)+', '+contact.anchor.y.toFixed(2)+')';})():'Якорі доступні для еталонного кота';
   target.dataset.labRendered='true';
   get('pixel25d-yaw-output').textContent=get('pixel25d-yaw').value+'°';
   status.textContent=(referenceEnabled?'CAT REFERENCE RIG · ':'')+'WebGL · ортографічна проєкція · Detailed pixel textures · yaw '+get('pixel25d-yaw').value+'° · depth '+get('pixel25d-depth').value+' · anchors: '+Object.keys(anchors).join(', ');
