@@ -96,6 +96,34 @@ try{
  // Real geometry QA in the existing private room; no flat billboard is used.
  await page.waitForFunction(()=>document.getElementById('cow3d-stage')?.dataset.cow3dReady==='true');
  await page.locator('#cow3d-play').uncheck();
+ // The owner's approved Detailed reference must not silently regress back to
+ // the old black-and-white appearance. Capture both designs for human review.
+ await select('cow3d-design','reference');
+ await select('cow3d-render-mode','locked');
+ await select('cow3d-emotion','sad');
+ await select('cow3d-pixels','3');
+ await select('cow3d-action','idle');
+ await page.locator('#cow3d-yaw').evaluate(el=>{el.value='0';el.dispatchEvent(new Event('input'));});await tick();
+ const cowMatch=await page.locator('#cow3d-stage').evaluate(c=>{
+  const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+  let cream=0,pink=0,brown=0;
+  for(let i=0;i<data.length;i+=4){
+   const [r,g,b]=[data[i],data[i+1],data[i+2]];
+   if(r-g>=11&&r-g<=20&&g-b>=24&&g-b<=42)cream++;
+   if(r>180&&g>=105&&g<=183&&b>=108&&b<=190&&Math.abs(g-b)<17)pink++;
+   if(r>=70&&r<=155&&g>=40&&g<=105&&b>=30&&b<=82&&r>g+28)brown++;
+  }
+  return {cream,pink,brown,design:c.dataset.cow3dDesign,revision:c.dataset.cow3dRevision};
+ });
+ assert.equal(cowMatch.design,'reference');
+ assert.equal(cowMatch.revision,'detailed-match-v2');
+ assert.ok(cowMatch.cream>25,'3D cow must retain a cream coat rather than black/grey');
+ assert.ok(cowMatch.pink>8,'wide reference pink muzzle must be visible');
+ assert.ok(cowMatch.brown>6,'warm cocoa patches, horns and ear rims must be visible');
+ await capture('cow3d-stage','cow-3d-detailed-match-front.png');
+ await select('cow3d-design','legacy');
+ await capture('cow3d-stage','cow-3d-legacy-front.png');
+ await select('cow3d-design','reference');
  const cowFrame=()=>page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
  const frontCow=await cowFrame();
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='90';el.dispatchEvent(new Event('input'));});await tick();
