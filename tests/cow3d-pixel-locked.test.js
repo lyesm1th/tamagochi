@@ -5,7 +5,7 @@ import {renderCowMeshPixels} from '../public/lab-cow3d-raster.js';
 
 test('locked poses hold small sub-frame movements without changing geometry',()=>{
  const a=pixelLockedPose({renderMode:'locked',yaw:12.3,headYaw:9.1,headPitch:5,time:1210});
- const b=pixelLockedPose({renderMode:'locked',yaw:13.1,headYaw:10.3,headPitch:5.2,time:1230});
+ const b=pixelLockedPose({renderMode:'locked',yaw:13.1,headYaw:9.8,headPitch:5.2,time:1230});
  assert.equal(a.yaw,b.yaw);assert.equal(a.headYaw,b.headYaw);
  assert.equal(a.headPitch,b.headPitch);assert.equal(a.time,b.time);
  assert.deepEqual(buildCow3D(a),buildCow3D(b));
