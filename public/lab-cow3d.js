@@ -2,6 +2,7 @@
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
 import {renderCowMeshPixels} from './lab-cow3d-raster.js';
+import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
 // All spatial values snap together, so eyes and contours follow the same 3D rig.
@@ -54,6 +55,13 @@ function sphere(parts,c,r,color,opts={}){
    const contour=opts.shape==='skull'?1+.34*Math.exp(-Math.pow((localY+.30)/.38,2))-.16*Math.exp(-Math.pow((localY-.77)/.26,2)):1;
    const faceDepth=opts.shape==='skull'?.10*Math.exp(-Math.pow((localY+.20)/.48,2)):0;
    const roundSquare=q=>Math.sign(q)*Math.pow(Math.abs(q),.74);
+   if(opts.shape==='toyBody'||opts.shape==='toyHoof'){
+    // Rounded box / toy-plush proportions: wider cream chest and square hooves.
+    const curved=q=>Math.sign(q)*Math.pow(Math.abs(q),opts.shape==='toyHoof'?.60:.77);
+    return [c[0]+r[0]*curved(Math.sin(ph)*Math.cos(th)),
+      c[1]+r[1]*curved(Math.cos(ph)),
+      c[2]+r[2]*curved(Math.sin(ph)*Math.sin(th))];
+   }
    if(opts.shape==='muzzle'){
     // Rounded rectangular face of the original Detailed muzzle, in real 3D.
     const x=Math.sin(ph)*Math.cos(th),y=Math.cos(ph),z=Math.sin(ph)*Math.sin(th);
@@ -82,34 +90,41 @@ function cylinder(parts,start,end,r1,r2,color,part='tail'){
  }
 }
 export function buildCow3D(pose={}){
- const reference=pose.designStyle!=='legacy',coat=reference?detailedCowColors.coat:palette.cream,patch=reference?detailedCowColors.patch:palette.brown;
+ const authentic=pose.designStyle!=='legacy'&&pose.designStyle!=='cream';
+ const reference=authentic||pose.designStyle==='cream';
+ const colors=authentic?originalCowPigments:detailedCowColors;
+ const coat=authentic?originalCowPigments.coat:reference?detailedCowColors.coat:palette.cream;
+ const patch=authentic?originalCowPigments.patch:reference?detailedCowColors.patch:palette.brown;
  const tris=[],t=Number(pose.time)||0,headYaw=rad(clamp(pose.headYaw??0,-55,55)),headBob=pose.action==='sleep'?0:Math.sin(t*.002)*.025;
  const walk=pose.action==='walk',wave=pose.action==='wave',sleep=pose.action==='sleep';
  const emotion=['happy','sad','angry'].includes(pose.emotion)?pose.emotion:'neutral';
  const headPitch=rad(clamp(Number(pose.headPitch)||0,-25,25));
  const breath=1+Math.sin(t*.0025)*(sleep?.008:.018);
- sphere(tris,[0,1.07,-.30],[ (reference?.92:.90)*breath,.64,.80],coat,{part:'body',patch:cowPatch,patchColor:patch});
+ sphere(tris,[0,1.07,-.30],[ (reference?.92:.90)*breath,authentic?.68:.64,.80],coat,
+  {part:'body',patch:authentic?undefined:cowPatch,patchColor:patch,shape:authentic?'toyBody':undefined});
  for(let i=0;i<4;i++){
   const left=i%2===0,front=i<2;
   const x=left?-.49:.49,z=front?.28:-.66;
   const phase=t*.009+(left?0:Math.PI)+(front?0:Math.PI);
   const lift=walk?Math.max(0,Math.sin(phase))*.19:wave&&i===1?.25*Math.max(0,Math.sin(t*.008)):0;
-  sphere(tris,[x,.43+lift,z],[.23,.32,.245],coat,{part:'leg'+i});
-  sphere(tris,[x,.18+lift,z+.02],[.245,.13,.255],palette.hoof,{part:'hoof'+i});
+  sphere(tris,[x,.43+lift,z],authentic?[.235,.33,.25]:[.23,.32,.245],coat,{part:'leg'+i,shape:authentic?'toyBody':undefined});
+  sphere(tris,[x,.18+lift,z+.02],authentic?[.26,.15,.255]:[.245,.13,.255],authentic?colors.hoof:palette.hoof,
+   {part:'hoof'+i,shape:authentic?'toyHoof':undefined});
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
- sphere(head,[0,.02,.07],reference?[.76,.67,.60]:[.75,.66,.60],coat,{part:'head',shape:'skull'});
+ sphere(head,[0,.02,.07],authentic?[.79,.71,.61]:reference?[.76,.67,.60]:[.75,.66,.60],coat,{part:'head',shape:'skull'});
  if(reference){
   // The reference muzzle is a broad pink, softly squared snout, not a tiny
   // round button. Shape and micro-features are volumetric and turn with head.
-  sphere(head,[0,-.30,.68],[.66,.255,.29],detailedCowColors.muzzle,{part:'muzzle',shape:'muzzle'});
-  sphere(head,[0,-.24,.976],[.49,.105,.025],detailedCowColors.muzzleLight,{part:'muzzleHighlight'});
+  sphere(head,[0,-.30,.68],authentic?[.655,.24,.285]:[.66,.255,.29],colors.muzzle,{part:'muzzle',shape:'muzzle'});
+  sphere(head,[0,-.24,.976],authentic?[.40,.085,.022]:[.49,.105,.025],colors.muzzleLight,{part:'muzzleHighlight'});
   // Frown in the supplied reference: centre higher than corners.
   for(let i=-2;i<=2;i++){
    const sad=emotion==='sad',happy=emotion==='happy';
-   const y=sad?-.46-Math.abs(i)*.026:happy?-.51+Math.abs(i)*.026:emotion==='angry'?-.45:-.48;
-   sphere(head,[i*.072,y,.945],[.048,.024,.023],detailedCowColors.ink,{part:'mouth',rows:12,cols:20});
+   const y=authentic?(sad?-.49-Math.abs(i)*.018:emotion==='angry'?-.48:-.53+Math.abs(i)*.029):
+     sad?-.46-Math.abs(i)*.026:happy?-.51+Math.abs(i)*.026:emotion==='angry'?-.45:-.48;
+   sphere(head,[i*.072,y,authentic?.955:.945],[.046,.023,.027],colors.ink,{part:'mouth',rows:12,cols:20});
   }
  }else{
   sphere(head,[0,-.30,.62],[.60,.26,.29],palette.pink,{part:'muzzle'});
@@ -120,22 +135,24 @@ export function buildCow3D(pose={}){
   else sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
  }
  for(const side of [-1,1]){
-  sphere(head,[side*.75,.26,.03],reference?[.46,.17,.16]:[.44,.17,.14],patch,{part:'ear'});
-  sphere(head,[side*.77,.26,.20],reference?[.34,.095,.070]:[.32,.095,.065],palette.rose,{part:'innerEar'});
-  cylinder(head,[side*.34,.48,.03],[side*.37,.80,.01],.16,.035,reference?detailedCowColors.horn:palette.horn,'horn');
+  sphere(head,[side*.75,.26,.03],authentic?[.47,.18,.165]:reference?[.46,.17,.16]:[.44,.17,.14],patch,{part:'ear'});
+  sphere(head,[side*.77,.26,.20],reference?[.34,.095,.070]:[.32,.095,.065],authentic?colors.innerEar:palette.rose,{part:'innerEar'});
+  cylinder(head,[side*.34,.48,.03],[side*.37,.80,.01],.16,.035,reference?colors.horn:palette.horn,'horn');
   sphere(head,[side*.49,-.24,reference?.58:.47],[.15,.10,.08],reference?coat:palette.pink,{part:'cheek'});
+  if(authentic)sphere(head,[side*.52,-.225,.70],[.16,.115,.055],colors.blush,{part:'blush'});
   if(reference){
    // Tall narrow eyes, pronounced cocoa eyebrows and visible tears restore
    // the recognisable expression of the original Detailed reference.
-   sphere(head,[side*.285,.095,.65],[.147,.174,.081],detailedCowColors.ink,{part:'eyeBorder'});
-   sphere(head,[side*.29,.315,.67],[.238,.054,.060],patch,{part:'brow'});
+   sphere(head,[side*.285,.095,.65],authentic?[.169,.185,.090]:[.147,.174,.081],colors.ink,{part:'eyeBorder'});
+   if(!authentic||emotion==='sad'||emotion==='angry')
+    sphere(head,[side*.29,.315,.67],authentic?[.21,.046,.055]:[.238,.054,.060],patch,{part:'brow'});
    if(!(pose.blink||sleep)){
-    sphere(head,[side*.285,.091,.732],[.100,.136,.051],palette.eye,{part:'eye'});
-    sphere(head,[side*.285-.038,.147,.778],[.028,.036,.013],palette.shine,{part:'sparkle'});
-    sphere(head,[side*.285+.040,.052,.785],[.013,.015,.010],palette.shine,{part:'sparkleSmall'});
-   }else sphere(head,[side*.285,.09,.735],[.139,.025,.035],detailedCowColors.ink,{part:'lid'});
-   sphere(head,[side*.275,-.255,1.000],[.058,.045,.026],detailedCowColors.ink,{part:'nostril'});
-   if(emotion==='sad')sphere(head,[side*.47,-.045,.83],[.045,.125,.038],detailedCowColors.tear,{part:'tear'});
+    sphere(head,[side*.285,.091,.732],authentic?[.125,.154,.056]:[.100,.136,.051],authentic?colors.eye:palette.eye,{part:'eye'});
+    sphere(head,[side*.285-.038,.147,.80],[.033,.040,.014],authentic?colors.shine:palette.shine,{part:'sparkle'});
+    sphere(head,[side*.285+.040,.052,.797],[.013,.015,.010],authentic?colors.shine:palette.shine,{part:'sparkleSmall'});
+   }else sphere(head,[side*.285,.09,.735],[.139,.025,.035],colors.ink,{part:'lid'});
+   sphere(head,[side*.275,-.255,1.000],[.058,.045,.026],colors.ink,{part:'nostril'});
+   if(emotion==='sad')sphere(head,[side*.47,-.045,.83],[.045,.125,.038],colors.tear||'#60b2d7',{part:'tear'});
   }else{
    sphere(head,[side*.29,.11,.57],[.155,.17,.075],palette.dark,{part:'eyeBorder'});
    if(emotion==='angry')sphere(head,[side*.29,.32,.60],[.18,.038,.052],palette.dark,{part:'brow'});
@@ -150,15 +167,17 @@ export function buildCow3D(pose={}){
   }
  }
  // Layered sculpted forehead tufts remain independent 3D geometry.
- sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
- sphere(head,[.06,.60,.29],[.21,.13,.20],palette.white,{part:'fringeDetail'});
- sphere(head,[-.25,.50,.46],[.12,.13,.14],'#fdf1d6',{part:'fringeLock'});
+ sphere(head,[-.09,.54,.35],authentic?[.275,.19,.24]:[.33,.20,.27],authentic?colors.coat:palette.white,{part:'fringe'});
+ sphere(head,[.06,.60,.29],[.21,.13,.20],authentic?colors.coat:palette.white,{part:'fringeDetail'});
+ sphere(head,[-.25,.50,.46],[.12,.13,.14],authentic?colors.coat:'#fdf1d6',{part:'fringeLock'});
  // Curved coat patches are shallow volumetric surfaces, not screen-space decals.
- sphere(head,[-.49,.34,reference?.53:.48],reference?[.23,.23,.105]:[.19,.19,.08],patch,{part:'foreheadMark'});
- sphere(head,[.48,.39,reference?.48:.42],reference?[.20,.20,.09]:[.15,.17,.07],patch,{part:'foreheadMark'});
+ if(!authentic){
+  sphere(head,[-.49,.34,reference?.53:.48],reference?[.23,.23,.105]:[.19,.19,.08],patch,{part:'foreheadMark'});
+  sphere(head,[.48,.39,reference?.48:.42],reference?[.20,.20,.09]:[.15,.17,.07],patch,{part:'foreheadMark'});
+ }
  // A chocolate cheek marking below the left edge of the snout is an iconic
  // part of the approved sprite, not a camera-facing black-and-white texture.
- if(reference)sphere(head,[-.66,-.43,.48],[.17,.16,.14],patch,{part:'cheekMark'});
+ if(reference&&!authentic)sphere(head,[-.66,-.43,.48],[.17,.16,.14],patch,{part:'cheekMark'});
  const neck=[0,1.65,.19];
  // Pitch is applied in the local head frame before the independent yaw.
  const tilt=p=>[p[0],p[1]*Math.cos(headPitch)-p[2]*Math.sin(headPitch),p[1]*Math.sin(headPitch)+p[2]*Math.cos(headPitch)];
@@ -189,14 +208,17 @@ export function drawCow3D(canvas,pose={}){
  const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54/pixelScale;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
  const faces=buildCow3D(pose).map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,z:v.reduce((s,q)=>s+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
+ const authentic=pose.designStyle!=='legacy'&&pose.designStyle!=='cream';
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,
+  materialPigment:authentic?paintOriginalCowSurface:null,
   textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
   outlineWidth:(pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1,
   protectFeatures:pose.renderMode==='locked',stablePalette:pose.renderMode==='locked',
   detailOutlines:pose.renderMode==='locked'&&pose.outlines!=='soft'});
  canvas.dataset.cow3dPixelScale=String(pixelScale);
- canvas.dataset.cow3dDesign=pose.designStyle==='legacy'?'legacy':'reference';
- canvas.dataset.cow3dRevision='detailed-match-v2';
+ canvas.dataset.cow3dDesign=pose.designStyle==='legacy'?'legacy':pose.designStyle==='cream'?'cream':'reference';
+ canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
+ canvas.dataset.cow3dRevision='original-detailed-v3';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
  canvas.dataset.cow3dOutlinePixels=String(rendered.outlined);
@@ -213,7 +235,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v2 · '+(canvas.dataset.cow3dDesign==='reference'?'Палітра оригіналу · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v3 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design'])get(id).addEventListener('input',render);
  canvas.addEventListener('click',()=>{const choice=get('cow3d-emotion');choice.value=choice.value==='happy'?'neutral':'happy';render();});
