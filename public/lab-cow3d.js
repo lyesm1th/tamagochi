@@ -178,8 +178,8 @@ export function buildCow3D(pose={}){
   else sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
  }
  for(const side of [-1,1]){
-  sphere(head,[side*.75,.26,.03],authentic?[.47,.18,.165]:reference?[.46,.17,.16]:[.44,.17,.14],patch,{part:'ear'});
-  sphere(head,[side*.77,.26,.20],reference?[.34,.095,.070]:[.32,.095,.065],authentic?colors.innerEar:palette.rose,{part:'innerEar'});
+  sphere(head,[side*(authentic?.93:.75),.26,.03],authentic?[.47,.18,.165]:reference?[.46,.17,.16]:[.44,.17,.14],patch,{part:'ear'});
+  sphere(head,[side*(authentic?.95:.77),.26,.20],reference?[.34,.095,.070]:[.32,.095,.065],authentic?colors.innerEar:palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.80,.01],.16,.035,reference?colors.horn:palette.horn,'horn');
   sphere(head,[side*.49,-.24,reference?.58:.47],[.15,.10,.08],reference?coat:palette.pink,{part:'cheek'});
   if(authentic)sphere(head,[side*.52,-.225,.70],[.16,.115,.055],colors.blush,{part:'blush'});
