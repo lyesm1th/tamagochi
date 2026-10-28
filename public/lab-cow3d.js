@@ -19,7 +19,7 @@ const rad=n=>n*Math.PI/180;
 const vadd=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
 const spin=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return [p[0]*c+p[2]*s,p[1],-p[0]*s+p[2]*c];};
 function sphere(parts,c,r,color,opts={}){
- const rows=opts.rows||16,cols=opts.cols||24;
+ const rows=opts.rows||20,cols=opts.cols||32;
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
   const point=(u,v)=>{const ph=v*Math.PI,th=u*Math.PI*2;return [c[0]+r[0]*Math.sin(ph)*Math.cos(th),c[1]+r[1]*Math.cos(ph),c[2]+r[2]*Math.sin(ph)*Math.sin(th)];};
   const pts=[point(i/cols,j/rows),point((i+1)/cols,j/rows),point((i+1)/cols,(j+1)/rows),point(i/cols,(j+1)/rows)];
@@ -58,24 +58,27 @@ export function buildCow3D(pose={}){
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
  sphere(head,[0,0,.07],[.65,.60,.57],palette.cream,{part:'head',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
- sphere(head,[0,-.20,.57],[.47,.27,.29],palette.pink,{part:'muzzle'});
+ sphere(head,[0,-.20,.57],[.49,.29,.30],palette.pink,{part:'muzzle'});
+ sphere(head,[0,-.21,.81],[.38,.18,.07],'#f4b0a9',{part:'muzzleHighlight'});
  sphere(head,[0,-.40,.65],[.21,.055,.085],palette.rose,{part:'mouth'});
  for(const side of [-1,1]){
   sphere(head,[side*.56,.31,.09],[.34,.225,.16],palette.brown,{part:'ear'});
   sphere(head,[side*.57,.32,.20],[.24,.14,.06],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
   sphere(head,[side*.46,-.22,.48],[.19,.13,.12],palette.pink,{part:'cheek'});
-  sphere(head,[side*.25,.085,.59],[.17,.19,.08],palette.dark,{part:'eyeBorder'});
+  sphere(head,[side*.25,.085,.59],[.205,.235,.105],palette.dark,{part:'eyeBorder'});
   if(!pose.blink){
-   sphere(head,[side*.25,.085,.655],[.114,.144,.065],palette.eye,{part:'eye'});
-   sphere(head,[side*.25-.036,.145,.713],[.034,.037,.017],palette.shine,{part:'sparkle'});
+   sphere(head,[side*.25,.085,.677],[.155,.18,.074],palette.eye,{part:'eye'});
+   sphere(head,[side*.25-.055,.165,.741],[.050,.055,.022],palette.shine,{part:'sparkle'});
+   sphere(head,[side*.25+.055,.02,.743],[.023,.025,.013],palette.shine,{part:'sparkleSmall'});
   }else{
-   sphere(head,[side*.25,.095,.651],[.12,.035,.035],palette.dark,{part:'lid'});
+   sphere(head,[side*.25,.095,.674],[.159,.030,.040],palette.dark,{part:'lid'});
   }
   sphere(head,[side*.19,-.19,.814],[.065,.045,.018],palette.rose,{part:'nostril'});
  }
- sphere(head,[-.09,.54,.35],[.30,.17,.25],palette.white,{part:'fringe'});
- sphere(head,[.06,.60,.29],[.19,.11,.19],palette.white,{part:'fringeDetail'});
+ sphere(head,[-.09,.54,.35],[.33,.20,.27],palette.white,{part:'fringe'});
+ sphere(head,[.06,.60,.29],[.21,.13,.20],palette.white,{part:'fringeDetail'});
+ sphere(head,[-.25,.50,.46],[.12,.13,.14],'#fdf1d6',{part:'fringeLock'});
  const neck=[0,1.66,.41];
  for(const tri of head)tris.push({...tri,normal:spin(tri.normal,headYaw),points:tri.points.map(p=>vadd(spin(p,headYaw),[neck[0],neck[1]+headBob,neck[2]]))});
  // A distinct 3D articulated tail, not a plane.
