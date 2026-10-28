@@ -77,7 +77,7 @@ export async function mountPixel25DLab(){
  for(const id of ['pixel25d-yaw','pixel25d-depth','pixel25d-head','pixel25d-left-hand','pixel25d-right-hand'])get(id).addEventListener('input',redraw);
  get('pixel25d-refresh').addEventListener('click',redraw);
  get('pixel25d-time').addEventListener('input',()=>{clock=Number(get('pixel25d-time').value);redraw();});
- const tick=t=>{if(!alive)return;if(get('pixel25d-play').checked&&(get('pixel25d-clip').value!=='manual'||get('pixel25d-interaction')?.value!=='manual')){clock=(clock+Math.min(64,Math.max(0,t-(last||t))))/Math.max(1,Number(get('pixel25d-time').max));clock=clock%1*Number(get('pixel25d-time').max);get('pixel25d-time').value=String(Math.round(clock));redraw();}last=t;requestAnimationFrame(tick);};
+ const tick=t=>{if(!alive)return;if(get('pixel25d-play').checked&&(get('pixel25d-clip').value!=='manual'||get('pixel25d-interaction')?.value!=='manual')){clock=(clock+Math.min(64,Math.max(0,t-(last||t))))%Math.max(1,Number(get('pixel25d-time').max));get('pixel25d-time').value=String(Math.round(clock));redraw();}last=t;requestAnimationFrame(tick);};
  requestAnimationFrame(tick);
  get('pixel25d-save').addEventListener('click',()=>{redraw();const link=document.createElement('a');link.download='pixel25d-'+get('species').value+'-'+get('age').value+'.png';link.href=target.toDataURL('image/png');link.click();});
  syncTimeline();redraw();
