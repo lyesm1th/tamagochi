@@ -1,7 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady} from './lab-cow3d-texture.js';
+import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference} from './lab-cow3d-texture.js';
 export const cow3DParts=Object.freeze(['body','head','muzzle','ears','horns','eyes','four legs','tail']);
 const palette={cream:'#f8e8c9',white:'#fff1da',brown:'#845039',dark:'#482b25',pink:'#ed9b9b',rose:'#bf6c75',hoof:'#50362d',horn:'#ecd5a2',eye:'#251d1a',shine:'#fff9ef'};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -142,7 +142,7 @@ export function mountCow3DLab(root=document){
   if(playing&&now-lastPaint>=90&&canvas.isConnected&&!canvas.closest('[hidden]')){render();lastPaint=now;}
   requestAnimationFrame(tick);}
  render();
- loadCowDetailedTexture().then(()=>render());
+ loadCowDetailedTexture().then(()=>{render();drawCowDetailedReference(get('cow3d-reference'));});
  requestAnimationFrame(tick);return {render};
 }
 if(typeof document!=='undefined'&&document.getElementById('cow3d-stage'))window.addEventListener('load',()=>mountCow3DLab());
