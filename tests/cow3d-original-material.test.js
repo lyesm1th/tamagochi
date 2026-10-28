@@ -48,3 +48,14 @@ test('full 3D original cow retains real features and a side-visible tail in all 
   assert.ok(mesh.every(f=>f.points.every(p=>p.every(Number.isFinite))));
  }
 });
+
+test('tiny nostrils, U-shaped smile and pink cheeks are face-bound pigment',()=>{
+ const p=(part,x,y,z)=>paintOriginalCowSurface(part,[x,y,z],[0,0,1],ink.muzzle);
+ assert.equal(p('muzzle',-.16,-.255,.95),ink.ink);
+ assert.equal(p('muzzle',.16,-.255,.95),ink.ink);
+ assert.equal(p('muzzle',0,-.455,.93),ink.ink,'smile dips at centre');
+ assert.equal(p('muzzle',.50,-.455,.93),ink.muzzle,'smile never extends beyond cheeks');
+ assert.equal(p('muzzle',0,-.35,.93),ink.muzzle,'empty skin between nose and mouth');
+ assert.equal(paintOriginalCowSurface('head',[-.52,-.235,.55],[0,0,1],ink.coat),ink.blush);
+ assert.equal(paintOriginalCowSurface('head',[.52,-.235,.55],[0,0,1],ink.coat),ink.blush);
+});
