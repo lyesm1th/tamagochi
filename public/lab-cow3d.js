@@ -47,7 +47,7 @@ function sphere(parts,c,r,color,opts={}){
    const n=[(center[0]-c[0])/r[0],(center[1]-c[1])/r[1],(center[2]-c[2])/r[2]];
    let ink=color;
    if(opts.patch&&opts.patch(n,center))ink=opts.patchColor||palette.brown;
-   if(['body','head','leg0','leg1','leg2','leg3'].includes(opts.part))ink=detailedCowPigment(opts.part,center,n,ink);
+   // Pigment is now sampled only by per-pixel UV rasterizer, never baked as flat triangle colors.
    parts.push({points:p,texPoints:p,uv:p.map(q=>cowPartUV(opts.part||'body',q)),normal:n,ink:opts.part==='eye'||opts.part==='sparkle'?ink:furTone(ink,center),part:opts.part||'body'});
   }
  }
@@ -76,7 +76,7 @@ export function buildCow3D(pose={}){
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
- sphere(head,[0,.02,.07],[.75,.66,.60],palette.cream,{part:'head',shape:'skull',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
+ sphere(head,[0,.02,.07],[.75,.66,.60],palette.cream,{part:'head',shape:'skull'});
  sphere(head,[0,-.29,.62],[.57,.245,.27],palette.pink,{part:'muzzle'});
  sphere(head,[0,-.24,.84],[.43,.15,.055],'#f4b0a9',{part:'muzzleHighlight'});
  sphere(head,[0,-.43,.66],[.18,.038,.055],palette.rose,{part:'mouth'});
