@@ -152,6 +152,20 @@ try{
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dMotion),'rigid-keyframes-8fps');
  await page.locator('#cow3d-play').uncheck();
  await capture('cow3d-stage','cow-3d-sprite-locked-idle.png');
+ // Only feet may change across locked walking frames. The head, pupils, horn
+ // and markings must not warp as the steps advance.
+ await page.locator('#cow3d-action').selectOption('walk');
+ await page.locator('#cow3d-play').check();
+ const sample=(x,y,w,h)=>page.locator('#cow3d-stage').evaluate((c,area)=>
+  Array.from(c.getContext('2d').getImageData(...area).data),[x,y,w,h]);
+ await page.waitForTimeout(170);
+ const faceWalkA=await sample(16,6,52,19),feetWalkA=await sample(18,39,50,20);
+ await page.waitForTimeout(170);
+ const faceWalkB=await sample(16,6,52,19),feetWalkB=await sample(18,39,50,20);
+ assert.deepEqual(faceWalkA,faceWalkB,'locked walking must not reshape the face each frame');
+ assert.notDeepEqual(feetWalkA,feetWalkB,'locked walking must visibly advance leg poses');
+ await page.locator('#cow3d-play').uncheck();
+ await page.locator('#cow3d-action').selectOption('idle');
  await page.locator('#cow3d-yaw').evaluate(el=>{el.value='90';el.dispatchEvent(new Event('input'));});await tick();
  const sideCow=await cowFrame();
  assert.notEqual(frontCow,sideCow,'3D cow must have different geometry when viewed from side');
