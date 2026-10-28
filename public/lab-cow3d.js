@@ -11,7 +11,7 @@ const cowPatch=(n,c)=>{const ell=(x,y,z,rx,ry,rz)=>((c[0]-x)/rx)**2+((c[1]-y)/ry
  return ell(-.43,1.27,.34,.30,.37,.35)||ell(.51,1.05,-.20,.37,.29,.30)||ell(-.18,1.54,-.38,.32,.27,.28);
 };
 const furTone=(ink,c)=>{if(!c)return ink;
- const grain=hash3(...c),d=grain>.86?18:grain<.15?-14:0;
+ const grain=hash3(...c),d=grain>.975?5:grain<.025?-5:0;
  if(!d)return ink;
  const hex=ink.replace('#','');const rgb=[0,2,4].map(k=>clamp(parseInt(hex.slice(k,k+2),16)+d,0,255).toString(16).padStart(2,'0'));
  return '#'+rgb.join('');
@@ -32,7 +32,13 @@ export function transferCowGrain(base,sampled){
 function sphere(parts,c,r,color,opts={}){
  const rows=opts.rows||20,cols=opts.cols||32;
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
-  const point=(u,v)=>{const ph=v*Math.PI,th=u*Math.PI*2;return [c[0]+r[0]*Math.sin(ph)*Math.cos(th),c[1]+r[1]*Math.cos(ph),c[2]+r[2]*Math.sin(ph)*Math.sin(th)];};
+  const point=(u,v)=>{const ph=v*Math.PI,th=u*Math.PI*2;
+   const localY=Math.cos(ph);
+   // Anatomically sculpted skull instead of a generic ellipsoid:
+   // broad cheek mass below the eyes, slimmer forehead and round jaw.
+   const contour=opts.shape==='skull'?1+.20*Math.exp(-Math.pow((localY+.30)/.38,2))-.11*Math.exp(-Math.pow((localY-.77)/.26,2)):1;
+   const faceDepth=opts.shape==='skull'?.10*Math.exp(-Math.pow((localY+.20)/.48,2)):0;
+   return [c[0]+r[0]*contour*Math.sin(ph)*Math.cos(th),c[1]+r[1]*Math.cos(ph),c[2]+(r[2]+faceDepth)*Math.sin(ph)*Math.sin(th)];};
   const pts=[point(i/cols,j/rows),point((i+1)/cols,j/rows),point((i+1)/cols,(j+1)/rows),point(i/cols,(j+1)/rows)];
   for(const tri of [[0,1,2],[0,2,3]]){
    const p=tri.map(k=>pts[k]);
@@ -69,13 +75,13 @@ export function buildCow3D(pose={}){
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
- sphere(head,[0,0,.07],[.65,.60,.57],palette.cream,{part:'head',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
- sphere(head,[0,-.20,.57],[.49,.29,.30],palette.pink,{part:'muzzle'});
+ sphere(head,[0,0,.07],[.65,.60,.57],palette.cream,{part:'head',shape:'skull',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
+ sphere(head,[0,-.24,.59],[.51,.275,.31],palette.pink,{part:'muzzle'});
  sphere(head,[0,-.21,.81],[.38,.18,.07],'#f4b0a9',{part:'muzzleHighlight'});
  sphere(head,[0,-.40,.65],[.21,.055,.085],palette.rose,{part:'mouth'});
  for(const side of [-1,1]){
-  sphere(head,[side*.56,.31,.09],[.34,.225,.16],palette.brown,{part:'ear'});
-  sphere(head,[side*.57,.32,.20],[.24,.14,.06],palette.rose,{part:'innerEar'});
+  sphere(head,[side*.60,.28,.05],[.34,.215,.17],palette.brown,{part:'ear'});
+  sphere(head,[side*.63,.28,.19],[.24,.13,.060],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
   sphere(head,[side*.46,-.22,.48],[.19,.13,.12],palette.pink,{part:'cheek'});
   sphere(head,[side*.25,.085,.59],[.175,.19,.087],palette.dark,{part:'eyeBorder'});
@@ -116,7 +122,7 @@ export function drawCow3D(canvas,pose={}){
   const center=f.v.reduce((v,p)=>[v[0]+p[0]/3,v[1]+p[1]/3],[0,0]);
   const base=rgb(f.ink),normal=f.normal||[0,0,1];
   const sunlight=Math.max(0,normal[0]*light[0]+normal[1]*light[1]+normal[2]*light[2]);
-  const shade=clamp(.79+sunlight*.29+Math.sin(center[0]*.43+center[1]*.36)*.025,.72,1.13);
+  const shade=clamp(Math.round((.82+sunlight*.23)*12)/12,.76,1.08);
   const r=base.map(n=>Math.round(clamp(n*shade,0,255)));
   ctx.fillStyle='rgb('+r.join(',')+')';ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.closePath();ctx.fill();
  }
