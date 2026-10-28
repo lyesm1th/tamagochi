@@ -95,13 +95,13 @@ export function drawCow3D(canvas,pose={}){
 export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
- let playing=true,last=0,time=0,lastPaint=-1000;
+ let playing=false,last=0,time=0,lastPaint=-1000;
  const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Справжня 3D-геометрія · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-action'])get(id).addEventListener('input',render);
  get('cow3d-save').addEventListener('click',()=>{render();const a=root.createElement('a');a.download='cow-3d-owner-lab.png';a.href=canvas.toDataURL('image/png');a.click();});
  function tick(now){time+=playing?Math.min(60,Math.max(0,now-(last||now))):0;last=now;
-  if(now-lastPaint>=90&&canvas.isConnected&&!canvas.closest('[hidden]')){render();lastPaint=now;}
+  if(playing&&now-lastPaint>=90&&canvas.isConnected&&!canvas.closest('[hidden]')){render();lastPaint=now;}
   requestAnimationFrame(tick);}
  render();
  requestAnimationFrame(tick);return {render};
