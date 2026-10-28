@@ -32,7 +32,13 @@ export function transferCowGrain(base,sampled){
 function sphere(parts,c,r,color,opts={}){
  const rows=opts.rows||20,cols=opts.cols||32;
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
-  const point=(u,v)=>{const ph=v*Math.PI,th=u*Math.PI*2;return [c[0]+r[0]*Math.sin(ph)*Math.cos(th),c[1]+r[1]*Math.cos(ph),c[2]+r[2]*Math.sin(ph)*Math.sin(th)];};
+  const point=(u,v)=>{const ph=v*Math.PI,th=u*Math.PI*2;
+   const localY=Math.cos(ph);
+   // Anatomically sculpted skull instead of a generic ellipsoid:
+   // broad cheek mass below the eyes, slimmer forehead and round jaw.
+   const contour=opts.shape==='skull'?1+.20*Math.exp(-((localY+.30)/.38)**2)-.11*Math.exp(-((localY-.77)/.26)**2):1;
+   const faceDepth=opts.shape==='skull'?.10*Math.exp(-((localY+.20)/.48)**2):0;
+   return [c[0]+r[0]*contour*Math.sin(ph)*Math.cos(th),c[1]+r[1]*Math.cos(ph),c[2]+(r[2]+faceDepth)*Math.sin(ph)*Math.sin(th)];};
   const pts=[point(i/cols,j/rows),point((i+1)/cols,j/rows),point((i+1)/cols,(j+1)/rows),point(i/cols,(j+1)/rows)];
   for(const tri of [[0,1,2],[0,2,3]]){
    const p=tri.map(k=>pts[k]);
@@ -69,13 +75,13 @@ export function buildCow3D(pose={}){
  }
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
- sphere(head,[0,0,.07],[.65,.60,.57],palette.cream,{part:'head',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
- sphere(head,[0,-.20,.57],[.49,.29,.30],palette.pink,{part:'muzzle'});
+ sphere(head,[0,0,.07],[.65,.60,.57],palette.cream,{part:'head',shape:'skull',patch:(n,c)=>((c[0]<-.31&&c[1]>.0)||(c[0]>.35&&c[1]>.16))&&c[2]<.43});
+ sphere(head,[0,-.24,.59],[.51,.275,.31],palette.pink,{part:'muzzle'});
  sphere(head,[0,-.21,.81],[.38,.18,.07],'#f4b0a9',{part:'muzzleHighlight'});
  sphere(head,[0,-.40,.65],[.21,.055,.085],palette.rose,{part:'mouth'});
  for(const side of [-1,1]){
-  sphere(head,[side*.56,.31,.09],[.34,.225,.16],palette.brown,{part:'ear'});
-  sphere(head,[side*.57,.32,.20],[.24,.14,.06],palette.rose,{part:'innerEar'});
+  sphere(head,[side*.60,.28,.05],[.34,.215,.17],palette.brown,{part:'ear'});
+  sphere(head,[side*.63,.28,.19],[.24,.13,.060],palette.rose,{part:'innerEar'});
   cylinder(head,[side*.34,.48,.03],[side*.37,.82,.01],.16,.035,palette.horn,'horn');
   sphere(head,[side*.46,-.22,.48],[.19,.13,.12],palette.pink,{part:'cheek'});
   sphere(head,[side*.25,.085,.59],[.175,.19,.087],palette.dark,{part:'eyeBorder'});
