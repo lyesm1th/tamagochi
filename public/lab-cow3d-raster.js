@@ -22,7 +22,7 @@ export function cleanFurSpeckles(pixels,mask,parts,width,height){
  return cleaned;
 }
 
-export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false,stablePalette=false,detailOutlines=false,materialPigment=null}){
+export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,textureReady,outlineWidth=1,protectFeatures=false,stablePalette=false,detailOutlines=false,materialPigment=null,adaptiveOutlines=false}){
  const image=ctx.getImageData(0,0,width,height);
  const pixels=image.data,depth=new Float32Array(width*height).fill(-Infinity);
  let painted=0,textured=0,materialPixels=0;
@@ -73,11 +73,33 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
  }
  const cleanedPixels=stablePalette&&materialPigment?
   cleanFurSpeckles(pixels,mask,parts,width,height):0;
+ // Context-sensitive outline shades are chosen from the unmodified visible
+ // pigment, before any contour is painted. Never infer a color from ink
+ // written earlier in the same pass, or contour boundaries can flicker.
+ const basePigments=adaptiveOutlines?new Uint8ClampedArray(pixels):null;
  // Depth-tested part IDs, not mesh triangle edges, define each ink line.
  // This prevents the wireframe/shimmer effect during articulated rotations.
- let outlined=0,detailOutlined=0;
+ let outlined=0,detailOutlined=0,adaptiveDarkOutlined=0;
  const edgeInk=[57,35,31],seamInk=[106,65,52];
  const detailInk=[70,41,35],softDetailInk=[90,57,47];
+ // Pigment family from the original Detailed reference: ivory coat needs a
+ // warm cocoa line; charcoal patches and hooves need *near-black* ink; pink
+ // cheeks and muzzle need a muted berry line rather than dark brown.
+ const darkEdge=[18,17,25],warmEdge=[62,41,40],roseEdge=[110,55,68],charcoalSeam=[95,88,98];
+ const materialFamily=i=>{
+  if(!adaptiveOutlines||i<0)return 'legacy';
+  const p=i*4,r=basePigments[p],g=basePigments[p+1],b=basePigments[p+2];
+  if(Math.max(r,g,b)<108)return 'dark';
+  if(r>g+25&&Math.abs(g-b)<30&&g>98&&g<215)return 'rose';
+  return 'ivory';
+ };
+ const adaptiveInk=(i,detail=false)=>{
+  const kind=materialFamily(i);
+  if(kind==='dark')return detail?charcoalSeam:darkEdge;
+  if(kind==='rose')return roseEdge;
+  if(kind==='ivory')return warmEdge;
+  return detail?detailInk:edgeInk;
+ };
  const protectedParts=new Set(['eye','sparkle','sparkleSmall','nostril','tear','lid','mouth']);
  const seamParts=new Set(['muzzle','ear','innerEar','horn','hoof0','hoof1','hoof2','hoof3','eyeBorder','cheek','mouth','tailTuft','brow','foreheadMark']);
  // Each detail owns the higher rank. Ink is placed on the neighboring LOWER
@@ -90,40 +112,48 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
   if(['muzzleHighlight','fringeLock','brow'].includes(part))return 5;
   return protectedParts.has(part)?6:0;
  };
- const colorPixel=(i,ink)=>{const p=i*4;pixels[p]=ink[0];pixels[p+1]=ink[1];pixels[p+2]=ink[2];pixels[p+3]=255;outlined++;};
+ const colorPixel=(i,ink)=>{const p=i*4;pixels[p]=ink[0];pixels[p+1]=ink[1];pixels[p+2]=ink[2];pixels[p+3]=255;outlined++;
+  if(ink===darkEdge)adaptiveDarkOutlined++;};
  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
   const i=y*width+x;
   if(!mask[i])continue;
   const adjacent=[i-1,i+1,i-width,i+width];
   const outer=adjacent.some(j=>!mask[j]);
   const protectedFeature=protectFeatures&&protectedParts.has(parts[i]);
-  if(outer){if(!protectedFeature)colorPixel(i,edgeInk);continue;}
+  if(outer){if(!protectedFeature)colorPixel(i,adaptiveOutlines?adaptiveInk(i):edgeInk);continue;}
   if(detailOutlines&&!protectedParts.has(parts[i])){
    const currentRank=rank(parts[i]);
    // Only visible anatomy boundaries are inked. Flat coat triangles remain
    // continuous, and there is no per-polygon outlining or temporal dithering.
    const details=adjacent.filter(j=>mask[j]&&parts[j]!==parts[i]&&rank(parts[j])>currentRank&&rank(parts[j])>=3);
    if(details.length){
-    colorPixel(i,details.some(j=>rank(parts[j])>=4)?detailInk:softDetailInk);
+    colorPixel(i,adaptiveOutlines?adaptiveInk(i,true):
+     details.some(j=>rank(parts[j])>=4)?detailInk:softDetailInk);
     detailOutlined++;continue;
    }
   }
   const seam=!detailOutlines&&seamParts.has(parts[i])&&adjacent.some(j=>mask[j]&&parts[j]!==parts[i]);
-  if(seam&&!protectedFeature)colorPixel(i,seamInk);
+  if(seam&&!protectedFeature)colorPixel(i,adaptiveOutlines?adaptiveInk(i,true):seamInk);
  }
  // Draw silhouette outside the model without erasing anatomy. Both rings are
  // computed from the original depth mask, not from the already-painted ink.
- const outside=new Uint8Array(width*height);
+ const outside=new Uint8Array(width*height),ringMaterial=new Int32Array(width*height).fill(-1);
  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
   const i=y*width+x;if(mask[i])continue;
-  if([i-1,i+1,i-width,i+width].some(j=>mask[j])){outside[i]=1;colorPixel(i,edgeInk);}
+  const neighbor=[i-1,i+1,i-width,i+width].find(j=>mask[j]);
+  if(neighbor!==undefined){
+   outside[i]=1;ringMaterial[i]=neighbor;
+   colorPixel(i,adaptiveOutlines?adaptiveInk(neighbor):edgeInk);
+  }
  }
  if(outlineWidth>=2){
   for(let y=2;y<height-2;y++)for(let x=2;x<width-2;x++){
    const i=y*width+x;if(mask[i]||outside[i])continue;
-   if([i-1,i+1,i-width,i+width].some(j=>outside[j]))colorPixel(i,edgeInk);
+   const neighbor=[i-1,i+1,i-width,i+width].find(j=>outside[j]);
+   if(neighbor!==undefined)
+    colorPixel(i,adaptiveOutlines?adaptiveInk(ringMaterial[neighbor]):edgeInk);
   }
  }
  ctx.putImageData(image,0,0);
- return {painted,textured,outlined,detailOutlined,materialPixels,cleanedPixels};
+ return {painted,textured,outlined,detailOutlined,materialPixels,cleanedPixels,adaptiveDarkOutlined};
 }
