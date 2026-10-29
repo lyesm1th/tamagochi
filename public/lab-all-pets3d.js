@@ -110,13 +110,15 @@ export function buildOtherPet3D(pose={}){
  const eyesY=species==='frog'?.30:species==='penguin'?.12:species==='bear'?.16:.13;
  for(const s of [-1,1]){
   const ex=s*(species==='frog'?.47:species==='penguin'?.22:species==='dino'?.27:.28);
-  const ez=species==='dino'?.69:species==='penguin'?.56:species==='frog'?.52:.67;
+  // Embedded facial landmarks, mostly inside the skin. The visible eye
+  // pigment is drawn directly on head/faceMask pixels by paintOtherPetSurface.
+  const ez=species==='dino'?.40:species==='penguin'?.34:species==='frog'?.38:.39;
   if(species==='frog')ball(head,'eyeBump',[s*.47,.40,.26],[.25,.23,.23],coat);
-  ball(head,'eyeWhite',[ex,eyesY,ez-.015],[.135,.155,.055],species==='penguin'?cfg.light:'#fff7eb','round',12,18);
-  ball(head,'eye',[ex,eyesY,ez+.050],[.083,.105,.052],emot==='angry'?side:'#25212a','round',14,18);
-  if(!asleep&&!pose.blink)ball(head,'shine',[ex-.027,eyesY+.048,ez+.099],[.032,.036,.019],'#fff9f5');
-  if(asleep||pose.blink)ball(head,'lid',[ex,eyesY,ez+.109],[.135,.037,.026],side);
-  if(emot==='sad')ball(head,'tear',[ex,eyesY-.15,ez+.115],[.034,.08,.024],'#75b9e0');
+  ball(head,'eyeWhite',[ex,eyesY,ez],[.09,.11,.025],coat,'flat',10,14);
+  ball(head,'eye',[ex,eyesY,ez+.012],[.07,.09,.018],coat,'flat',10,14);
+  if(!asleep&&!pose.blink)ball(head,'shine',[ex-.027,eyesY+.048,ez+.018],[.019,.021,.011],coat,'flat',8,10);
+  if(asleep||pose.blink)ball(head,'lid',[ex,eyesY,ez+.02],[.09,.025,.012],coat,'flat',10,12);
+  if(emot==='sad')ball(head,'tear',[ex,eyesY-.15,ez+.01],[.027,.06,.01],coat,'flat',10,12);
   if(['cat','corgi','bear','bunny','fox','monkey','pig'].includes(species))
    ball(head,'blush',[s*.43,-.24,.59],[.13,.08,.038],cfg.accent);
  }
@@ -169,6 +171,23 @@ export function buildOtherPet3D(pose={}){
 export function paintOtherPetSurface(species,part,p,normal,base){
  const cfg=pet3DSpecies[species];if(!cfg||!p)return base;
  const [x,y,z]=p;
+ if(part==='head'||part==='faceMask'){
+  // Face ink is part of the 3D surface, never a raised spherical eye.
+  // The snout and its nose remain separate small anatomical volumes.
+  const ey=species==='frog'?.30:species==='penguin'?.12:species==='bear'?.16:.13;
+  const ex=species==='frog'?.47:species==='penguin'?.22:species==='dino'?.27:.28;
+  const rx=species==='penguin'?.065:species==='dino'?.078:.085;
+  const ry=species==='frog'?.078:.104;
+  if(z>.27){
+   for(const side of [-1,1]){
+    const u=(x-side*ex)/rx,v=(y-ey)/ry;
+    if(u*u+v*v<1){
+     const shine=((x-side*ex+.024)/.027)**2+((y-ey-.044)/.032)**2;
+     return shine<1?'#fffdf7':'#272129';
+    }
+   }
+  }
+ }
  if(part==='head'){
   if(species==='penguin'&&z>.28&&y<.30)return cfg.light;
   if(species==='cat'&&z>.2&&y>.23&&Math.abs(x)<.10)return cfg.side;
