@@ -78,10 +78,10 @@ function farmQuadruped(out,pose,cfg,id,ball,link){
  ball(out,'body',[0,1.02,-.42],pig?[.76,.66,.83]:[.76,.70,.81],cfg.coat,'pear',20,28);
  if(sheep){
   // Dense overlapping wool curls wrap the entire shell and visible shoulder.
-  const rings=[{y:.69,z:-.45,rx:.66,n:10},{y:1.03,z:-.45,rx:.74,n:12},{y:1.37,z:-.43,rx:.62,n:10},{y:1.59,z:-.43,rx:.39,n:8}];
+  const rings=[{y:.67,z:-.39,rx:.81,n:11},{y:1.01,z:-.41,rx:.91,n:13},{y:1.39,z:-.41,rx:.79,n:11},{y:1.65,z:-.40,rx:.50,n:9}];
   for(const [ring,r]of rings.entries())for(let i=0;i<r.n;i++){
-   const theta=i*2*Math.PI/r.n,x=Math.cos(theta)*r.rx,z=r.z+Math.sin(theta)*.56;
-   ball(out,'wool',[x,r.y,z],[.25,.24,.25],ring%2?cfg.light:cfg.coat,'round',10,14);
+   const theta=i*2*Math.PI/r.n,x=Math.cos(theta)*r.rx,z=r.z+Math.sin(theta)*.70;
+   ball(out,'wool',[x,r.y,z],[.30,.30,.29],ring%2?cfg.light:cfg.coat,'round',12,16);
   }
   for(const sign of [-1,1])ball(out,'wool',[sign*.56,1.30,.30],[.26,.25,.24],cfg.light);
  }
@@ -89,10 +89,10 @@ function farmQuadruped(out,pose,cfg,id,ball,link){
  if(pig){
   // Real corkscrew tail made of short connected 3D segments; visible behind
   // the rump at quarter turns, not a straight generic rope.
-  let prev=[.44,1.03,-1.03];
+  let prev=[.72,.98,-.70];
   for(let i=1;i<=13;i++){
    const a=i/13*Math.PI*2.6;
-   const next=[.44+i*.035,1.04+.17*Math.sin(a),-1.03-.17*(1-Math.cos(a))];
+   const next=[.72+i*.040,1.04+.17*Math.sin(a),-.70-.17*(1-Math.cos(a))];
    link(out,'curlyTail',prev,next,.065-i*.002,cfg.side);prev=next;
   }
  }else ball(out,'tailPom',[.09,.86,-1.12],[.23,.24,.22],cfg.light);
@@ -110,7 +110,9 @@ function petQuadruped(out,pose,cfg,id,ball,link){
    ball(out,'leg'+i,[sign*.37,.29+dy,z],[.18,.23,.20],cfg.coat);
    ball(out,'hoof'+i,[sign*.37,.12+dy,z+.10],[.21,.11,.24],cfg.light);
   }
-  ball(out,'tailStub',[.18,.80,-1.42],[.20,.14,.24],cfg.coat);
+  // Distinct tail rises above the right rump, visible in the front view.
+  ball(out,'tailBase',[.61,.79,-.91],[.19,.16,.21],cfg.coat);
+  ball(out,'tailStub',[.82,.92,-.80],[.23,.16,.23],cfg.coat);
  }else{
   if(fox)ball(out,'chest',[0,1.00,.30],[.34,.43,.20],cfg.light,'flat');
   legs(out,pose,cfg,4,'pet',ball);
