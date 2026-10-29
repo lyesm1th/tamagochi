@@ -1,7 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=greenv7';
+import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=cheeksx1v8';
 import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
@@ -39,9 +39,9 @@ const furTone=(ink,c)=>{if(!c)return ink;
 // fundamentally too wide overall: a kite-shaped face, not the approved sprite.
 // This defines the x-radius of a real three-dimensional head mesh.
 export function originalCowHeadProfile(sy){
- const cheek=1+.26*Math.exp(-Math.pow((sy+.26)/.36,2));
+ const cheek=1+.20*Math.exp(-Math.pow((sy+.24)/.34,2));
  const forehead=1-.24*Math.exp(-Math.pow((sy-.49)/.40,2));
- const chin=1-.27*Math.exp(-Math.pow((sy+.72)/.26,2));
+ const chin=1-.29*Math.exp(-Math.pow((sy+.72)/.25,2));
  return cheek*forehead*chin;
 }
 const rad=n=>n*Math.PI/180;
@@ -259,7 +259,7 @@ function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 export function drawCow3D(canvas,pose={}){
  const ctx=canvas.getContext('2d');if(!ctx)return;
  pose=pixelLockedPose(pose);
- const pixelScale=[2,3,4].includes(Number(pose.pixelScale))?Number(pose.pixelScale):2,w=Math.round(256/pixelScale),h=Math.round(192/pixelScale);canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
+ const pixelScale=[1,2,3,4].includes(Number(pose.pixelScale))?Number(pose.pixelScale):2,w=Math.round(256/pixelScale),h=Math.round(192/pixelScale);canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
  canvas.style.imageRendering='pixelated';
  // Fractional CSS upscaling at ×3 (85→768) makes pixel columns uneven.
  // Prefer an integer nearest-neighbor factor (85→765) on wide screens.
@@ -289,7 +289,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
  canvas.dataset.cow3dMotion=pose.renderMode==='locked'?'rigid-keyframes-8fps':'continuous';
  canvas.dataset.cow3dPoseFrame=String(Math.round((Number(pose.time)||0)/125));
- canvas.dataset.cow3dRevision='green-contour-v7';
+ canvas.dataset.cow3dRevision='cheeks-x1-v8';
  canvas.dataset.cow3dOutlinePalette=authentic&&pose.renderMode==='locked'?'reference-adaptive':'classic';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
@@ -309,7 +309,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v7 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v8 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design']){
   const control=get(id);
