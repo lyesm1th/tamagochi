@@ -1,7 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=profilev5';
+import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=guitarv6';
 import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
@@ -34,13 +34,15 @@ const furTone=(ink,c)=>{if(!c)return ink;
  const hex=ink.replace('#','');const rgb=[0,2,4].map(k=>clamp(parseInt(hex.slice(k,k+2),16)+d,0,255).toString(16).padStart(2,'0'));
  return '#'+rgb.join('');
 };
-// The original Detailed cow has a rounded brow and jaw, not the V-shaped
-// lower cheeks or pinched forehead of the previous procedural head.
+// The original Detailed sprite has a guitar-shaped, not spherical, head.
+// A narrow upper forehead expands into generous lower cheeks and tapers into
+// a small rounded chin. The shape is a true 3D surface at every head angle.
 export function originalCowHeadProfile(sy){
- const cheek=1+.17*Math.exp(-Math.pow((sy+.20)/.38,2));
- const temples=1-.105*Math.exp(-Math.pow((sy-.79)/.25,2));
- const jaw=1-.045*Math.exp(-Math.pow((sy+.88)/.20,2));
- return cheek*temples*jaw;
+ // Broader cheek plateau avoids a sharp wedge at low-poly side vertices.
+ const cheek=1+.28*Math.exp(-Math.pow((sy+.31)/.44,2));
+ const forehead=1-.16*Math.exp(-Math.pow((sy-.54)/.43,2));
+ const chin=1-.23*Math.exp(-Math.pow((sy+.79)/.28,2));
+ return cheek*forehead*chin;
 }
 const rad=n=>n*Math.PI/180;
 const vadd=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
@@ -66,8 +68,8 @@ function sphere(parts,c,r,color,opts={}){
    const faceDepth=opts.shape==='skull'?.10*Math.exp(-Math.pow((localY+.20)/.48,2)):0;
    const roundSquare=q=>Math.sign(q)*Math.pow(Math.abs(q),.74);
    if(opts.shape==='spriteHead'){
-    // The approved Detailed sprite has a large dome, soft round cheeks,
-    // narrowed temples and a distinctly curved jaw, not the old sphere.
+    // The original sprite has a narrower forehead, broader cheek shelf,
+    // and tapered chin rather than the previous beach-ball outline.
     // Full depth is retained for 360° yaw and independent head movement.
     const sy=Math.cos(ph),sx=Math.sin(ph)*Math.cos(th),sz=Math.sin(ph)*Math.sin(th);
     const round=(q,p)=>Math.sign(q)*Math.pow(Math.abs(q),p);
@@ -157,7 +159,8 @@ export function buildCow3D(pose={}){
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
  sphere(head,[0,.02,.07],authentic?[.94,.72,.63]:reference?[.76,.67,.60]:[.75,.66,.60],coat,
-  {part:'head',shape:authentic?'spriteHead':'skull',solidInk:authentic&&locked});
+  {part:'head',shape:authentic?'spriteHead':'skull',solidInk:authentic&&locked,
+   rows:authentic?24:16,cols:authentic?32:24});
  if(reference){
   // The reference muzzle is a broad pink, softly squared snout, not a tiny
   // round button. Shape and micro-features are volumetric and turn with head.
@@ -286,7 +289,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
  canvas.dataset.cow3dMotion=pose.renderMode==='locked'?'rigid-keyframes-8fps':'continuous';
  canvas.dataset.cow3dPoseFrame=String(Math.round((Number(pose.time)||0)/125));
- canvas.dataset.cow3dRevision='head-palette-v5';
+ canvas.dataset.cow3dRevision='guitar-head-v6';
  canvas.dataset.cow3dOutlinePalette=authentic&&pose.renderMode==='locked'?'reference-adaptive':'classic';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
@@ -306,7 +309,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v5 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v6 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design']){
   const control=get(id);
