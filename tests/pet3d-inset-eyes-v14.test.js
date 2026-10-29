@@ -27,3 +27,15 @@ test('new silhouettes remain geometrically distinct and retain two legs for bird
  const fox=buildOtherPet3D({species:'fox'});
  assert.notDeepEqual(bunny.find(f=>f.part==='body').points,fox.find(f=>f.part==='body').points);
 });
+
+test('frog eye mounds retain clear pupils despite recessed eye meshes',()=>{
+ assert.equal(paintOtherPetSurface('frog','eyeBump',[.47,.47,.55],[0,0,1],'#91be72'),'#272129');
+ assert.equal(paintOtherPetSurface('frog','eyeBump',[.45,.504,.55],[0,0,1],'#91be72'),'#fffdf7');
+ assert.equal(paintOtherPetSurface('frog','eyeBump',[0,.47,.55],[0,0,1],'#91be72'),'#91be72');
+});
+test('dinosaur has visible outward arms and raised side ridge',()=>{
+ const mesh=buildOtherPet3D({species:'dino',renderMode:'locked'});
+ const arm=mesh.filter(f=>f.part==='arm').flatMap(f=>f.points);
+ assert.ok(Math.max(...arm.map(p=>Math.abs(p[0])))>.76);
+ assert.ok(mesh.some(f=>f.part==='backSpine'));
+});
