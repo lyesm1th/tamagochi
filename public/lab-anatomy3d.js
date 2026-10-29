@@ -46,7 +46,7 @@ function penguinBiped(out,pose,cfg,ball){
  // Penguin-specific upright silhouette: round lower belly, narrow upper
  // shoulders, flush head and short orange feet, rather than a hunched dog.
  ball(out,'body',[0,1.00,-.09],[.69,.87,.58],cfg.coat,'round',22,30);
- ball(out,'bib',[0,1.00,.39],[.48,.69,.19],cfg.light,'flat',20,28);
+ ball(out,'belly',[0,1.00,.39],[.48,.69,.19],cfg.light,'flat',20,28);
  for(const sign of [-1,1]){
   const dy=lift(pose,sign<0?0:1,.55);
   ball(out,'leg'+(sign<0?0:1),[sign*.23,.20+dy,.04],[.13,.14,.15],cfg.mouth);
