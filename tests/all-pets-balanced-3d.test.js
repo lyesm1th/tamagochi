@@ -53,7 +53,7 @@ test('Balanced renders all pets in native x2 with crisp outlines, no data saves'
   assert.equal(canvas.dataset.cow3dSpecies,id);
   assert.equal(canvas.dataset.cow3dPixelScale,'balanced');
   assert.equal(canvas.dataset.cow3dSilhouetteRings,'1');
-  assert.equal(canvas.dataset.cow3dRevision,'all-species-3d-v10');
+  assert.equal(canvas.dataset.cow3dRevision,'species-sculpt-v12');
   assert.equal(ctx.imageSmoothingEnabled,false);
  }
 });

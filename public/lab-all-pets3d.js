@@ -1,5 +1,5 @@
-import {buildFamilyBody,pet3DTopology} from './lab-anatomy3d.js';
-export {pet3DTopology} from './lab-anatomy3d.js';
+import {buildFamilyBody,pet3DTopology} from './lab-anatomy3d.js?v=speciesv12';
+export {pet3DTopology} from './lab-anatomy3d.js?v=speciesv12';
 // Owner-only preview: thirteen original, articulated 3D species alongside the
 // existing Detailed cow. Each entry has its own head/body silhouette and
 // anatomy. No player save, game mechanics, or external libraries are touched.
@@ -73,32 +73,59 @@ export function buildOtherPet3D(pose={}){
  const coat=cfg.coat,side=cfg.side,light=cfg.light;
  const headY=buildFamilyBody(out,pose,cfg,species,{ball,cone,link});
  // Local face frame independently turns and pitches with the neck.
- const h=cfg.head;ball(head,'head',[0,0,0],h,coat,'head',22,28);
+ const h=species==='dino'?[.74,.56,.68]:species==='penguin'?[.59,.56,.53]:
+ species==='fox'?[.66,.53,.58]:species==='bunny'?[.62,.55,.53]:
+ species==='frog'?[.85,.43,.59]:cfg.head;
+ ball(head,'head',[0,0,0],h,coat,species==='frog'?'flat':'head',22,28);
  const bird=['chicken','duck','penguin'].includes(species);
- const snout=species==='pig'?[.34,.18,.23]:bird?[.33,.13,.29]:species==='dino'?[.47,.21,.31]:species==='fox'?[.29,.18,.31]:[.31,.21,.20];
- const tip=species==='dino'?.69:species==='fox'?.57:.52;
- ball(head,bird?'beak':'muzzle',[0,-.28,tip],snout,bird?cfg.mouth:species==='pig'?cfg.accent:light,bird?'flat':'round',16,24);
+ const snout=species==='pig'?[.39,.205,.24]:species==='penguin'?[.22,.085,.18]:
+ species==='chicken'?[.25,.12,.20]:species==='duck'?[.37,.10,.24]:
+ species==='dino'?[.39,.17,.34]:species==='fox'?[.35,.17,.29]:
+ species==='bear'?[.34,.21,.22]:species==='bunny'?[.22,.16,.17]:
+ species==='monkey'?[.28,.17,.17]:[.30,.19,.20];
+ const tip=species==='dino'?.63:species==='fox'?.54:species==='penguin'?.52:.52;
+ ball(head,bird?'beak':'muzzle',[0,species==='penguin'?-.18:-.28,tip],snout,
+ bird?cfg.mouth:species==='pig'?cfg.accent:species==='fox'||species==='bear'||species==='monkey'||species==='bunny'?cfg.light:light,
+ bird?'flat':'round',18,26);
+ // Critical visibility: raised face planes live at positive surface depth,
+ // not hidden underneath the front of the skull in a 3D depth buffer.
+ if(['bear','pig','bunny','fox','monkey','corgi','cat','dino'].includes(species)){
+  const maskDepth=species==='dino'?.53:.50;
+  if(['bear','monkey','bunny','fox'].includes(species))
+   ball(head,'faceMask',[0,-.03,maskDepth],[.44,.38,.135],species==='bear'||species==='monkey'?cfg.light:cfg.light,'flat',18,24);
+  if(species==='bear')ball(head,'noseBridge',[0,-.27,.78],[.19,.16,.10],cfg.light,'round',14,20);
+  if(species==='pig')ball(head,'snoutRim',[0,-.28,.72],[.37,.19,.10],cfg.accent,'flat',16,24);
+  if(species==='dino')ball(head,'lowerJaw',[0,-.37,.66],[.41,.14,.22],cfg.light,'flat',16,24);
+ }
+ if(species==='sheep'){
+  // Face remains visible through the wool, crown is unmistakably fluffy.
+  for(const [x,y,z] of [[-.52,.52,-.02],[-.31,.67,.02],[0,.73,.02],[.31,.67,.02],[.52,.52,-.02],[-.60,.18,-.05],[.60,.18,-.05]])
+   ball(head,'wool',[x,y,z],[.23,.25,.22],cfg.light,'round',12,16);
+ }
  if(species==='pig')for(const s of [-1,1])
   ball(head,'nostril',[s*.17,-.27,tip+snout[2]*.88],[.042,.055,.025],side);
- if(species==='dino')ball(head,'noseTip',[0,-.22,.84],[.33,.16,.20],light);
- if(species==='monkey')ball(head,'faceMask',[0,-.07,.44],[.50,.39,.17],light,'flat');
- if(species==='fox')ball(head,'faceMask',[0,-.31,.44],[.45,.21,.18],light,'flat');
+ if(species==='dino')ball(head,'noseTip',[0,-.25,.90],[.26,.14,.17],coat);
+ if(species==='fox')ball(head,'chinFur',[0,-.40,.67],[.34,.13,.16],light,'flat');
  // Eyes positioned on the face in 3D rather than stuck to the camera plane.
- const eyesY=species==='frog'?.22:.11;
+ const eyesY=species==='frog'?.30:species==='penguin'?.12:species==='bear'?.16:.13;
  for(const s of [-1,1]){
-  const ex=s*(species==='frog'?.42:.28),ez=species==='dino'?.60:.51;
+  const ex=s*(species==='frog'?.47:species==='penguin'?.22:species==='dino'?.27:.28);
+  const ez=species==='dino'?.69:species==='penguin'?.56:species==='frog'?.52:.67;
   if(species==='frog')ball(head,'eyeBump',[s*.47,.40,.26],[.25,.23,.23],coat);
-  ball(head,'eye',[ex,eyesY,ez],[.105,.13,.07],emot==='angry'?side:'#25212a');
-  if(!asleep&&!pose.blink)ball(head,'shine',[ex-.028,eyesY+.048,ez+.059],[.034,.042,.017],'#fff9f5');
-  if(asleep||pose.blink)ball(head,'lid',[ex,eyesY,ez+.065],[.13,.032,.025],side);
-  if(emot==='sad')ball(head,'tear',[ex,eyesY-.15,ez+.06],[.034,.08,.024],'#75b9e0');
+  ball(head,'eyeWhite',[ex,eyesY,ez-.015],[.135,.155,.055],species==='penguin'?cfg.light:'#fff7eb','round',12,18);
+  ball(head,'eye',[ex,eyesY,ez+.050],[.083,.105,.052],emot==='angry'?side:'#25212a','round',14,18);
+  if(!asleep&&!pose.blink)ball(head,'shine',[ex-.027,eyesY+.048,ez+.099],[.032,.036,.019],'#fff9f5');
+  if(asleep||pose.blink)ball(head,'lid',[ex,eyesY,ez+.109],[.135,.037,.026],side);
+  if(emot==='sad')ball(head,'tear',[ex,eyesY-.15,ez+.115],[.034,.08,.024],'#75b9e0');
   if(['cat','corgi','bear','bunny','fox','monkey','pig'].includes(species))
-   ball(head,'blush',[s*.42,-.26,.44],[.14,.10,.045],cfg.accent);
+   ball(head,'blush',[s*.43,-.24,.59],[.13,.08,.038],cfg.accent);
  }
  if(species!=='pig'&&!bird)
-  ball(head,'nose',[0,-.29,tip+snout[2]*.86],[.08,.055,.03],species==='frog'?side:cfg.mouth);
- if(emot==='happy')ball(head,'mouth',[0,-.42,tip+snout[2]*.77],[.17,.041,.035],cfg.mouth);
- else if(emot==='sad')ball(head,'mouth',[0,-.48,tip+snout[2]*.80],[.12,.04,.03],cfg.mouth);
+  ball(head,'nose',[0,-.27,tip+snout[2]*.94],[.08,.055,.042],species==='frog'?side:cfg.mouth);
+ if(!bird){
+  const smile=emot==='sad'?.0:emot==='happy'?.06:.025;
+  ball(head,'mouth',[0,-.42+smile,tip+snout[2]*.98],[.14,.032,.034],cfg.mouth,'round',10,16);
+ }
  if(cfg.ears==='triangle'||cfg.ears==='tallTriangle'){
   for(const sign of [-1,1]) {
    const tall=cfg.ears==='tallTriangle';

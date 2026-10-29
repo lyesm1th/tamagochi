@@ -43,63 +43,143 @@ function birdBiped(out,pose,cfg,id,ball,cone){
  return duck?1.62:1.70;
 }
 function penguinBiped(out,pose,cfg,ball){
- ball(out,'body',[0,1.10,-.23],[.62,.90,.65],cfg.coat,'pear',22,30);
- ball(out,'belly',[0,1.05,.24],[.45,.69,.24],cfg.light,'flat',18,26);
- legs(out,pose,cfg,2,'penguin',ball);
+ // Penguin-specific upright silhouette: round lower belly, narrow upper
+ // shoulders, flush head and short orange feet, rather than a hunched dog.
+ ball(out,'body',[0,1.00,-.09],[.69,.87,.58],cfg.coat,'round',22,30);
+ ball(out,'belly',[0,1.00,.39],[.48,.69,.19],cfg.light,'flat',20,28);
  for(const sign of [-1,1]){
-  ball(out,'flipper',[sign*.63,1.12,-.20],[.13,.43,.24],cfg.side,'flat',20,22);
-  ball(out,'flipperTip',[sign*.75,.79,-.13],[.12,.19,.17],cfg.side,'flat',14,18);
+  const dy=lift(pose,sign<0?0:1,.55);
+  ball(out,'leg'+(sign<0?0:1),[sign*.23,.20+dy,.04],[.13,.14,.15],cfg.mouth);
+  ball(out,'foot'+(sign<0?0:1),[sign*.23,.105+dy,.30],[.22,.08,.31],cfg.mouth,'flat');
+  ball(out,'flipper',[sign*.71,1.06,.02],[.14,.42,.22],cfg.side,'flat',20,24);
+  ball(out,'flipperTip',[sign*.77,.73,.03],[.13,.16,.17],cfg.coat);
  }
- return 1.82;
+ return 1.71;
 }
 function dinoBiped(out,pose,cfg,ball,cone,link){
- ball(out,'body',[0,1.10,-.48],[.68,.72,.85],cfg.coat,'pear',22,30);
- ball(out,'belly',[0,1.05,.12],[.45,.51,.26],cfg.light,'flat');
+ // Dinosaur silhouette: compact forward-leaning pear and coherent long tapered
+ // counterbalancing tail. No stacked torso "snowman" spheres.
+ ball(out,'body',[0,1.00,-.42],[.64,.70,.82],cfg.coat,'pear',22,28);
+ ball(out,'belly',[0,.97,.17],[.43,.42,.20],cfg.light,'flat');
  legs(out,pose,cfg,2,'dino',ball);
  for(const sign of [-1,1]){
-  const dy=pose.action==='wave'&&sign===1?[0,.09,.20,.08][Math.floor((pose.time||0)/125)%4]:0;
-  ball(out,'arm',[sign*.57,1.17,.20],[.14,.23,.16],cfg.side);
-  ball(out,'hand',[sign*.62,.98+dy,.34],[.13,.11,.13],cfg.coat);
-  for(const j of [-1,0,1])ball(out,'claw',[sign*.63+j*.065,.94+dy,.45],[.04,.07,.055],cfg.light,'round',8,10);
+  const dy=pose.action==='wave'&&sign===1?[0,.08,.18,.08][Math.floor((pose.time||0)/125)%4]:0;
+  ball(out,'arm',[sign*.52,1.17,.18],[.12,.18,.15],cfg.coat);
+  ball(out,'hand',[sign*.56,1.04+dy,.35],[.11,.095,.11],cfg.coat);
+  for(const j of [-1,1])ball(out,'claw',[sign*.56+j*.048,1.01+dy,.45],[.035,.055,.045],cfg.light,'round',8,10);
  }
- link(out,'tail',[0,1.03,-1.02],[.34,1.05,-1.70],.20,cfg.coat);
- link(out,'tail',[.34,1.05,-1.70],[.57,1.15,-2.08],.115,cfg.side);
- for(let i=0;i<5;i++)cone(out,'backSpine',[0,1.64-i*.24,-.72-i*.21],[0,1.88-i*.25,-.87-i*.22],.16,cfg.accent);
- return 1.67;
+ const nodes=[[0,.99,-1.01],[.24,1.03,-1.37],[.48,1.12,-1.76],[.71,1.19,-2.04]];
+ for(let i=1;i<nodes.length;i++)link(out,'tail',nodes[i-1],nodes[i],.19-i*.035,cfg.coat);
+ for(let i=0;i<5;i++)cone(out,'backSpine',[0,1.54-i*.24,-.82-i*.23],[0,1.74-i*.24,-.92-i*.25],.11,cfg.accent);
+ return 1.63;
 }
 function farmQuadruped(out,pose,cfg,id,ball,link){
  const sheep=id==='sheep',pig=id==='pig';
- ball(out,'body',[0,1.03,-.40],pig?[.78,.69,.83]:[.76,.76,.83],cfg.coat,'pear',20,28);
- if(sheep)for(const [x,y,z] of [[-.50,1.46,-.05],[.50,1.46,-.04],[0,1.62,-.32],[-.65,1.06,-.14],[.65,1.05,-.14]])
-  ball(out,'wool',[x,y,z],[.29,.31,.29],cfg.light);
+ ball(out,'body',[0,1.02,-.42],pig?[.76,.66,.83]:[.76,.70,.81],cfg.coat,'pear',20,28);
+ if(sheep){
+  // Dense overlapping wool curls wrap the entire shell and visible shoulder.
+  const rings=[{y:.69,z:-.45,rx:.66,n:10},{y:1.03,z:-.45,rx:.74,n:12},{y:1.37,z:-.43,rx:.62,n:10},{y:1.59,z:-.43,rx:.39,n:8}];
+  for(const [ring,r]of rings.entries())for(let i=0;i<r.n;i++){
+   const theta=i*2*Math.PI/r.n,x=Math.cos(theta)*r.rx,z=r.z+Math.sin(theta)*.56;
+   ball(out,'wool',[x,r.y,z],[.25,.24,.25],ring%2?cfg.light:cfg.coat,'round',10,14);
+  }
+  for(const sign of [-1,1])ball(out,'wool',[sign*.56,1.30,.30],[.26,.25,.24],cfg.light);
+ }
  legs(out,pose,cfg,4,'farm',ball);
- if(pig)link(out,'tail',[.43,.90,-1.08],[.73,1.19,-1.16],.06,cfg.side);
- else ball(out,'tailPom',[.05,.86,-1.15],[.19,.18,.22],cfg.light);
- return sheep?1.67:1.58;
+ if(pig){
+  // Real corkscrew tail made of short connected 3D segments; visible behind
+  // the rump at quarter turns, not a straight generic rope.
+  let prev=[.44,1.03,-1.03];
+  for(let i=1;i<=13;i++){
+   const a=i/13*Math.PI*2.6;
+   const next=[.44+i*.035,1.04+.17*Math.sin(a),-1.03-.17*(1-Math.cos(a))];
+   link(out,'curlyTail',prev,next,.065-i*.002,cfg.side);prev=next;
+  }
+ }else ball(out,'tailPom',[.09,.86,-1.12],[.23,.24,.22],cfg.light);
+ return sheep?1.66:1.57;
 }
 function petQuadruped(out,pose,cfg,id,ball,link){
- const corgi=id==='corgi',fox=id==='fox';
- ball(out,'body',[0,corgi?.84:1.02,-.43],corgi?[.75,.52,.87]:fox?[.56,.63,.86]:[.62,.68,.73],cfg.coat,'pear',20,28);
- ball(out,'belly',[0,corgi?.80:.98,.24],[.43,.39,.20],cfg.light,'flat');
- legs(out,pose,cfg,4,'pet',ball);
- if(fox||id==='cat'){
-  link(out,'tail',[.50,.85,-.89],[1.15,1.37,-1.24],fox?.20:.09,fox?cfg.side:cfg.coat);
-  if(fox)ball(out,'tailTip',[1.15,1.37,-1.24],[.22,.22,.24],cfg.light);
+ const corgi=id==='corgi',fox=id==='fox',cat=id==='cat';
+ const bodyY=corgi?.69:fox?.94:.96;
+ ball(out,'body',[0,bodyY,-.48],corgi?[.67,.42,1.03]:fox?[.52,.55,.86]:[.53,.59,.72],cfg.coat,'pear',20,28);
+ if(corgi){
+  // Low long-backed corgi: chest forward, short legs, distinct stubby tail.
+  ball(out,'chest',[0,.79,.21],[.50,.43,.40],cfg.light,'round',16,22);
+  for(let i=0;i<4;i++){
+   const sign=i%2===0?-1:1,front=i<2,z=front?.38:-1.05,dy=lift(pose,i%2,.55);
+   ball(out,'leg'+i,[sign*.37,.29+dy,z],[.18,.23,.20],cfg.coat);
+   ball(out,'hoof'+i,[sign*.37,.12+dy,z+.10],[.21,.11,.24],cfg.light);
+  }
+  ball(out,'tailStub',[.18,.80,-1.42],[.20,.14,.24],cfg.coat);
+ }else{
+  if(fox)ball(out,'chest',[0,1.00,.30],[.34,.43,.20],cfg.light,'flat');
+  legs(out,pose,cfg,4,'pet',ball);
  }
- return corgi?1.46:1.63;
+ if(cat){
+  // Thin continuous curved cat-tail, rising then curling inward at the tip.
+  const nodes=[[.48,.76,-.96],[.71,.88,-1.13],[.86,1.16,-1.19],[.88,1.49,-1.15],[.71,1.64,-1.06]];
+  for(let i=1;i<nodes.length;i++)link(out,'catTail',nodes[i-1],nodes[i],.085-i*.009,cfg.coat);
+  ball(out,'catTailTip',nodes.at(-1),[.085,.09,.10],cfg.side);
+ }
+ if(fox){
+  const nodes=[[.48,.74,-1.04],[.80,.83,-1.28],[1.05,1.02,-1.48]];
+  for(let i=1;i<nodes.length;i++)link(out,'foxTail',nodes[i-1],nodes[i],.23+i*.025,cfg.side);
+  ball(out,'tailTip',[1.05,1.02,-1.48],[.25,.24,.31],cfg.light);
+ }
+ return corgi?1.35:fox?1.52:1.59;
 }
 function toyBiped(out,pose,cfg,id,ball,link){
- const frog=id==='frog',bear=id==='bear';
- ball(out,'body',[0,frog?.88:1.04,-.30],frog?[.78,.57,.68]:bear?[.72,.77,.69]:[.62,.69,.67],cfg.coat,'pear',20,28);
- if(id==='monkey')ball(out,'belly',[0,1.04,.27],[.42,.42,.20],cfg.light,'flat');
- legs(out,pose,cfg,2,frog?'frog':'toy',ball);
- for(const sign of [-1,1]){
-  ball(out,'arm',[sign*(frog?.67:.58),1.10,-.01],[.20,.29,.22],cfg.side);
-  ball(out,'hand',[sign*(frog?.79:.67),.88,.12],[.19,.15,.19],cfg.coat);
+ const frog=id==='frog',bear=id==='bear',bunny=id==='bunny',monkey=id==='monkey';
+ if(frog){
+  // Frog is wide and low, with spread rear thighs and splayed webbed feet.
+  ball(out,'body',[0,.77,-.25],[.83,.42,.68],cfg.coat,'flat',20,28);
+  ball(out,'belly',[0,.70,.27],[.54,.25,.19],cfg.light,'flat');
+  for(const sign of [-1,1]){
+   const dy=lift(pose,sign===-1?0:1,.60);
+   ball(out,'leg'+(sign<0?0:1),[sign*.62,.40+dy,-.15],[.32,.25,.32],cfg.side);
+   ball(out,'hoof'+(sign<0?0:1),[sign*.70,.13+dy,.26],[.31,.09,.29],cfg.coat,'flat');
+   ball(out,'arm',[sign*.73,.79,.13],[.17,.20,.18],cfg.coat);
+   ball(out,'hand',[sign*.79,.66,.28],[.21,.12,.18],cfg.coat);
+  }
+  return 1.34;
  }
- if(id==='monkey')link(out,'tail',[.45,.81,-.81],[1.04,1.46,-1.05],.085,cfg.side);
- if(id==='bunny')ball(out,'tailPom',[.02,.89,-.99],[.20,.22,.21],cfg.light);
- return frog?1.54:1.70;
+ if(bunny){
+  // Rabbit: pronounced haunches, tiny chest and elongated hopping hind feet.
+  ball(out,'body',[0,.90,-.36],[.54,.62,.59],cfg.coat,'pear',20,28);
+  ball(out,'chest',[0,1.04,.18],[.34,.38,.21],cfg.light);
+  for(const sign of [-1,1]){
+   const dy=lift(pose,sign<0?0:1,1.1);
+   ball(out,'leg'+(sign<0?0:1),[sign*.38,.41+dy,-.32],[.28,.32,.31],cfg.coat);
+   ball(out,'hoof'+(sign<0?0:1),[sign*.40,.13+dy,.10],[.23,.10,.43],cfg.light,'flat');
+   ball(out,'arm',[sign*.40,1.15,.18],[.13,.21,.14],cfg.coat);
+   ball(out,'hand',[sign*.44,.99,.29],[.12,.10,.13],cfg.light);
+  }
+  ball(out,'tailPom',[.07,.89,-.96],[.22,.22,.23],cfg.light);
+  return 1.59;
+ }
+ if(monkey){
+  // Monkey has relatively short legs, LONG forearms and a compact torso.
+  ball(out,'body',[0,.96,-.33],[.58,.62,.60],cfg.coat,'pear',20,28);
+  ball(out,'belly',[0,.94,.24],[.35,.42,.19],cfg.light,'flat');
+  for(const sign of [-1,1]){
+   const dy=lift(pose,sign<0?0:1,.90);
+   ball(out,'leg'+(sign<0?0:1),[sign*.35,.33+dy,-.22],[.19,.25,.24],cfg.side);
+   ball(out,'hoof'+(sign<0?0:1),[sign*.36,.13+dy,.11],[.21,.10,.29],cfg.coat);
+   ball(out,'arm',[sign*.62,.97,.13],[.14,.41,.17],cfg.coat);
+   ball(out,'hand',[sign*.69,.61,.30],[.19,.16,.18],cfg.light);
+  }
+  let prev=[.42,.81,-.84];
+  for(let i=1;i<=6;i++){const a=i/6*Math.PI*1.6;const next=[.42+.12*i,.95+.34*Math.sin(a),-.88-.21*Math.sin(a*.65)];link(out,'monkeyTail',prev,next,.085,cfg.side);prev=next;}
+  return 1.57;
+ }
+ ball(out,'body',[0,1.00,-.30],bear?[.70,.70,.67]:[.62,.69,.67],cfg.coat,'pear',20,28);
+ if(bear)ball(out,'belly',[0,.96,.25],[.41,.44,.18],cfg.light,'flat');
+ legs(out,pose,cfg,2,'toy',ball);
+ for(const sign of [-1,1]){
+  ball(out,'arm',[sign*.61,1.13,.05],[.18,.31,.20],cfg.coat);
+  ball(out,'hand',[sign*.69,.90,.19],[.19,.17,.19],cfg.side);
+ }
+ return 1.67;
 }
 export function buildFamilyBody(out,pose,cfg,id,{ball,cone,link}){
  const family=pet3DTopology[id];
