@@ -1,5 +1,5 @@
-import {buildFamilyBody,pet3DTopology} from './lab-anatomy3d.js';
-export {pet3DTopology} from './lab-anatomy3d.js';
+import {buildFamilyBody,pet3DTopology} from './lab-anatomy3d.js?v=speciesv12';
+export {pet3DTopology} from './lab-anatomy3d.js?v=speciesv12';
 // Owner-only preview: thirteen original, articulated 3D species alongside the
 // existing Detailed cow. Each entry has its own head/body silhouette and
 // anatomy. No player save, game mechanics, or external libraries are touched.
