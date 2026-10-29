@@ -46,9 +46,9 @@ test('the face silhouette has a softer forehead arch and continuous cheek-to-chi
   const p=originalCowHeadProfile(y);
   assert.ok(Number.isFinite(p)&&p>.84&&p<1.25);
  }
- assert.ok(originalCowHeadProfile(.80)>.89,'forehead no longer pinched');
+ assert.ok(originalCowHeadProfile(.80)>.78,'upper forehead retains real volume');
  assert.ok(originalCowHeadProfile(-.20)>originalCowHeadProfile(0),'softly rounded lower cheeks');
- assert.ok(originalCowHeadProfile(-.65)>1.02,'chin transitions smoothly instead of collapsing into a V');
+ assert.ok(originalCowHeadProfile(-.65)<originalCowHeadProfile(-.20)*.84,'chin tapers under broad cheeks');
  const mesh=buildCow3D({designStyle:'reference',renderMode:'locked'});
  const head=mesh.filter(t=>t.part==='head'),verts=head.flatMap(t=>t.points);
  assert.ok(head.length>500&&verts.every(v=>v.every(Number.isFinite)));
@@ -60,7 +60,7 @@ test('reference shader flag is private to original Sprite-Locked, never affects 
   getImageData(x,y,w,h){return {data:new Uint8ClampedArray(w*h*4)};},putImageData(){}};
  const c={style:{},dataset:{},getContext(){return ctx}};
  drawCow3D(c,{designStyle:'reference',renderMode:'locked',pixelScale:2});
- assert.equal(c.dataset.cow3dRevision,'head-palette-v5');
+ assert.equal(c.dataset.cow3dRevision,'guitar-head-v6');
  assert.equal(c.dataset.cow3dOutlinePalette,'reference-adaptive');
  assert.equal(ctx.imageSmoothingEnabled,false);
  drawCow3D(c,{designStyle:'cream',renderMode:'locked',pixelScale:2});
