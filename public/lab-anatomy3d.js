@@ -59,7 +59,7 @@ function penguinBiped(out,pose,cfg,ball){
 function dinoBiped(out,pose,cfg,ball,cone,link){
  // Dinosaur silhouette: compact forward-leaning pear and coherent long tapered
  // counterbalancing tail. No stacked torso "snowman" spheres.
- ball(out,'body',[0,1.00,-.42],[.64,.70,.82],cfg.coat,'pear',22,28);
+ ball(out,'body',[0,1.04,-.40],[.70,.66,.89],cfg.coat,'pear',22,28);
  ball(out,'belly',[0,.97,.17],[.43,.42,.20],cfg.light,'flat');
  legs(out,pose,cfg,2,'dino',ball);
  for(const sign of [-1,1]){
@@ -71,7 +71,7 @@ function dinoBiped(out,pose,cfg,ball,cone,link){
  const nodes=[[0,.99,-1.01],[.24,1.03,-1.37],[.48,1.12,-1.76],[.71,1.19,-2.04]];
  for(let i=1;i<nodes.length;i++)link(out,'tail',nodes[i-1],nodes[i],.19-i*.035,cfg.coat);
  for(let i=0;i<5;i++)cone(out,'backSpine',[0,1.54-i*.24,-.82-i*.23],[0,1.74-i*.24,-.92-i*.25],.11,cfg.accent);
- return 1.63;
+ return 1.55;
 }
 function farmQuadruped(out,pose,cfg,id,ball,link){
  const sheep=id==='sheep',pig=id==='pig';
@@ -100,8 +100,8 @@ function farmQuadruped(out,pose,cfg,id,ball,link){
 }
 function petQuadruped(out,pose,cfg,id,ball,link){
  const corgi=id==='corgi',fox=id==='fox',cat=id==='cat';
- const bodyY=corgi?.69:fox?.94:.96;
- ball(out,'body',[0,bodyY,-.48],corgi?[.67,.42,1.03]:fox?[.52,.55,.86]:[.53,.59,.72],cfg.coat,'pear',20,28);
+ const bodyY=corgi?.69:fox?.90:.94;
+ ball(out,'body',[0,bodyY,-.48],corgi?[.67,.42,1.03]:fox?[.48,.50,.94]:[.57,.58,.76],cfg.coat,'pear',20,28);
  if(corgi){
   // Low long-backed corgi: chest forward, short legs, distinct stubby tail.
   ball(out,'chest',[0,.79,.21],[.50,.43,.40],cfg.light,'round',16,22);
@@ -147,7 +147,7 @@ function toyBiped(out,pose,cfg,id,ball,link){
  }
  if(bunny){
   // Rabbit: pronounced haunches, tiny chest and elongated hopping hind feet.
-  ball(out,'body',[0,.90,-.36],[.54,.62,.59],cfg.coat,'pear',20,28);
+  ball(out,'body',[0,.82,-.38],[.62,.51,.66],cfg.coat,'pear',20,28);
   ball(out,'chest',[0,1.04,.18],[.34,.38,.21],cfg.light);
   for(const sign of [-1,1]){
    const dy=lift(pose,sign<0?0:1,1.1);
@@ -157,11 +157,11 @@ function toyBiped(out,pose,cfg,id,ball,link){
    ball(out,'hand',[sign*.44,.99,.29],[.12,.10,.13],cfg.light);
   }
   ball(out,'tailPom',[.07,.89,-.96],[.22,.22,.23],cfg.light);
-  return 1.59;
+  return 1.49;
  }
  if(monkey){
   // Monkey has relatively short legs, LONG forearms and a compact torso.
-  ball(out,'body',[0,.96,-.33],[.58,.62,.60],cfg.coat,'pear',20,28);
+  ball(out,'body',[0,.90,-.36],[.56,.55,.63],cfg.coat,'pear',20,28);
   ball(out,'belly',[0,.94,.24],[.35,.42,.19],cfg.light,'flat');
   for(const sign of [-1,1]){
    const dy=lift(pose,sign<0?0:1,.90);
@@ -172,7 +172,7 @@ function toyBiped(out,pose,cfg,id,ball,link){
   }
   let prev=[.42,.81,-.84];
   for(let i=1;i<=6;i++){const a=i/6*Math.PI*1.6;const next=[.42+.12*i,.95+.34*Math.sin(a),-.88-.21*Math.sin(a*.65)];link(out,'monkeyTail',prev,next,.085,cfg.side);prev=next;}
-  return 1.57;
+  return 1.50;
  }
  ball(out,'body',[0,1.00,-.30],bear?[.70,.70,.67]:[.62,.69,.67],cfg.coat,'pear',20,28);
  if(bear)ball(out,'belly',[0,.96,.25],[.41,.44,.18],cfg.light,'flat');
