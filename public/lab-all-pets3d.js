@@ -99,8 +99,8 @@ export function buildOtherPet3D(pose={}){
  }
  if(species==='sheep'){
   // Face remains visible through the wool, crown is unmistakably fluffy.
-  for(const [x,y,z] of [[-.52,.52,-.02],[-.31,.67,.02],[0,.73,.02],[.31,.67,.02],[.52,.52,-.02],[-.60,.18,-.05],[.60,.18,-.05]])
-   ball(head,'wool',[x,y,z],[.23,.25,.22],cfg.light,'round',12,16);
+  for(const [x,y,z] of [[-.67,.48,.01],[-.43,.72,.08],[-.14,.83,.08],[.14,.83,.08],[.43,.72,.08],[.67,.48,.01],[-.72,.17,.00],[.72,.17,.00]])
+   ball(head,'wool',[x,y,z],[.29,.29,.27],cfg.light,'round',12,16);
  }
  if(species==='pig')for(const s of [-1,1])
   ball(head,'nostril',[s*.17,-.27,tip+snout[2]*.88],[.042,.055,.025],side);
