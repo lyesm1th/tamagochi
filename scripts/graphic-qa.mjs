@@ -121,7 +121,8 @@ try{
    material:c.dataset.cow3dMaterial,painted:Number(c.dataset.cow3dPaintedFurPixels||0)};
  });
  assert.equal(cowMatch.design,'reference');
- assert.equal(cowMatch.revision,'cheeks-x1-v8');
+ assert.equal(cowMatch.revision,'balanced-slim-v9');
+ assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dPixelScale),'3');
  assert.equal(cowMatch.material,'original-detailed-surface');
  assert.equal(cowMatch.outlinePalette,'reference-adaptive');
  assert.ok(cowMatch.darkRim>8&&cowMatch.borderPixels>8,'original charcoal fur must have a visibly darker border');
@@ -132,6 +133,9 @@ try{
  assert.ok(cowMatch.painted>15,'3D paint must actually cover depth-tested mesh pixels');
  const originalFrame=await page.locator('#cow3d-stage').evaluate(c=>c.toDataURL('image/png'));
  // Higher native resolution shows the actual Detailed-style eyes and cheeks.
+ await select('cow3d-pixels','balanced');
+ assert.deepEqual(await page.locator('#cow3d-stage').evaluate(c=>({w:c.width,h:c.height,rings:c.dataset.cow3dSilhouetteRings,scale:c.dataset.cow3dPixelScale,boost:c.dataset.cow3dModelBoost})),{w:128,h:96,rings:'1',scale:'balanced',boost:'1.065'});
+ await capture('cow3d-stage','cow-3d-balanced-slim-v9.png');
  await select('cow3d-pixels','1');
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.width),256);
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.height),192);
