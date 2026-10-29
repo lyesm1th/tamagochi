@@ -96,6 +96,28 @@ try{
  // Real geometry QA in the existing private room; no flat billboard is used.
  await page.waitForFunction(()=>document.getElementById('cow3d-stage')?.dataset.cow3dReady==='true');
  await page.locator('#cow3d-play').uncheck();
+ // Every living species must have an independently inspectable volumetric model
+ // in Balanced ×2 mode. Capture each for art review without altering game saves.
+ await select('cow3d-pixels','balanced');
+ await select('cow3d-render-mode','locked');
+ await select('cow3d-action','idle');
+ const speciesList=['chicken','cat','corgi','frog','bear','dog','dino','bunny','pig','sheep','fox','monkey','duck','penguin'];
+ const distinctFrames=new Set();
+ for(const id of speciesList){
+  await select('cow3d-species',id);
+  const info=await page.locator('#cow3d-stage').evaluate(c=>({
+   id:c.dataset.cow3dSpecies,scale:c.dataset.cow3dPixelScale,
+   revision:c.dataset.cow3dRevision,faces:Number(c.dataset.cow3dFaces),frame:c.toDataURL('image/png')
+  }));
+  assert.equal(info.id,id,'owner lab species selector must show the requested real species');
+  assert.equal(info.scale,'balanced');
+  assert.equal(info.revision,'all-species-3d-v10');
+  assert.ok(info.faces>1000,id+' must have substantial 3D triangles');
+  distinctFrames.add(info.frame);
+  await capture('cow3d-stage','pet-3d-balanced-'+id+'.png');
+ }
+ assert.equal(distinctFrames.size,speciesList.length,'no 3D pet may be a duplicate of another');
+ await select('cow3d-species','dog');
  // The *lower* Detailed sprite is the approved original: black cap and flanks,
  // creamy white face, pink muzzle, and happy expression. The upper cream cow
  // was an earlier 3D attempt, retained separately for A/B inspection.
@@ -121,7 +143,7 @@ try{
    material:c.dataset.cow3dMaterial,painted:Number(c.dataset.cow3dPaintedFurPixels||0)};
  });
  assert.equal(cowMatch.design,'reference');
- assert.equal(cowMatch.revision,'balanced-slim-v9');
+ assert.equal(cowMatch.revision,'all-species-3d-v10');
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.dataset.cow3dPixelScale),'3');
  assert.equal(cowMatch.material,'original-detailed-surface');
  assert.equal(cowMatch.outlinePalette,'reference-adaptive');
@@ -135,7 +157,7 @@ try{
  // Higher native resolution shows the actual Detailed-style eyes and cheeks.
  await select('cow3d-pixels','balanced');
  assert.deepEqual(await page.locator('#cow3d-stage').evaluate(c=>({w:c.width,h:c.height,rings:c.dataset.cow3dSilhouetteRings,scale:c.dataset.cow3dPixelScale,boost:c.dataset.cow3dModelBoost})),{w:128,h:96,rings:'1',scale:'balanced',boost:'1.065'});
- await capture('cow3d-stage','cow-3d-balanced-slim-v9.png');
+ await capture('cow3d-stage','cow-3d-all-species-3d-v10.png');
  await select('cow3d-pixels','1');
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.width),256);
  assert.equal(await page.locator('#cow3d-stage').evaluate(c=>c.height),192);

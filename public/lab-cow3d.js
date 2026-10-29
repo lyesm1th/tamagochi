@@ -1,7 +1,8 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=balancedv9';
+import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=allpetsv10';
+import {pet3DSpecies,buildOtherPet3D,paintOtherPetSurface} from './lab-all-pets3d.js';
 import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
@@ -271,23 +272,27 @@ export function drawCow3D(canvas,pose={}){
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160/pixelScale,57/pixelScale,13/pixelScale,0,0,Math.PI*2);ctx.fill();
  const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=(54*(balanced?1.065:1))/pixelScale;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
- const authentic=pose.designStyle!=='legacy'&&pose.designStyle!=='cream';
+ const species=pet3DSpecies[pose.species]?pose.species:'dog';
+ const other=species!=='dog';
+ const authentic=other||(pose.designStyle!=='legacy'&&pose.designStyle!=='cream');
  // Hide the coarse 3D beads used by the earlier model for mouth/nostrils:
  // tiny features are now inked onto the actual curved snout and cheeks.
  // Build still retains each true head part for rig tests and future variants.
  const paintedFacialParts=new Set(['mouth','nostril','muzzleHighlight','eyeBorder','blush']);
- const faces=buildCow3D(pose).filter(tri=>!authentic||!paintedFacialParts.has(tri.part))
+ const faces=(other?buildOtherPet3D({...pose,species}):buildCow3D(pose)).filter(tri=>other||!authentic||!paintedFacialParts.has(tri.part))
   .map(tri=>{const v=tri.points.map(project);return {v,normal:spin(tri.normal,yaw),
    ink:tri.ink,part:tri.part,texPoints:tri.texPoints,uv:tri.uv,
    z:v.reduce((sum,q)=>sum+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,
-  materialPigment:authentic?paintOriginalCowSurface:null,
-  textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
+  materialPigment:other?(part,p,n,base)=>paintOtherPetSurface(species,part,p,n,base):authentic?paintOriginalCowSurface:null,
+  textureReady:!other&&cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
   outlineWidth:balanced?1:(pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1,
   protectFeatures:pose.renderMode==='locked',stablePalette:pose.renderMode==='locked',
   detailOutlines:pose.renderMode==='locked'&&pose.outlines!=='soft',
   adaptiveOutlines:authentic&&pose.renderMode==='locked'});
  canvas.dataset.cow3dPixelScale=balanced?'balanced':String(pixelScale);
+ canvas.dataset.cow3dSpecies=species;
+ canvas.dataset.cow3dSpeciesName=other?pet3DSpecies[species].name:'Корівка';
  canvas.dataset.cow3dNativePixelScale=String(pixelScale);
  canvas.dataset.cow3dSilhouetteRings=balanced?'1':String((pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1);
  canvas.dataset.cow3dModelBoost=balanced?'1.065':'1';
@@ -295,7 +300,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
  canvas.dataset.cow3dMotion=pose.renderMode==='locked'?'rigid-keyframes-8fps':'continuous';
  canvas.dataset.cow3dPoseFrame=String(Math.round((Number(pose.time)||0)/125));
- canvas.dataset.cow3dRevision='balanced-slim-v9';
+ canvas.dataset.cow3dRevision='all-species-3d-v10';
  canvas.dataset.cow3dOutlinePalette=authentic&&pose.renderMode==='locked'?'reference-adaptive':'classic';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
@@ -307,17 +312,32 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dTexturedPixels=String(rendered.textured);
  canvas.dataset.cow3dFaces=String(faces.length);
  canvas.dataset.cow3dReady='true';
- canvas.dataset.cow3dTextured=String(cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy');
+ canvas.dataset.cow3dTextured=String(!other&&cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy');
  canvas.dataset.cow3dSleeping=String(pose.action==='sleep');
  return faces.length;
 }
 export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
+ // Selecting a species also selects its *real* Detailed sprite in the
+ // existing owner lab above. No second fake reference sprite is drawn.
+ const syncSpecies=()=>{
+  const id=get('cow3d-species').value;
+  const main=get('species');
+  if(main&&main.value!==id){main.value=id;main.dispatchEvent(new Event('change',{bubbles:true}));}
+  const original=get('cow3d-reference');
+  if(original?.parentElement)original.parentElement.hidden=id!=='dog';
+  const note=get('cow3d-reference-note');
+  if(note)note.textContent=id==='dog'?'Detailed-спрайт корівки (еталон)':
+   'Еталон '+(pet3DSpecies[id]?.name||id)+': дивись у верхній Detailed-кімнаті. Модель нижче поки експериментальна.';
+  const design=get('cow3d-design');
+  if(design){design.disabled=id!=='dog';if(id!=='dog')design.value='reference';}
+ };
+ get('cow3d-species').addEventListener('change',syncSpecies);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:get('cow3d-pixels').value,yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v9 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{species:get('cow3d-species').value,designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:get('cow3d-pixels').value,yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent=canvas.dataset.cow3dSpeciesName+' · Дизайн '+canvas.dataset.cow3dDesign+' · v10 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
- for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design']){
+ for(const id of ['cow3d-species','cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design']){
   const control=get(id);
   // Ranges draw live on input; dropdowns draw once on change. This avoids
   // two expensive full-mesh paints for each native select interaction.
