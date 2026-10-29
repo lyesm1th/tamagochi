@@ -28,7 +28,7 @@ const sig=(v,p)=>Math.sign(v)*Math.pow(Math.abs(v),p);
 function ball(out,part,c,r,ink,shape='round',n=16,m=20){
  const vertex=(u,v)=>{
   const ph=v*PI,th=u*PI*2,y=Math.cos(ph),x=Math.sin(ph)*Math.cos(th),z=Math.sin(ph)*Math.sin(th);
-  const taper=shape==='head'?(1+.16*Math.exp(-((y+.25)/.37)**2)-.09*Math.max(0,y)):shape==='pear'?(1-.20*Math.max(0,y)+.07*Math.max(0,-y)):1;
+  const taper=shape==='head'?(1+.16*Math.exp(-Math.pow((y+.25)/.37,2))-.09*Math.max(0,y)):shape==='pear'?(1-.20*Math.max(0,y)+.07*Math.max(0,-y)):1;
   const exp=shape==='flat'?.8:shape==='head'?.85:.92;
   return [c[0]+sig(x,exp)*r[0]*taper,c[1]+sig(y,.9)*r[1],c[2]+sig(z,.86)*r[2]];
  };
