@@ -1,7 +1,7 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=cheeksx1v8';
+import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=balancedv9';
 import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
@@ -259,14 +259,17 @@ function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 export function drawCow3D(canvas,pose={}){
  const ctx=canvas.getContext('2d');if(!ctx)return;
  pose=pixelLockedPose(pose);
- const pixelScale=[1,2,3,4].includes(Number(pose.pixelScale))?Number(pose.pixelScale):2,w=Math.round(256/pixelScale),h=Math.round(192/pixelScale);canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
+ // Balanced keeps the authentic x2 pixel lattice, with a slimmer silhouette
+ // and a slightly larger subject. It is NOT fractional pixel scaling.
+ const balanced=pose.pixelScale==='balanced';
+ const pixelScale=balanced?2:[1,2,3,4].includes(Number(pose.pixelScale))?Number(pose.pixelScale):2,w=Math.round(256/pixelScale),h=Math.round(192/pixelScale);canvas.width=w;canvas.height=h;ctx.imageSmoothingEnabled=false;
  canvas.style.imageRendering='pixelated';
  // Fractional CSS upscaling at ×3 (85→768) makes pixel columns uneven.
  // Prefer an integer nearest-neighbor factor (85→765) on wide screens.
  canvas.style.width=(w*Math.max(1,Math.round(768/w)))+'px';
  ctx.fillStyle='#e8dfcc';ctx.fillRect(0,0,w,h);
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160/pixelScale,57/pixelScale,13/pixelScale,0,0,Math.PI*2);ctx.fill();
- const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=54/pixelScale;
+ const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=(54*(balanced?1.065:1))/pixelScale;
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
  const authentic=pose.designStyle!=='legacy'&&pose.designStyle!=='cream';
  // Hide the coarse 3D beads used by the earlier model for mouth/nostrils:
@@ -280,16 +283,19 @@ export function drawCow3D(canvas,pose={}){
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,
   materialPigment:authentic?paintOriginalCowSurface:null,
   textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
-  outlineWidth:(pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1,
+  outlineWidth:balanced?1:(pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1,
   protectFeatures:pose.renderMode==='locked',stablePalette:pose.renderMode==='locked',
   detailOutlines:pose.renderMode==='locked'&&pose.outlines!=='soft',
   adaptiveOutlines:authentic&&pose.renderMode==='locked'});
- canvas.dataset.cow3dPixelScale=String(pixelScale);
+ canvas.dataset.cow3dPixelScale=balanced?'balanced':String(pixelScale);
+ canvas.dataset.cow3dNativePixelScale=String(pixelScale);
+ canvas.dataset.cow3dSilhouetteRings=balanced?'1':String((pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1);
+ canvas.dataset.cow3dModelBoost=balanced?'1.065':'1';
  canvas.dataset.cow3dDesign=pose.designStyle==='legacy'?'legacy':pose.designStyle==='cream'?'cream':'reference';
  canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
  canvas.dataset.cow3dMotion=pose.renderMode==='locked'?'rigid-keyframes-8fps':'continuous';
  canvas.dataset.cow3dPoseFrame=String(Math.round((Number(pose.time)||0)/125));
- canvas.dataset.cow3dRevision='cheeks-x1-v8';
+ canvas.dataset.cow3dRevision='balanced-slim-v9';
  canvas.dataset.cow3dOutlinePalette=authentic&&pose.renderMode==='locked'?'reference-adaptive':'classic';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
@@ -309,7 +315,7 @@ export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
- const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:Number(get('cow3d-pixels').value),yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v8 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
+ const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:get('cow3d-pixels').value,yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent='Дизайн '+canvas.dataset.cow3dDesign+' · v9 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · модель dog (Корівка) · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
  for(const id of ['cow3d-yaw','cow3d-head','cow3d-pitch','cow3d-emotion','cow3d-action','cow3d-pixels','cow3d-render-mode','cow3d-outlines','cow3d-design']){
   const control=get(id);
