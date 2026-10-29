@@ -69,7 +69,7 @@ test('owner-only lab selects frontal, smiling black-and-white reference design',
  assert.match(html,/value="reference" selected/);
  assert.match(html,/value="neutral" selected/);
  assert.match(html,/id="cow3d-yaw"[^>]*value="0"/);
- assert.match(html,/src="\/lab-cow3d\.js\?v=allpetsv10" data-revision="all-species-3d-v10"/);
+ assert.match(html,/src="\/lab-cow3d\.js\?v=speciesv12" data-revision="species-sculpt-v12"/);
 });
 
 test('3D reference view exposes version and integer pixel scale without smoothing',()=>{
@@ -79,7 +79,7 @@ test('3D reference view exposes version and integer pixel scale without smoothin
  const canvas={style:{},dataset:{},getContext(){return ctx}};
  drawCow3D(canvas,{pixelScale:3,designStyle:'reference',renderMode:'locked',emotion:'sad',outlines:'detailed'});
  assert.equal(canvas.dataset.cow3dDesign,'reference');
- assert.equal(canvas.dataset.cow3dRevision,'all-species-3d-v10');
+ assert.equal(canvas.dataset.cow3dRevision,'species-sculpt-v12');
  assert.equal(canvas.dataset.cow3dMaterial,'original-detailed-surface');
  assert.equal(canvas.dataset.cow3dTextured,'false');
  assert.equal(canvas.style.width,'765px');
