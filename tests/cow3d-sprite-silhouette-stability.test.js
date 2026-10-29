@@ -8,15 +8,15 @@ const limits=(pts,axis)=>[Math.min(...pts.map(p=>p[axis])),Math.max(...pts.map(p
 const width=(mesh,part)=>{const [min,max]=limits(vertices(mesh,part),0);return max-min;};
 const height=(mesh,part)=>{const [min,max]=limits(vertices(mesh,part),1);return max-min;};
 
-test('the approved original has a sculpted chibi head significantly wider than its new pear-shaped torso',()=>{
+test('the green reference has a compact head approximately the torso width with broad lower cheeks',()=>{
  const original=buildCow3D({designStyle:'reference',action:'idle',renderMode:'locked'});
  const cream=buildCow3D({designStyle:'cream',action:'idle',renderMode:'locked'});
- assert.ok(width(original,'head')>width(original,'body')*1.10);
- assert.ok(width(original,'head')>width(cream,'head')*1.07,'head sculpt must be physically wider, not recolored');
+ assert.ok(width(original,'head')>width(original,'body')*.93,'head must remain full but not oversized');
+ assert.ok(width(original,'head')<width(cream,'head')*1.10,'green contour narrows the old over-wide head');
  assert.ok(width(original,'body')<width(cream,'body')*.96,'torso must be narrower than the old cream mesh');
  assert.ok(height(original,'leg0')<height(original,'body')*.60);
  const outer=(id)=>Math.max(...vertices(original,id).map(p=>Math.abs(p[0])));
- assert.ok(outer('ear')>outer('head')*1.12,'ears must visibly extend past newly enlarged cheeks');
+ assert.ok(outer('ear')>outer('head')*1.12,'ears must visibly extend beyond the narrower cheeks');
  assert.ok(vertices(original,'head').length>500&&vertices(original,'body').length>500);
 });
 
