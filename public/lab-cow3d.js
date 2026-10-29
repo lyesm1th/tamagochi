@@ -38,9 +38,10 @@ const furTone=(ink,c)=>{if(!c)return ink;
 // A narrow upper forehead expands into generous lower cheeks and tapers into
 // a small rounded chin. The shape is a true 3D surface at every head angle.
 export function originalCowHeadProfile(sy){
- const cheek=1+.32*Math.exp(-Math.pow((sy+.29)/.31,2));
- const forehead=1-.19*Math.exp(-Math.pow((sy-.52)/.39,2));
- const chin=1-.22*Math.exp(-Math.pow((sy+.76)/.24,2));
+ // Broader cheek plateau avoids a sharp wedge at low-poly side vertices.
+ const cheek=1+.28*Math.exp(-Math.pow((sy+.31)/.44,2));
+ const forehead=1-.16*Math.exp(-Math.pow((sy-.54)/.43,2));
+ const chin=1-.23*Math.exp(-Math.pow((sy+.79)/.28,2));
  return cheek*forehead*chin;
 }
 const rad=n=>n*Math.PI/180;
@@ -158,7 +159,8 @@ export function buildCow3D(pose={}){
  // Head group: independently rotates in a genuine 3D frame about the neck.
  const head=[];
  sphere(head,[0,.02,.07],authentic?[.94,.72,.63]:reference?[.76,.67,.60]:[.75,.66,.60],coat,
-  {part:'head',shape:authentic?'spriteHead':'skull',solidInk:authentic&&locked});
+  {part:'head',shape:authentic?'spriteHead':'skull',solidInk:authentic&&locked,
+   rows:authentic?24:16,cols:authentic?32:24});
  if(reference){
   // The reference muzzle is a broad pink, softly squared snout, not a tiny
   // round button. Shape and micro-features are volumetric and turn with head.
