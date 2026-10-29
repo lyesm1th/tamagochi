@@ -6,10 +6,10 @@ test('near eye pixel wins over far coat even when triangles arrive in reverse or
  renderCowMeshPixels(ctx,[tri(3,'#251d1a','eye'),tri(1,'#f8e8c9','head')],{width:4,height:4,pigment:()=>{},textureReady:false});
  assert.deepEqual([...data.slice(0,3)],[37,29,26]);
 });
-test('head turning does not change torso mesh and chibi skull is wider than torso',()=>{
+test('head turning does not change torso mesh and green head is close to torso width',()=>{
  const a=buildCow3D({headYaw:-35}),b=buildCow3D({headYaw:35});
  const bounds=(faces,id)=>{const p=faces.filter(t=>t.part===id).flatMap(t=>t.points).map(v=>v[0]);return Math.max(...p)-Math.min(...p);};
  assert.deepEqual(a.find(t=>t.part==='body').points,b.find(t=>t.part==='body').points);
  assert.notDeepEqual(a.find(t=>t.part==='head').points,b.find(t=>t.part==='head').points);
- assert.ok(bounds(a,'head')>bounds(a,'body')*1.10,'chibi head must remain larger than torso');
+ assert.ok(bounds(a,'head')>bounds(a,'body')*.90,'green outline retains distinct cheeks without oversized skull');
 });
