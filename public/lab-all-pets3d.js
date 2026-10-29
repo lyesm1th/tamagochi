@@ -1,3 +1,5 @@
+import {buildFamilyBody,pet3DTopology} from './lab-anatomy3d.js';
+export {pet3DTopology} from './lab-anatomy3d.js';
 // Owner-only preview: thirteen original, articulated 3D species alongside the
 // existing Detailed cow. Each entry has its own head/body silhouette and
 // anatomy. No player save, game mechanics, or external libraries are touched.
@@ -69,29 +71,8 @@ export function buildOtherPet3D(pose={}){
  const emot=pose.emotion||'neutral';
  const step=Math.floor(t/125)%4,pace=locked?0:Math.sin(t*.002)*.018;
  const coat=cfg.coat,side=cfg.side,light=cfg.light;
- const bodyY=species==='penguin'?1.10:1.03;
- ball(out,'body',[0,bodyY,-.31],cfg.body,coat,'pear',18,24);
- if(species==='penguin'||species==='fox'||species==='monkey'||species==='corgi')
-  ball(out,'belly',[0,bodyY-.05,.26],[cfg.body[0]*.72,cfg.body[1]*.77,.25],light,'flat');
- if(species==='sheep'){
-  for(const [x,y,z] of [[-.49,1.44,-.02],[.46,1.43,-.04],[0,1.68,-.22],[-.64,1.00,-.11],[.64,1.0,-.18]])
-   ball(out,'wool',[x,y,z],[.28,.32,.29],light);
- }
- // Each animal has a different limb count/look; bird legs are short and slim.
- for(let i=0;i<4;i++){
-  const front=i<2,left=i%2===0,sign=left?-1:1;
-  const stride=(step+(left?0:2)+(front?0:2))%4;
-  const lift=walk?(locked?[0,.14,.20,.06][stride]:Math.max(0,Math.sin(t*.009+stride))* .18):
-   wave&&i===1?(locked?[0,.10,.23,.10][step]:Math.abs(Math.sin(t*.009))*.22):0;
-  const bird=cfg.feet==='bird';
-  const x=sign*(bird?.36:.44),z=front?.24:-.67;
-  const limb=bird?[.13,.30,.15]:[.21,.29,.21];
-  const foot=bird?[.19,.08,.26]:[.22,.12,.23];
-  ball(out,'leg'+i,[x,.39+lift,z],limb,side);
-  ball(out,'hoof'+i,[x,.17+lift,z+.07],foot,bird?cfg.mouth:side);
- }
+ const headY=buildFamilyBody(out,pose,cfg,species,{ball,cone,link});
  // Local face frame independently turns and pitches with the neck.
- const headY=species==='frog'?1.62:species==='penguin'?1.79:1.67;
  const h=cfg.head;ball(head,'head',[0,0,0],h,coat,'head',22,28);
  const bird=['chicken','duck','penguin'].includes(species);
  const snout=species==='pig'?[.34,.18,.23]:bird?[.33,.13,.29]:species==='dino'?[.47,.21,.31]:species==='fox'?[.29,.18,.31]:[.31,.21,.20];
@@ -150,26 +131,6 @@ export function buildOtherPet3D(pose={}){
  for(const f of head){
   const move=p=>add(spinY(pitchX(p,hp),hy),pivot);
   out.push({...f,points:f.points.map(move),normal:spinY(pitchX(f.normal,hp),hy)});
- }
- // Distinct articulated tails, flippers, feathers and spines on the body.
- if(species==='dino'){
-  for(let i=0;i<4;i++)cone(out,'backSpine',[0,1.55-i*.29,-.84],[0,1.78-i*.30,-1.04],.19,cfg.accent);
-  link(out,'tail',[0,.93,-.86],[.55,1.01,-1.58],.19,coat);
- }else if(species==='fox'||species==='cat'||species==='monkey'){
-  const tip=species==='fox'?[1.20,1.35,-1.10]:[1.13,1.61,-.75];
-  link(out,'tail',[.53,.78,-.68],tip,species==='fox'?.22:.08,species==='fox'?side:coat);
-  if(species==='fox')ball(out,'tailTip',tip,[.23,.19,.22],light);
- }else if(species==='pig'){
-  link(out,'tail',[.40,.91,-.88],[.78,1.20,-1.05],.065,side);
- }else if(species==='bunny'||species==='sheep'){
-  ball(out,'tailPom',[.15,.84,-1.03],[.22,.22,.21],light);
- }else if(species==='chicken'||species==='duck'){
-  for(const sign of [-1,1]){
-   ball(out,'wing',[sign*.67,1.16,-.27],[.22,.36,.27],side);
-   cone(out,'tailFeather',[sign*.30,1.25,-.92],[sign*.42,1.76,-1.1],.16,coat);
-  }
- }else if(species==='penguin'){
-  for(const sign of [-1,1])ball(out,'flipper',[sign*.73,1.12,-.26],[.16,.45,.24],side);
  }
  if(!asleep)return out;
  const angle=rad(-72),co=Math.cos(angle),si=Math.sin(angle);
