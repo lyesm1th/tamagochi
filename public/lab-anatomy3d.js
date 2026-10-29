@@ -64,13 +64,18 @@ function dinoBiped(out,pose,cfg,ball,cone,link){
  legs(out,pose,cfg,2,'dino',ball);
  for(const sign of [-1,1]){
   const dy=pose.action==='wave'&&sign===1?[0,.08,.18,.08][Math.floor((pose.time||0)/125)%4]:0;
-  ball(out,'arm',[sign*.52,1.17,.18],[.12,.18,.15],cfg.coat);
-  ball(out,'hand',[sign*.56,1.04+dy,.35],[.11,.095,.11],cfg.coat);
-  for(const j of [-1,1])ball(out,'claw',[sign*.56+j*.048,1.01+dy,.45],[.035,.055,.045],cfg.light,'round',8,10);
+  ball(out,'arm',[sign*.73,1.15,.27],[.15,.22,.16],cfg.coat);
+  ball(out,'hand',[sign*.83,1.00+dy,.41],[.13,.11,.13],cfg.coat);
+  for(const j of [-1,1])ball(out,'claw',[sign*.83+j*.048,.97+dy,.53],[.035,.055,.045],cfg.light,'round',8,10);
  }
  const nodes=[[0,.99,-1.01],[.24,1.03,-1.37],[.48,1.12,-1.76],[.71,1.19,-2.04]];
  for(let i=1;i<nodes.length;i++)link(out,'tail',nodes[i-1],nodes[i],.19-i*.035,cfg.coat);
- for(let i=0;i<5;i++)cone(out,'backSpine',[0,1.54-i*.24,-.82-i*.23],[0,1.74-i*.24,-.92-i*.25],.11,cfg.accent);
+ for(let i=0;i<5;i++){
+  // Move ridge partly to camera-right so scales are readable in portrait,
+  // without compromising rotation or the tail's 3D depth.
+  const x=.34-i*.045;
+  cone(out,'backSpine',[x,1.57-i*.23,-.76-i*.23],[x+.19,1.77-i*.23,-.86-i*.25],.12,cfg.accent);
+ }
  return 1.55;
 }
 function farmQuadruped(out,pose,cfg,id,ball,link){
