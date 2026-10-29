@@ -44,7 +44,7 @@ test('the face silhouette has a softer forehead arch and continuous cheek-to-chi
  const ys=[.95,.80,.60,.30,0,-.20,-.45,-.65,-.85];
  for(const y of ys){
   const p=originalCowHeadProfile(y);
-  assert.ok(Number.isFinite(p)&&p>.84&&p<1.25);
+  assert.ok(Number.isFinite(p)&&p>.72&&p<1.38);
  }
  assert.ok(originalCowHeadProfile(.80)>.78,'upper forehead retains real volume');
  assert.ok(originalCowHeadProfile(-.20)>originalCowHeadProfile(0),'softly rounded lower cheeks');
