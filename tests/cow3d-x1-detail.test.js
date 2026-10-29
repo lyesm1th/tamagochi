@@ -13,7 +13,7 @@ test('1x is true 256x192 native raster and keeps sharp pixels',()=>{
  assert.equal(ctx.imageSmoothingEnabled,false);
  assert.equal(canvas.style.imageRendering,'pixelated');
  assert.equal(canvas.dataset.cow3dPixelScale,'1');
- assert.equal(canvas.dataset.cow3dRevision,'species-sculpt-v13');
+ assert.equal(canvas.dataset.cow3dRevision,'inset-eyes-v14');
  assert.equal(canvas.dataset.cow3dMotion,'rigid-keyframes-8fps');
 });
 test('owner lab defaults to Balanced while 1x 2x 3x and 4x remain',()=>{
@@ -21,7 +21,7 @@ test('owner lab defaults to Balanced while 1x 2x 3x and 4x remain',()=>{
  assert.match(html,/<option value="1">×1/);
  assert.match(html,/<option value="balanced" selected>Balanced/);
  for(const scale of [2,3,4])assert.match(html,new RegExp('<option value="'+scale+'">'));
- assert.match(html,/lab-cow3d\.js\?v=speciesv13/);
+ assert.match(html,/lab-cow3d\.js\?v=insetv14/);
 });
 test('cheek bump reduced while preserving narrow forehead and compact chin',()=>{
  const cheek=originalCowHeadProfile(-.24);
