@@ -285,7 +285,7 @@ export function drawCow3D(canvas,pose={}){
    z:v.reduce((sum,q)=>sum+q[2],0)/3};}).sort((a,b)=>a.z-b.z);
  const rendered=renderCowMeshPixels(ctx,faces,{width:w,height:h,pigment:detailedCowPigment,uvPigment:detailedCowPigmentUV,
   materialPigment:other?(part,p,n,base)=>paintOtherPetSurface(species,part,p,n,base):authentic?paintOriginalCowSurface:null,
-  textureReady:cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
+  textureReady:!other&&cowDetailedTextureReady()&&pose.renderMode!=='locked'&&pose.designStyle==='legacy',
   outlineWidth:balanced?1:(pixelScale===2||(pose.renderMode==='locked'&&pose.outlines!=='soft'&&pixelScale===3))?2:1,
   protectFeatures:pose.renderMode==='locked',stablePalette:pose.renderMode==='locked',
   detailOutlines:pose.renderMode==='locked'&&pose.outlines!=='soft',
@@ -319,6 +319,21 @@ export function drawCow3D(canvas,pose={}){
 export function mountCow3DLab(root=document){
  const canvas=root.getElementById('cow3d-stage');if(!canvas)return;
  const get=id=>root.getElementById(id);
+ // Selecting a species also selects its *real* Detailed sprite in the
+ // existing owner lab above. No second fake reference sprite is drawn.
+ const syncSpecies=()=>{
+  const id=get('cow3d-species').value;
+  const main=get('species');
+  if(main&&main.value!==id){main.value=id;main.dispatchEvent(new Event('change',{bubbles:true}));}
+  const original=get('cow3d-reference');
+  if(original?.parentElement)original.parentElement.hidden=id!=='dog';
+  const note=get('cow3d-reference-note');
+  if(note)note.textContent=id==='dog'?'Detailed-спрайт корівки (еталон)':
+   'Еталон '+(pet3DSpecies[id]?.name||id)+': дивись у верхній Detailed-кімнаті. Модель нижче поки експериментальна.';
+  const design=get('cow3d-design');
+  if(design){design.disabled=id!=='dog';if(id!=='dog')design.value='reference';}
+ };
+ get('cow3d-species').addEventListener('change',syncSpecies);
  let playing=false,last=0,time=0,lastPaint=-1000,lastSignature='';
  const render=()=>{const action=get('cow3d-action').value;drawCow3D(canvas,{species:get('cow3d-species').value,designStyle:get('cow3d-design').value,renderMode:get('cow3d-render-mode').value,outlines:get('cow3d-outlines').value,emotion:get('cow3d-emotion').value,headPitch:Number(get('cow3d-pitch').value),pixelScale:get('cow3d-pixels').value,yaw:Number(get('cow3d-yaw').value),headYaw:action==='turn'?Math.sin(time*.002)*50:Number(get('cow3d-head').value),blink:action==='blink'&&(time%2100>1850),action,time});get('cow3d-status').textContent=canvas.dataset.cow3dSpeciesName+' · Дизайн '+canvas.dataset.cow3dDesign+' · v10 · '+(canvas.dataset.cow3dDesign==='reference'?'Розпис оригіналу на 3D · ':cowDetailedTextureReady()?'Detailed sprite texture · ':'Підготовка Detailed texture · ')+ (canvas.dataset.cow3dRenderMode==='locked'?'Pixel-Locked · ':'Поточний 3D · ')+'контури '+canvas.dataset.cow3dOutlineStyle+' ('+canvas.dataset.cow3dDetailOutlinePixels+' детальних) · '+'3D-геометрія · піксель ×'+canvas.dataset.cow3dPixelScale+' · '+canvas.dataset.cow3dFaces+' трикутників · owner-only';};
  get('cow3d-play').addEventListener('change',e=>{playing=e.target.checked;});
