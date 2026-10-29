@@ -60,7 +60,7 @@ test('reference shader flag is private to original Sprite-Locked, never affects 
   getImageData(x,y,w,h){return {data:new Uint8ClampedArray(w*h*4)};},putImageData(){}};
  const c={style:{},dataset:{},getContext(){return ctx}};
  drawCow3D(c,{designStyle:'reference',renderMode:'locked',pixelScale:2});
- assert.equal(c.dataset.cow3dRevision,'species-sculpt-v12');
+ assert.equal(c.dataset.cow3dRevision,'species-sculpt-v13');
  assert.equal(c.dataset.cow3dOutlinePalette,'reference-adaptive');
  assert.equal(ctx.imageSmoothingEnabled,false);
  drawCow3D(c,{designStyle:'cream',renderMode:'locked',pixelScale:2});
