@@ -56,7 +56,7 @@ test('original locked render uses exact flat palette and leaves previous cream r
    getImageData(){return {data};},putImageData(){}};
  const canvas={style:{},dataset:{},getContext(){return ctx}};
  drawCow3D(canvas,{designStyle:'reference',renderMode:'locked',pixelScale:3,time:250});
- assert.equal(canvas.dataset.cow3dRevision,'species-sculpt-v13');
+ assert.equal(canvas.dataset.cow3dRevision,'inset-eyes-v14');
  assert.equal(canvas.dataset.cow3dMotion,'rigid-keyframes-8fps');
  assert.equal(canvas.dataset.cow3dDesign,'reference');
  assert.equal(ctx.imageSmoothingEnabled,false);

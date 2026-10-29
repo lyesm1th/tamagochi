@@ -53,7 +53,7 @@ test('v6 remains owner-lab-only and does not antialias the Detailed renderer',()
  getImageData(x,y,w,h){return {data:new Uint8ClampedArray(w*h*4)};},putImageData(){}};
  const canvas={style:{},dataset:{},getContext(){return ctx}};
  drawCow3D(canvas,{designStyle:'reference',renderMode:'locked',pixelScale:2});
- assert.equal(canvas.dataset.cow3dRevision,'species-sculpt-v13');
+ assert.equal(canvas.dataset.cow3dRevision,'inset-eyes-v14');
  assert.equal(canvas.dataset.cow3dMotion,'rigid-keyframes-8fps');
  assert.equal(canvas.dataset.cow3dOutlinePalette,'reference-adaptive');
  assert.equal(ctx.imageSmoothingEnabled,false);

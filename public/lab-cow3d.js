@@ -1,8 +1,8 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=speciesv13';
-import {pet3DSpecies,buildOtherPet3D,paintOtherPetSurface} from './lab-all-pets3d.js?v=speciesv13';
+import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=insetv14';
+import {pet3DSpecies,buildOtherPet3D,paintOtherPetSurface} from './lab-all-pets3d.js?v=insetv14';
 import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
@@ -300,7 +300,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
  canvas.dataset.cow3dMotion=pose.renderMode==='locked'?'rigid-keyframes-8fps':'continuous';
  canvas.dataset.cow3dPoseFrame=String(Math.round((Number(pose.time)||0)/125));
- canvas.dataset.cow3dRevision='species-sculpt-v13';
+ canvas.dataset.cow3dRevision='inset-eyes-v14';
  canvas.dataset.cow3dOutlinePalette=authentic&&pose.renderMode==='locked'?'reference-adaptive':'classic';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
