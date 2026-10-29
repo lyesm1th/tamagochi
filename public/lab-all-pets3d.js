@@ -113,7 +113,7 @@ export function buildOtherPet3D(pose={}){
   // Embedded facial landmarks, mostly inside the skin. The visible eye
   // pigment is drawn directly on head/faceMask pixels by paintOtherPetSurface.
   const ez=species==='dino'?.40:species==='penguin'?.34:species==='frog'?.38:.39;
-  if(species==='frog')ball(head,'eyeBump',[s*.47,.40,.26],[.25,.23,.23],coat);
+  if(species==='frog')ball(head,'eyeBump',[s*.47,.40,.33],[.25,.23,.26],coat);
   ball(head,'eyeWhite',[ex,eyesY,ez],[.09,.11,.025],coat,'flat',10,14);
   ball(head,'eye',[ex,eyesY,ez+.012],[.07,.09,.018],coat,'flat',10,14);
   if(!asleep&&!pose.blink)ball(head,'shine',[ex-.027,eyesY+.048,ez+.018],[.019,.021,.011],coat,'flat',8,10);
@@ -171,6 +171,18 @@ export function buildOtherPet3D(pose={}){
 export function paintOtherPetSurface(species,part,p,normal,base){
  const cfg=pet3DSpecies[species];if(!cfg||!p)return base;
  const [x,y,z]=p;
+ if(part==='eyeBump'&&species==='frog'){
+  // Frogs have their eyes ON the elevated eye mounds, not the lower skull.
+  if(z>.40){
+   for(const sign of [-1,1]){
+    const u=(x-sign*.47)/.092,v=(y-.47)/.092;
+    if(u*u+v*v<1){
+     const shine=((x-sign*.47+.02)/.028)**2+((y-.47-.034)/.025)**2;
+     return shine<1?'#fffdf7':'#272129';
+    }
+   }
+  }
+ }
  if(part==='head'||part==='faceMask'){
   // Face ink is part of the 3D surface, never a raised spherical eye.
   // The snout and its nose remain separate small anatomical volumes.
