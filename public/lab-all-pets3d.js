@@ -1,5 +1,5 @@
-import {buildFamilyBody,pet3DTopology} from './lab-anatomy3d.js?v=insetv14';
-export {pet3DTopology} from './lab-anatomy3d.js?v=insetv14';
+import {buildFamilyBody,pet3DTopology} from './lab-anatomy3d.js?v=contrastv15';
+export {pet3DTopology} from './lab-anatomy3d.js?v=contrastv15';
 // Owner-only preview: thirteen original, articulated 3D species alongside the
 // existing Detailed cow. Each entry has its own head/body silhouette and
 // anatomy. No player save, game mechanics, or external libraries are touched.
@@ -9,7 +9,7 @@ export const pet3DSpecies=Object.freeze({
  corgi:{name:'Коргі',coat:'#e8ab6f',side:'#aa754e',light:'#fff0d3',accent:'#d98e89',mouth:'#573c37',head:[.72,.61,.57],body:[.72,.59,.73],face:'dog',ears:'tallTriangle',tail:'stub'},
  frog:{name:'Жабка',coat:'#91be72',side:'#618e60',light:'#b8dca0',accent:'#d6a0ac',mouth:'#557c59',head:[.82,.48,.60],body:[.67,.55,.60],face:'frog',ears:'eyebumps',tail:'none'},
  bear:{name:'Ведмедик',coat:'#b99073',side:'#775746',light:'#e6c2a0',accent:'#cb9c8a',mouth:'#4c3330',head:[.72,.70,.65],body:[.72,.75,.72],face:'bear',ears:'round',tail:'stub'},
- dino:{name:'Динозаврик',coat:'#80b7a0',side:'#548879',light:'#c1ded0',accent:'#efb773',mouth:'#496956',head:[.73,.59,.71],body:[.74,.77,.79],face:'dino',ears:'spikes',tail:'long'},
+ dino:{name:'Динозаврик',coat:'#80b7a0',side:'#548879',light:'#c1ded0',accent:'#efb773',mouth:'#496956',head:[.64,.64,.66],body:[.61,.70,.72],face:'dino',ears:'spikes',tail:'long'},
  bunny:{name:'Кролик',coat:'#e7c6d9',side:'#be9bad',light:'#fff1fa',accent:'#ef9fb4',mouth:'#805869',head:[.65,.67,.56],body:[.62,.69,.64],face:'bunny',ears:'rabbit',tail:'pom'},
  pig:{name:'Свинка',coat:'#efb1b4',side:'#cf8795',light:'#ffd2d4',accent:'#e18b9d',mouth:'#9d5061',head:[.79,.61,.63],body:[.77,.68,.71],face:'pig',ears:'flop',tail:'curl'},
  sheep:{name:'Овечка',coat:'#f4e9cc',side:'#cbbda5',light:'#fff8e8',accent:'#cfb5b5',mouth:'#786d67',head:[.68,.59,.59],body:[.79,.75,.72],face:'sheep',ears:'flop',tail:'pom'},
@@ -73,24 +73,24 @@ export function buildOtherPet3D(pose={}){
  const coat=cfg.coat,side=cfg.side,light=cfg.light;
  const headY=buildFamilyBody(out,pose,cfg,species,{ball,cone,link});
  // Local face frame independently turns and pitches with the neck.
- const h=species==='dino'?[.74,.56,.68]:species==='penguin'?[.59,.56,.53]:
+ const h=species==='dino'?[.64,.64,.66]:species==='penguin'?[.59,.56,.53]:
  species==='fox'?[.66,.53,.58]:species==='bunny'?[.62,.55,.53]:
  species==='frog'?[.85,.43,.59]:cfg.head;
  ball(head,'head',[0,0,0],h,coat,species==='frog'?'flat':'head',22,28);
  const bird=['chicken','duck','penguin'].includes(species);
  const snout=species==='pig'?[.39,.205,.24]:species==='penguin'?[.22,.085,.18]:
  species==='chicken'?[.25,.12,.20]:species==='duck'?[.37,.10,.24]:
- species==='dino'?[.39,.17,.34]:species==='fox'?[.35,.17,.29]:
+ species==='dino'?[.30,.16,.43]:species==='fox'?[.35,.17,.29]:
  species==='bear'?[.34,.21,.22]:species==='bunny'?[.22,.16,.17]:
  species==='monkey'?[.28,.17,.17]:[.30,.19,.20];
- const tip=species==='dino'?.63:species==='fox'?.54:species==='penguin'?.52:.52;
+ const tip=species==='dino'?.73:species==='fox'?.54:species==='penguin'?.52:.52;
  ball(head,bird?'beak':'muzzle',[0,species==='penguin'?-.18:-.28,tip],snout,
  bird?cfg.mouth:species==='pig'?cfg.accent:species==='fox'||species==='bear'||species==='monkey'||species==='bunny'?cfg.light:light,
  bird?'flat':'round',18,26);
  // Critical visibility: raised face planes live at positive surface depth,
  // not hidden underneath the front of the skull in a 3D depth buffer.
  if(['bear','pig','bunny','fox','monkey','corgi','cat','dino'].includes(species)){
-  const maskDepth=species==='dino'?.53:.50;
+  const maskDepth=species==='dino'?.55:.50;
   if(['bear','monkey','bunny','fox'].includes(species))
    ball(head,'faceMask',[0,-.03,maskDepth],[.44,.38,.135],species==='bear'||species==='monkey'?cfg.light:cfg.light,'flat',18,24);
   if(species==='bear')ball(head,'noseBridge',[0,-.27,.78],[.19,.16,.10],cfg.light,'round',14,20);
@@ -104,7 +104,11 @@ export function buildOtherPet3D(pose={}){
  }
  if(species==='pig')for(const s of [-1,1])
   ball(head,'nostril',[s*.17,-.27,tip+snout[2]*.88],[.042,.055,.025],side);
- if(species==='dino')ball(head,'noseTip',[0,-.25,.90],[.26,.14,.17],coat);
+ if(species==='dino'){
+  // Long narrow reptilian muzzle instead of the wide upturned pig nose.
+  ball(head,'noseTip',[0,-.27,1.08],[.23,.105,.12],coat);
+  for(const sign of [-1,1])ball(head,'dinoNostril',[sign*.16,-.23,1.177],[.025,.019,.013],side);
+ }
  if(species==='fox')ball(head,'chinFur',[0,-.40,.67],[.34,.13,.16],light,'flat');
  // Eyes positioned on the face in 3D rather than stuck to the camera plane.
  const eyesY=species==='frog'?.30:species==='penguin'?.12:species==='bear'?.16:.13;
@@ -122,7 +126,7 @@ export function buildOtherPet3D(pose={}){
   if(['cat','corgi','bear','bunny','fox','monkey','pig'].includes(species))
    ball(head,'blush',[s*.43,-.24,.59],[.13,.08,.038],cfg.accent);
  }
- if(species!=='pig'&&!bird)
+ if(species!=='pig'&&species!=='dino'&&!bird)
   ball(head,'nose',[0,-.27,tip+snout[2]*.94],[.08,.055,.042],species==='frog'?side:cfg.mouth);
  if(!bird){
   const smile=emot==='sad'?.0:emot==='happy'?.06:.025;

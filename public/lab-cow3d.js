@@ -1,8 +1,8 @@
 // Real volumetric procedural cow mesh for the OWNER-ONLY laboratory.
 // Mesh surfaces are 3D triangles with perspective projection, depth ordering and indexed pixel shading.
 // No billboard sprites or paid dependencies; intentionally isolated from gameplay.
-import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=insetv14';
-import {pet3DSpecies,buildOtherPet3D,paintOtherPetSurface} from './lab-all-pets3d.js?v=insetv14';
+import {renderCowMeshPixels} from './lab-cow3d-raster.js?v=contrastv15';
+import {pet3DSpecies,buildOtherPet3D,paintOtherPetSurface} from './lab-all-pets3d.js?v=contrastv15';
 import {originalCowPigments,paintOriginalCowSurface} from './lab-cow3d-paint.js';
 import {loadCowDetailedTexture,detailedCowPixel,cowDetailedTextureReady,drawCowDetailedReference,detailedCowPigment,cowPartUV,detailedCowPigmentUV} from './lab-cow3d-texture.js';
 // Deliberately quantized poses preserve coherent pixel clusters between frames.
@@ -270,10 +270,12 @@ export function drawCow3D(canvas,pose={}){
  canvas.style.width=(w*Math.max(1,Math.round(768/w)))+'px';
  ctx.fillStyle='#e8dfcc';ctx.fillRect(0,0,w,h);
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160/pixelScale,57/pixelScale,13/pixelScale,0,0,Math.PI*2);ctx.fill();
- const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=(54*(balanced?1.065:1))/pixelScale;
+ const yaw=rad(Number(pose.yaw)||0),pitch=rad(7);
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
  const species=pet3DSpecies[pose.species]?pose.species:'dog';
  const other=species!=='dog';
+ // Sprite-matched size: experimental species no longer dwarf the Detailed reference.
+ const scale=(54*(balanced?1.065:1)*(other?.82:1))/pixelScale;
  const authentic=other||(pose.designStyle!=='legacy'&&pose.designStyle!=='cream');
  // Hide the coarse 3D beads used by the earlier model for mouth/nostrils:
  // tiny features are now inked onto the actual curved snout and cheeks.
@@ -300,7 +302,7 @@ export function drawCow3D(canvas,pose={}){
  canvas.dataset.cow3dMaterial=authentic?'original-detailed-surface':'legacy-flat';
  canvas.dataset.cow3dMotion=pose.renderMode==='locked'?'rigid-keyframes-8fps':'continuous';
  canvas.dataset.cow3dPoseFrame=String(Math.round((Number(pose.time)||0)/125));
- canvas.dataset.cow3dRevision='inset-eyes-v14';
+ canvas.dataset.cow3dRevision='contrast-outline-v15';
  canvas.dataset.cow3dOutlinePalette=authentic&&pose.renderMode==='locked'?'reference-adaptive':'classic';
  canvas.dataset.cow3dRenderMode=pose.renderMode==='locked'?'locked':'classic';
  canvas.dataset.cow3dPainted=String(rendered.painted);
