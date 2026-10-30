@@ -270,10 +270,12 @@ export function drawCow3D(canvas,pose={}){
  canvas.style.width=(w*Math.max(1,Math.round(768/w)))+'px';
  ctx.fillStyle='#e8dfcc';ctx.fillRect(0,0,w,h);
  ctx.fillStyle='#d3c8b1';ctx.beginPath();ctx.ellipse(w/2,160/pixelScale,57/pixelScale,13/pixelScale,0,0,Math.PI*2);ctx.fill();
- const yaw=rad(Number(pose.yaw)||0),pitch=rad(7),scale=(54*(balanced?1.065:1))/pixelScale;
+ const yaw=rad(Number(pose.yaw)||0),pitch=rad(7);
  const project=p=>{const q=spin(p,yaw),y=q[1]*Math.cos(pitch)-q[2]*Math.sin(pitch),z=q[1]*Math.sin(pitch)+q[2]*Math.cos(pitch);const perspective=6/(6-z*.19);return [w/2+q[0]*scale*perspective,148/pixelScale-y*scale*perspective,z];};
  const species=pet3DSpecies[pose.species]?pose.species:'dog';
  const other=species!=='dog';
+ // Sprite-matched size: experimental species no longer dwarf the Detailed reference.
+ const scale=(54*(balanced?1.065:1)*(other?.82:1))/pixelScale;
  const authentic=other||(pose.designStyle!=='legacy'&&pose.designStyle!=='cream');
  // Hide the coarse 3D beads used by the earlier model for mouth/nostrils:
  // tiny features are now inked onto the actual curved snout and cheeks.
