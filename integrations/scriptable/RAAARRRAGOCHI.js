@@ -1,4 +1,4 @@
-// РААААРРРАГОЧІ • free Scriptable iOS Home Screen widget, v0.1
+// РААААРРРАГОЧІ • free Scriptable iOS Home Screen widget, v0.2
 // Install: Scriptable > + > paste this script > save > add a Scriptable widget.
 // In Edit Widget, assign this script; set Parameter to e.g. "dino" or "cat|teen".
 // This first version is a read-only visual companion, NOT a live synchronized game.
@@ -46,13 +46,10 @@ try{
 const w=new ListWidget();
 w.backgroundColor=new Color("#16202c");
 w.setPadding(10,10,10,10);
-const title=w.addText("🦖 РААААРРРАГОЧІ");
-title.font=Font.boldSystemFont(11);
-title.textColor=new Color("#f4dca5");
-w.addSpacer(3);
+w.addSpacer();
 if(source){
   // Crop the committed transparent atlas without changing the pet's original face.
-  const size=128,scale=Math.min(size/cell[2],size/cell[3]);
+  const size=160,scale=Math.min(142/cell[2],142/cell[3]);
   const ctx=new DrawContext();
   ctx.size=new Size(size,size);ctx.opaque=false;ctx.respectScreenScale=true;
   ctx.drawImageInRect(source,new Rect(
@@ -60,16 +57,17 @@ if(source){
     (size-cell[3]*scale)/2-cell[1]*scale,
     source.size.width*scale,source.size.height*scale
   ));
-  const pet=w.addImage(ctx.getImage());pet.imageSize=new Size(92,92);pet.centerAlignImage();
+  const pet=w.addImage(ctx.getImage());pet.imageSize=new Size(106,106);pet.centerAlignImage();
 }else{
   const t=w.addText("🐾 Немає з'єднання");t.textColor=Color.white();
 }
 const caption=w.addText(names[id]);
 caption.centerAlignText();caption.font=Font.semiboldSystemFont(13);
 caption.textColor=Color.white();
-w.addSpacer(3);
-const info=w.addText("Твій пет поруч ♡");
-info.centerAlignText();info.font=Font.systemFont(10);info.textColor=new Color("#c8d4dd");
+w.addSpacer();
+// The small Scriptable widget has strict height; do not add extra title/status rows.
+
+
 w.refreshAfterDate=new Date(Date.now()+CONFIG.refreshMinutes*60000);
 if(config.runsInWidget)Script.setWidget(w);
 else await w.presentSmall();
