@@ -95,9 +95,10 @@ export class PetRoom{
    if(pet)await this.ctx.storage.put('pet',pet);
    return json(mobilePetSnapshot(pet));
   }
-  if(!id||!validRequestId(id))return json({error:'X-Request-ID required'},400);
+  const operationId=id||body.requestId;
+  if(!validRequestId(operationId))return json({error:'Widget requestId is required'},400);
   if(!['feed','clean','pet','sleep'].includes(body.action))return json({error:'Unsupported widget action'},400);
-  return requestOnce(this.ctx.storage,id,await requestSignature(path,body),async()=>{
+  return requestOnce(this.ctx.storage,operationId,await requestSignature(path,{action:body.action}),async()=>{
    let pet=tick(await this.ctx.storage.get('pet'));
    if(!pet||pet.dead)return json({error:'No active pet'},400);
    const outcome=act(pet,body.action,Date.now(),{});
