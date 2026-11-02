@@ -32,6 +32,7 @@ async function registerPush(){
   if(!auth?.token)return;
   pushPublicKey=(await api('push-key')).publicKey;
   const sub=await pushReady.pushManager.getSubscription();
+  if(sub&&Notification.permission==='granted')await api('push-subscribe',{subscription:sub.toJSON(),timezone:'Europe/Kyiv'});
   $('enablePush').hidden=Boolean(sub);
   $('disablePush').hidden=!sub;
   $('testPush').hidden=!sub;
