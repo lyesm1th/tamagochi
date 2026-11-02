@@ -63,9 +63,9 @@ async function portrait(p){
   const canvas=document.createElement('canvas');
   canvas.width=w;canvas.height=h;
   canvas.getContext('2d').drawImage(image,x,y,w,h,0,0,w,h);
-  return canvas.toDataURL('image/png').split(',')[1];
- })()`;
- const base64=await browser.evaluateJavaScript(script,false);
+  completion(canvas.toDataURL('image/png').split(',')[1]);
+ })().catch(e=>completion(null))`;
+ const base64=await browser.evaluateJavaScript(script,true);
  if(!base64||typeof base64!=="string")throw Error("Не вдалося вирізати спрайт");
  const image=Image.fromData(Data.fromBase64String(base64));
  fm.writeImage(cache,image);
