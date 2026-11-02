@@ -8,7 +8,7 @@
     "deploy": "wrangler deploy",
     "test": "node --test",
     "check": "node --check src/worker.js && node --check public/app.js && node --check public/game.js && node scripts/check-assets.js",
-    "build": "node scripts/build-client.js && npm run check",
+    "build": "node scripts/build-client.js && node scripts/build-island-art.mjs && npm run check",
     "build:sprites": "node scripts/build-emotion-sprites.mjs",
     "test:sprites": "node --test tests/sprite-integrity.test.js",
     "check:visual-baseline": "node scripts/check-visual-baseline.mjs",
