@@ -10,7 +10,9 @@ const delay=ms=>new Promise(resolve=>Timer.schedule(ms,false,resolve));
 function parsePairing(value){
  const i=value.indexOf("|");if(i<0)throw Error("Скопіюй повний код із Telegram, разом із адресою.");
  const origin=value.slice(0,i),token=value.slice(i+1);
- if(!/^https:\/\/[^/]+$/.test(origin)||!/^\d+\.[a-f0-9]{64}$/.test(token))throw Error("Неправильний код прив'язки");
+ let validOrigin=false;
+ try{const parsed=new URL(origin);validOrigin=parsed.protocol==="https:"&&parsed.origin===origin;}catch{}
+ if(!validOrigin||!/^\\d+\\.[a-f0-9]{64}$/.test(token))throw Error("Неправильний код прив'язки");
  return {origin,token};
 }
 async function call(path,body={},requestId=null){
