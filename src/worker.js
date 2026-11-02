@@ -91,7 +91,7 @@ export class PetRoom{
   await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
   return json({token});
  }
- if(path==='/internal/widget/state'||path==='/internal/widget/action'){
+ if(['/internal/widget/state','/internal/widget/action','/internal/widget/push-key','/internal/widget/push-subscribe','/internal/widget/push-unsubscribe','/internal/widget/push-test'].includes(path)){
   const token=req.headers.get('X-Widget-Token')||'';
   const secret=token.split('.')[1]||'';
   const record=await this.ctx.storage.get('widget-access');
