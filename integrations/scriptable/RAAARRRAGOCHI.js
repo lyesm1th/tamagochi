@@ -5,7 +5,7 @@ const names={chicken:"Курочка",cat:"Котик",corgi:"Коргі",frog:"
 const old={chicken:[419,11,121,181],cat:[192,11,182,176],corgi:[49,192,142,182],frog:[594,30,122,162],bear:[235,193,134,181],dog:[43,10,149,182],dino:[416,192,141,184],bunny:[600,192,115,184]};
 const six=["pig","sheep","fox","monkey","duck","penguin"];
 const assets="https://raw.githubusercontent.com/lyesm1th/tamagochi/64be0f7913e0070d40afffa4d9b52dc3ce0ffc67/public/art/detailed/";
-let cfg={};try{cfg=JSON.parse(fm.readString(file));}catch{}
+let cfg={};try{const saved=JSON.parse(fm.readString(file));if(saved&&typeof saved==="object"&&!Array.isArray(saved))cfg=saved;}catch{}
 const delay=ms=>new Promise(resolve=>Timer.schedule(ms,false,resolve));
 function parsePairing(value){
  const i=value.indexOf("|");if(i<0)throw Error("Скопіюй повний код із Telegram, разом із адресою.");
@@ -71,7 +71,7 @@ async function show(){
 }
 async function notice(title,message){const a=new Alert();a.title=title;a.message=message;a.addAction("ОК");await a.presentAlert();}
 if(!config.runsInWidget){
- try{if(!cfg.token&&!await askLink())Script.complete();else await show();}
+ try{if(!cfg.token){if(await askLink())await show();}else await show();}
  catch(e){await notice("Помилка",e.message);}
  Script.complete();
 }else{
