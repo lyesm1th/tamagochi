@@ -39,6 +39,9 @@ try{
  await page.goto(host+'/companion.html',{waitUntil:'networkidle',timeout:30000});
  await page.waitForFunction(()=>document.querySelector('#name')?.textContent==='Чуча');
  assert.equal(await page.locator('#name').textContent(),'Чуча');
+ assert.equal(await page.locator('#installDirections').isVisible(),true,'ordinary iPhone browser shows install guidance');
+ assert.equal(await page.locator('#enablePush').isVisible(),false,'no push consent in ordinary browser tab');
+ assert.match(await page.locator('#pushStatus').textContent(),/початковий екран/);
  assert.ok((await page.locator('#stats').textContent()).includes('67%'));
  await page.waitForFunction(()=>{
   const c=document.getElementById('pet'),img=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
