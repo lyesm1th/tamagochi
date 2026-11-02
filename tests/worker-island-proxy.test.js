@@ -19,7 +19,7 @@ const createHarness=async()=>{
  const room=new PetRoom(ctx,{});
  const env={PETS:{idFromName:name=>name,get:id=>{assert.equal(id,owner);return room;}},ASSETS:{fetch:()=>Response.json({error:'unexpected asset'})}};
  data.set('widget-access',{hash:await requestSignature('widget',secret),created:Date.now()});
- data.set('pet',{...fresh('dog',Date.now()-10*86400000),name:'Чуча',hunger:50,happy:60,energy:78,clean:97,lastAction:0});
+ data.set('pet',{...fresh('dog',Date.now()),born:Date.now()-10*86400000,updated:Date.now(),name:'Чуча',hunger:50,happy:60,energy:78,clean:97,lastAction:0});
  const call=async(path,body={},bearer=token)=>{
   const response=await worker.fetch(new Request(origin+'/api/widget/'+path,{method:'POST',headers:{
    Authorization:'Bearer '+bearer,'Content-Type':'application/json'
