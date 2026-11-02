@@ -36,6 +36,7 @@ test('PushWard REST integration starts, updates and ends an activity without lea
   assert.deepEqual(calls.map(c=>c.options.method),['GET','POST','PATCH']);
   assert.deepEqual(calls.map(c=>new URL(c.url).hostname),['api.pushward.app','api.pushward.app','api.pushward.app']);
   assert.equal(calls[2].options.headers['Content-Type'],'application/merge-patch+json');
+  assert.ok(calls.every(c=>c.options.redirect==='manual'),'Cloudflare Workers only support manual/follow redirect modes');
   const pushed=JSON.parse(calls[2].options.body);
   assert.equal(pushed.state,'ongoing');
   assert.equal(pushed.content.image_url,'https://pixel-pets.example.workers.dev/assets/island/adult/dog.png');
@@ -70,5 +71,26 @@ test('PushWard auth failure identifies which provider step failed without reflec
   globalThis.fetch=async()=>{throw new TypeError('failed to fetch')};
   await assert.rejects(()=>activateIsland(KEY,pet,'https://pixel-pets.example.workers.dev'),e=>
    e instanceof PushWardTransportError&&e.stage==='authentication'&&e.reason==='network');
+ }finally{globalThis.fetch=original}
+});
+
+test('PushWard provider redirects never forward integration token to another host',async()=>{
+ const original=globalThis.fetch,requests=[];
+ try{
+  globalThis.fetch=async(url,options)=>{
+   requests.push({url,redirect:options.redirect});
+   return new Response(null,{status:302,headers:{Location:'https://malicious.example/steal'}});
+  };
+  const health=await checkPushWardHealth();
+  assert.equal(health.ok,false);
+  assert.equal(health.status,302);
+  assert.equal(health.reason,'provider_http_error');
+  const result=await activateIsland(KEY,pet,'https://pixel-pets.example.workers.dev');
+  assert.equal(result.ok,false);
+  assert.equal(result.status,302);
+  assert.deepEqual(requests,[
+   {url:'https://api.pushward.app/health',redirect:'manual'},
+   {url:'https://api.pushward.app/auth/me',redirect:'manual'}
+  ]);
  }finally{globalThis.fetch=original}
 });
