@@ -7,5 +7,14 @@
   "display": "standalone",
   "background_color": "#101d2b",
   "theme_color": "#17283a",
-  "lang": "uk"
+  "lang": "uk",
+  "id": "/companion.html",
+  "icons": [
+    {
+      "src": "/companion-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
