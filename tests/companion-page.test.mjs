@@ -19,5 +19,8 @@ assert.ok(serviceWorker.includes('showNotification'),'push handler shows visible
 assert.ok(js.includes("api('push-subscribe'"),'PWA subscribes to server push');
 assert.ok(js.includes('navigator.serviceWorker.register'),'PWA registers service worker');
 assert.ok(js.includes("Notification.requestPermission"),'permission requires explicit user action');
+assert.ok(html.includes('id="installDirections"'),'browser-only iPhone install instructions exist');
+const pushInitializer=js.slice(js.indexOf('async function registerPush(){'),js.indexOf("$('enablePush').onclick"));
+assert.ok(pushInitializer.indexOf("if(!installed())")<pushInitializer.indexOf("if(!('serviceWorker'"),'install check comes before browser push support check');
 assert.ok(manifest.icons?.[0]?.src==='/companion-icon.png','iOS web app icon');
 console.log('Companion page: syntax, offline shell and push hook checks passed');
