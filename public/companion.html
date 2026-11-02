@@ -8,7 +8,7 @@
 <section class="panel" id="connect"><h2>Підключити твого пета</h2><p class="muted">У Telegram-грі натисни «📱 Підключити віджет iPhone», скопіюй рядок із адресою та ключем. Встав його сюди один раз.</p><label for="code">Код прив'язки</label><input id="code" type="password" autocomplete="off" placeholder="https://…|123456.abcdef…"><button id="pair">🔗 Підключити Чучу</button><p id="connectError" role="status"></p></section>
 <section class="panel" id="game"><div class="scene"><div class="bubble" id="bubble" aria-live="polite">Я тут!</div><canvas id="pet" width="220" height="220" aria-label="Твій піксельний пет"></canvas></div><div class="name" id="name"></div><div class="muted" id="age"></div><div class="stats" id="stats"></div>
 <div class="actions"><button data-action="feed">🍗 Погодувати</button><button data-action="clean">🧹 Прибрати</button><button data-action="pet">❤️ Погладити</button><button data-action="sleep">💤 Сон / прокинутись</button></div>
-<div class="push" id="push-controls"><strong>🔔 Чуча на заблокованому екрані</strong><div class="push-actions"><button id="enablePush">Увімкнути сповіщення</button><button id="testPush" hidden>Надіслати тест</button><button id="disablePush" hidden>Вимкнути</button></div><small id="pushStatus" role="status">Сповіщення підтримуються у встановленій на домашній екран вебапці iPhone.</small></div><p role="status" id="status" class="muted"></p><button id="refresh">↻ Оновити стан</button></section>
+<div class="push" id="push-controls"><strong>🔔 Чуча на заблокованому екрані</strong><div id="installDirections" class="muted" hidden><p>На iPhone сповіщення працюють лише у встановленій вебапці, а не у вкладці браузера.</p><p><strong>1.</strong> Відкрий цю сторінку в Safari.<br><strong>2.</strong> Натисни «Поділитися» → «На початковий екран» → «Додати».<br><strong>3.</strong> Запусти РАААРРРАГОЧІ через нову іконку на екрані.<br><strong>4.</strong> Тут з’явиться кнопка «Увімкнути сповіщення».</p></div><div class="push-actions"><button id="enablePush">Увімкнути сповіщення</button><button id="testPush" hidden>Надіслати тест</button><button id="disablePush" hidden>Вимкнути</button></div><small id="pushStatus" role="status">Сповіщення підтримуються у встановленій на домашній екран вебапці iPhone.</small></div><p role="status" id="status" class="muted"></p><button id="refresh">↻ Оновити стан</button></section>
 <footer class="muted">Той самий пет, що й у Telegram · 2D pixel art</footer></main>
 <script type="module">
 import {detailedArt} from '/detailed-art-manifest.js';
@@ -22,13 +22,22 @@ function installed(){return window.navigator.standalone===true||matchMedia('(dis
 function keyBytes(key){const raw=atob(key.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-key.length%4)%4));return Uint8Array.from(raw,x=>x.charCodeAt(0))}
 function pushMessage(text){$('pushStatus').textContent=text}
 async function registerPush(){
+ // iOS exposes its Web Push APIs to installed Home Screen apps, not regular browser tabs.
+ // Check install state first so Safari users never see a false "unsupported" warning.
+ if(!installed()){
+  $('installDirections').hidden=false;
+  $('enablePush').hidden=true;$('disablePush').hidden=true;$('testPush').hidden=true;
+  pushMessage('Спочатку додай РАААРРРАГОЧІ на початковий екран і відкрий гру через її іконку.');
+  return;
+ }
+ $('installDirections').hidden=true;
  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
-  pushMessage('Цей браузер не підтримує Web Push. Потрібен iPhone з iOS 16.4+.');
-  $('enablePush').disabled=true;return;
+  $('enablePush').hidden=true;$('disablePush').hidden=true;$('testPush').hidden=true;
+  pushMessage('У встановленій вебапці немає доступу до Web Push. Перевір, що iOS 16.4+ і застосунок запущений через власну іконку.');
+  return;
  }
  try{
   pushReady=await navigator.serviceWorker.register('/companion-sw.js',{scope:'/'});
-  if(!installed()){pushMessage('Відкрий цей сайт у Safari → Поділитися → На початковий екран. Запусти встановлену іконку й увімкни сповіщення.');return;}
   if(!auth?.token)return;
   pushPublicKey=(await api('push-key')).publicKey;
   const sub=await pushReady.pushManager.getSubscription();
