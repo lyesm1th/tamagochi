@@ -1,0 +1,14 @@
+import {readFileSync} from 'node:fs';
+import {Script} from 'node:vm';
+import assert from 'node:assert/strict';
+const html=readFileSync(new URL('../public/companion.html',import.meta.url),'utf8');
+const js=html.match(/<script type="module">([\\s\\S]*?)<\\/script>/)?.[1];
+assert.ok(js,'companion module exists');
+new Script(js,{filename:'public/companion.html'});
+for(const name of ['feed','clean','pet','sleep'])assert.ok(html.includes('data-action="'+name+'"'),'missing '+name);
+assert.ok(js.includes('api(\'action\''),'actions use server API');
+assert.ok(js.includes('ctx.drawImage(img,x,y,w,h'),'atlas source crop is explicit');
+assert.ok(html.includes('companion.webmanifest'),'install manifest is linked');
+const manifest=JSON.parse(readFileSync(new URL('../public/companion.webmanifest',import.meta.url),'utf8'));
+assert.equal(manifest.start_url,'/companion.html');
+console.log('Companion page: syntax and route checks passed');
