@@ -1,0 +1,11 @@
+{
+  "name": "РАААРРРАГОЧІ · Мій пет",
+  "short_name": "РАААРРРАГОЧІ",
+  "description": "Синхронізований 2D-компаньйон Telegram-пета",
+  "start_url": "/companion.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#101d2b",
+  "theme_color": "#17283a",
+  "lang": "uk"
+}
