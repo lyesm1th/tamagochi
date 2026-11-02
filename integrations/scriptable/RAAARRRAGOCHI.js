@@ -1,4 +1,4 @@
-// РААААРРРАГОЧІ • free Scriptable iOS Home Screen widget, v0.2
+// РААААРРРАГОЧІ • free Scriptable iOS Home Screen widget, v0.3
 // Install: Scriptable > + > paste this script > save > add a Scriptable widget.
 // In Edit Widget, assign this script; set Parameter to e.g. "dino" or "cat|teen".
 // This first version is a read-only visual companion, NOT a live synchronized game.
@@ -49,15 +49,19 @@ w.setPadding(10,10,10,10);
 w.addSpacer();
 if(source){
   // Crop the committed transparent atlas without changing the pet's original face.
-  const size=160,scale=Math.min(142/cell[2],142/cell[3]);
+  // First crop at source pixel coordinates, then let Scriptable fit the cropped actor.
+  // Drawing the whole atlas into a scaled Rect caused clipping on real iPhones.
   const ctx=new DrawContext();
-  ctx.size=new Size(size,size);ctx.opaque=false;ctx.respectScreenScale=true;
-  ctx.drawImageInRect(source,new Rect(
-    (size-cell[2]*scale)/2-cell[0]*scale,
-    (size-cell[3]*scale)/2-cell[1]*scale,
-    source.size.width*scale,source.size.height*scale
-  ));
-  const pet=w.addImage(ctx.getImage());pet.imageSize=new Size(106,106);pet.centerAlignImage();
+  ctx.size=new Size(cell[2],cell[3]);
+  ctx.opaque=false;
+  ctx.respectScreenScale=false;
+  ctx.drawImageAtPoint(source,new Point(-cell[0],-cell[1]));
+  const actor=ctx.getImage();
+  const maxWidth=116,maxHeight=112;
+  const factor=Math.min(maxWidth/cell[2],maxHeight/cell[3]);
+  const pet=w.addImage(actor);
+  pet.imageSize=new Size(Math.round(cell[2]*factor),Math.round(cell[3]*factor));
+  pet.centerAlignImage();
 }else{
   const t=w.addText("🐾 Немає з'єднання");t.textColor=Color.white();
 }
