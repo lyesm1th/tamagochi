@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {Script} from 'node:vm';
 import assert from 'node:assert/strict';
 const html=readFileSync(new URL('../public/companion.html',import.meta.url),'utf8');
-const js=html.match(/<script type="module">([\\s\\S]*?)<\\/script>/)?.[1];
+const js=html.split('<script type="module">')[1]?.split('</script>')[0];
 assert.ok(js,'companion module exists');
 new Script(js,{filename:'public/companion.html'});
 for(const name of ['feed','clean','pet','sleep'])assert.ok(html.includes('data-action="'+name+'"'),'missing '+name);
