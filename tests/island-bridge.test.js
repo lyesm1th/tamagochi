@@ -1,0 +1,47 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {validPushWardKey,islandContent,islandQuota,activateIsland,updateIsland,endIsland} from '../src/island-bridge.js';
+const KEY='hlk_'+'B'.repeat(32);
+const pet={name:'Чуча',species:'dog',age:'Дорослий',sleeping:false,dead:false,mood:{happy:23,hunger:96,clean:97,energy:78}};
+test('island bridge accepts only scoped format; never leaks keys into picture URL',()=>{
+ assert.equal(validPushWardKey(KEY),true);
+ assert.equal(validPushWardKey('hlk_abc'),false);
+ const payload=islandContent(pet,'https://pixel-pets.example.workers.dev');
+ assert.equal(payload.template,'generic');
+ assert.equal(payload.progress,.23);
+ assert.equal(payload.image_url,'https://pixel-pets.example.workers.dev/assets/island/adult/dog.png');
+ assert.equal(payload.compact_trailing_label,'23%');
+ assert.ok(!JSON.stringify(payload).includes(KEY));
+ assert.equal(islandContent({...pet,sleeping:true},'https://pixel-pets.example.workers.dev').image_url,'https://pixel-pets.example.workers.dev/assets/island/sleep/dog.png');
+ assert.throws(()=>islandContent(pet,'http://localhost'));
+});
+test('hard maximum 6 PushWard updates per UTC day; at least 30 min between sends',()=>{
+ const now=Date.parse('2026-11-02T21:00:00Z');
+ assert.equal(islandQuota({day:'2026-11-02',count:6,lastSent:0},now).allowed,false);
+ assert.equal(islandQuota({day:'2026-11-02',count:2,lastSent:now-300000},now).allowed,false);
+ assert.equal(islandQuota({day:'2026-11-02',count:2,lastSent:now-2000000},now).allowed,true);
+ assert.equal(islandQuota({day:'2026-11-01',count:6,lastSent:now-2000000},now).count,0);
+});
+test('PushWard REST integration starts, updates and ends an activity without leaking token',async()=>{
+ const original=globalThis.fetch,calls=[];
+ try{
+  globalThis.fetch=async(url,options)=>{
+   calls.push({url,options});
+   if(url.endsWith('/auth/me'))return Response.json({id:'test'}, {status:200});
+   if(options.method==='POST')return Response.json({slug:'raaarrr-pet'}, {status:201});
+   return Response.json({state:'ongoing'},{status:200});
+  };
+  const started=await activateIsland(KEY,pet,'https://pixel-pets.example.workers.dev');
+  assert.equal(started.ok,true);
+  assert.deepEqual(calls.map(c=>c.options.method),['GET','POST','PATCH']);
+  assert.deepEqual(calls.map(c=>new URL(c.url).hostname),['api.pushward.app','api.pushward.app','api.pushward.app']);
+  assert.equal(calls[2].options.headers['Content-Type'],'application/merge-patch+json');
+  const pushed=JSON.parse(calls[2].options.body);
+  assert.equal(pushed.state,'ongoing');
+  assert.equal(pushed.content.image_url,'https://pixel-pets.example.workers.dev/assets/island/adult/dog.png');
+  assert.equal((await endIsland(KEY)).ok,true);
+  assert.equal(JSON.parse(calls.at(-1).options.body).state,'ended');
+  assert.equal((await updateIsland(KEY,{...pet,dead:true},'https://pixel-pets.example.workers.dev')).ok,true);
+  assert.equal(JSON.parse(calls.at(-1).options.body).state,'ended');
+ }finally{globalThis.fetch=original}
+});
