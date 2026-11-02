@@ -1,4 +1,4 @@
-// РААААРРРАГОЧІ • Scriptable v1.2: real Telegram synced pet and care.
+// РААААРРРАГОЧІ • Scriptable v1.3: real Telegram synced pet and care.
 // Setup: Run inside Scriptable once, paste pairing from Telegram game button.
 const fm=FileManager.local(),file=fm.joinPath(fm.documentsDirectory(),"raaarrragochi-pairing.json");
 const names={chicken:"Курочка",cat:"Котик",corgi:"Коргі",frog:"Жабка",bear:"Ведмедик",dog:"Корівка",dino:"Динозаврик",bunny:"Кролик",pig:"Порося",sheep:"Вівця",fox:"Лисичка",monkey:"Мавпа",duck:"Качка",penguin:"Пінгвін"};
@@ -48,7 +48,7 @@ function atlasFor(p){
 async function portrait(p){
  const a=atlasFor(p);
  // v2 cache: older Scriptable drawings could contain neighboring sprites.
- const cache=fm.joinPath(fm.documentsDirectory(),"pet-canvas-v2-"+a.file+"-"+p.species+".png");
+ const cache=fm.joinPath(fm.documentsDirectory(),"pet-canvas-v3-"+a.file+"-"+p.species+".png");
  if(fm.fileExists(cache))return fm.readImage(cache);
  const r=new Request(assets+a.file);r.timeoutInterval=20;
  const data=await r.load();
@@ -84,7 +84,7 @@ async function show(){
  if(choice===4){await show();return;}
  if(choice>=0&&choice<=3){
   const action=["feed","clean","pet","sleep"][choice];
-  const id=UUID.string().replace(/-/g,"");
+  const id="w"+Date.now().toString(36)+Math.random().toString(36).slice(2,14);
   try{const updated=await call("action",{action},id);await notice(p.name,updated.text||"Готово!");}
   catch(e){await notice("Дію не підтверджено",e.message+"\nПовтори перевірку стану в Telegram перед новою спробою.");}
  }
@@ -101,9 +101,9 @@ if(!config.runsInWidget){
  try{if(cfg.token)pet=(await call("state")).pet;else error="Спочатку запусти скрипт";}catch(e){error="Немає зв'язку";} 
  const family=config.widgetFamily||"small";
  if(pet){
-  const title=widget.addText("🐾 "+pet.name);title.font=Font.boldSystemFont(12);title.textColor=Color.white();
+  const title=widget.addText("🐾 "+pet.name+" · v1.3");title.font=Font.boldSystemFont(12);title.textColor=Color.white();
   if(family!=="accessoryInline"){
-   try{const im=widget.addImage(await portrait(pet));im.centerAlignImage();im.imageSize=family.startsWith("accessory")?new Size(36,44):new Size(93,98);}catch{}
+   try{const im=widget.addImage(await portrait(pet));im.centerAlignImage();im.imageSize=family.startsWith("accessory")?new Size(36,44):new Size(93,98);}catch(e){const t=widget.addText("Помилка графіки: "+e.message);t.textColor=Color.white();}
   }
   if(!family.startsWith("accessory")){
    const status=widget.addText("🍗 "+pet.mood.hunger+"%   🧹 "+pet.mood.clean+"%");
