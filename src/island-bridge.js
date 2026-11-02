@@ -27,30 +27,55 @@ export function islandContent(pet,origin){
   image_shape:'square',compact_trailing_label:sleeping?'💤':p+'%'
  };
 }
-async function send(key,path,method,body){
- const controller=AbortSignal.timeout(8000);
- const response=await fetch(BASE+path,{
-  method,headers:{'Authorization':'Bearer '+key,'Content-Type':method==='PATCH'?'application/merge-patch+json':'application/json'},
-  body:body===undefined?undefined:JSON.stringify(body),
-  signal:controller,redirect:'error'
- });
+// Surface safe diagnostic categories only. Never reflect keys, full URLs or remote response bodies.
+export class PushWardTransportError extends Error {
+ constructor(stage,cause){
+  super('PushWard request did not complete');
+  this.name='PushWardTransportError';
+  this.stage=stage;
+  this.reason=String(cause?.name||'')==='TimeoutError'||String(cause?.name||'')==='AbortError'?'timeout':'network';
+ }
+}
+async function requestProvider(path,method,body,key=null){
+ const stage=path==='/auth/me'?'authentication':path==='/activities'?'create_activity':path==='/health'?'health':'update_activity';
+ let response;
+ try{
+  response=await fetch(BASE+path,{
+   method,headers:key?{'Authorization':'Bearer '+key,'Content-Type':method==='PATCH'?'application/merge-patch+json':'application/json'}:{'Accept':'application/json'},
+   body:body===undefined?undefined:JSON.stringify(body),
+   signal:AbortSignal.timeout(8000),redirect:'error'
+  });
+ }catch(e){throw new PushWardTransportError(stage,e);}
  let data;try{data=await response.json();}catch{data={};}
- return {status:response.status,ok:response.ok,detail:typeof data?.error==='string'?data.error:null};
+ return {
+  status:response.status,ok:response.ok,
+  code:typeof data?.code==='string'?data.code.slice(0,96):null,
+  detail:typeof data?.detail==='string'?data.detail.slice(0,180):typeof data?.error==='string'?data.error.slice(0,180):null
+ };
+}
+const send=(key,path,method,body)=>requestProvider(path,method,body,key);
+export async function checkPushWardHealth(){
+ try{
+  const res=await requestProvider('/health','GET');
+  return {ok:res.ok,status:res.status,reason:res.ok?null:'provider_http_error'};
+ }catch(e){
+  return {ok:false,stage:e.stage||'health',reason:e.reason||'unknown'};
+ }
 }
 export async function activateIsland(key,pet,origin){
  if(!validPushWardKey(key))return {ok:false,status:400,detail:'Недійсний формат ключа PushWard'};
  if(!pet||pet.dead)return {ok:false,status:400,detail:'Немає активного пета'};
  const profile=await send(key,'/auth/me','GET');
- if(!profile.ok)return {ok:false,status:profile.status,detail:'Не вдалось підтвердити ключ PushWard'};
+ if(!profile.ok)return {ok:false,status:profile.status,stage:'authentication',code:profile.code,detail:profile.status===401?'PushWard відхилив ключ (401). Спробуй створити новий у застосунку.':profile.status===403?'Ключ PushWard не має необхідних дозволів (403).':profile.detail||'Не вдалось підтвердити ключ PushWard'};
  const created=await send(key,'/activities','POST',{slug:SLUG,name:clean(pet.name)});
- if(!created.ok&&created.status!==409)return {ok:false,status:created.status,detail:created.detail||'Не вдалось створити Live Activity'};
+ if(!created.ok&&created.status!==409)return {ok:false,status:created.status,stage:'create_activity',code:created.code,detail:created.detail||'Не вдалось створити Live Activity'};
  return updateIsland(key,pet,origin);
 }
 export async function updateIsland(key,pet,origin){
  if(!validPushWardKey(key))return {ok:false,status:400,detail:'Invalid PushWard key'};
  if(!pet)return {ok:false,status:400,detail:'No active pet'};
  const result=await send(key,'/activities/'+SLUG,'PATCH',pet.dead?{state:'ended'}:{state:'ongoing',content:islandContent(pet,origin)});
- return result;
+ return {...result,stage:'update_activity'};
 }
 export async function endIsland(key){
  if(!validPushWardKey(key))return {ok:false,status:400};
