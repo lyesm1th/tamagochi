@@ -1,3 +1,4 @@
+import {generateVapid,validateSubscription,pushToDevice} from './web-push.js';
 import {mobilePetSnapshot} from '../public/mobile-pet-snapshot.js';
 import {petInitiative} from '../public/pet-initiative.js';
 import {requestOnce,requestSignature,protectedRequest,validRequestId} from './request-receipts.js';
@@ -49,10 +50,10 @@ export default {async fetch(req,env){
   const token=req.headers.get('Authorization')?.replace(/^Bearer /i,'')||'';
   const match=/^([0-9]+)[.]([a-f0-9]{64})$/.exec(token);
   if(!match)return json({error:'Pair the widget in Telegram first'},401);
-  if(!['/api/widget/state','/api/widget/action'].includes(url.pathname))return json({error:'Not found'},404);
-  let body;try{body=await req.text();if(body.length>2048)return json({error:'Too large'},413);}catch{return json({error:'Bad request'},400);}
+  if(!['/api/widget/state','/api/widget/action','/api/widget/push-key','/api/widget/push-subscribe','/api/widget/push-unsubscribe','/api/widget/push-test'].includes(url.pathname))return json({error:'Not found'},404);
+  let body;try{body=await req.text();if(body.length>8192)return json({error:'Too large'},413);}catch{return json({error:'Bad request'},400);}
   const uid=match[1];
-  return env.PETS.get(env.PETS.idFromName(uid)).fetch(new Request('https://pet/internal/widget/'+url.pathname.split('/').at(-1),{method:'POST',headers:{'X-Widget-Token':token,'X-Request-ID':req.headers.get('X-Request-ID')||''},body}));
+  return env.PETS.get(env.PETS.idFromName(uid)).fetch(new Request('https://pet/internal/widget/'+url.pathname.split('/').at(-1),{method:'POST',headers:{'X-Widget-Token':token,'X-Companion-Origin':url.origin,'X-Request-ID':req.headers.get('X-Request-ID')||''},body}));
  }
  if(url.pathname==='/api/health')return json({ok:true});
  if(url.pathname.startsWith('/api/')){
@@ -83,13 +84,54 @@ export class PetRoom{
   const secret=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
   const token=req.headers.get('X-Pet-Owner')+'.'+secret;
   await this.ctx.storage.put('widget-access',{hash:await requestSignature('widget',secret),created:Date.now()});
+  // Pairing a different phone revokes the former phone's notification subscription.
+  await this.ctx.storage.delete('push-subscription');
+  const pushPrefs=await this.ctx.storage.get('push-reminders')||{};pushPrefs.enabled=false;
+  await this.ctx.storage.put('push-reminders',pushPrefs);
+  await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
   return json({token});
  }
- if(path==='/internal/widget/state'||path==='/internal/widget/action'){
+ if(['/internal/widget/state','/internal/widget/action','/internal/widget/push-key','/internal/widget/push-subscribe','/internal/widget/push-unsubscribe','/internal/widget/push-test'].includes(path)){
   const token=req.headers.get('X-Widget-Token')||'';
   const secret=token.split('.')[1]||'';
   const record=await this.ctx.storage.get('widget-access');
   if(!record||Date.now()-record.created>90*86400000||await requestSignature('widget',secret)!==record.hash)return json({error:'Widget access expired; pair again'},401);
+  if(path==='/internal/widget/push-key'){
+   return json({publicKey:(await this.vapid()).publicKey});
+  }
+  if(path==='/internal/widget/push-subscribe'){
+   if(!validateSubscription(body.subscription))return json({error:'Invalid push subscription'},400);
+   const appOrigin=req.headers.get('X-Companion-Origin')||'';
+   if(!/^https:\/\/[^/]+$/.test(appOrigin))return json({error:'Invalid app origin'},400);
+   await this.vapid();
+   const previous=await this.ctx.storage.get('push-subscription');
+   const unchanged=previous?.endpoint===body.subscription.endpoint&&previous?.keys?.p256dh===body.subscription.keys.p256dh;
+   await this.ctx.storage.put('push-subscription',{endpoint:body.subscription.endpoint,keys:{p256dh:body.subscription.keys.p256dh,auth:body.subscription.keys.auth},origin:appOrigin});
+   const prefs=await this.ctx.storage.get('push-reminders')||{enabled:false,timezone:'Europe/Kyiv'};
+   prefs.enabled=true;prefs.timezone=safeZone(body.timezone||prefs.timezone||'Europe/Kyiv');if(!unchanged)prefs.pendingAt=0;
+   await this.ctx.storage.put('push-reminders',prefs);
+   await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
+   return json({ok:true,enabled:true});
+  }
+  if(path==='/internal/widget/push-unsubscribe'){
+   await this.ctx.storage.delete('push-subscription');
+   const prefs=await this.ctx.storage.get('push-reminders')||{};prefs.enabled=false;prefs.pendingAt=0;
+   await this.ctx.storage.put('push-reminders',prefs);
+   await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
+   return json({ok:true,enabled:false});
+  }
+  if(path==='/internal/widget/push-test'){
+   const sub=await this.ctx.storage.get('push-subscription');
+   if(!sub)return json({error:'Увімкни сповіщення на домашньому екрані'},400);
+   const now=Date.now(),last=await this.ctx.storage.get('push-test-last')||0;
+   if(now-last<60000)return json({error:'Тест можна надсилати раз на хвилину'},429);
+   await this.ctx.storage.put('push-test-last',now);
+   try{
+    const res=await pushToDevice(sub,await this.vapid(),{title:'🐾 РААААРРРАГОЧІ',body:'Я тут! І так, це справжнє сповіщення від твого пета.',url:'/companion.html'},sub.origin);
+    if(res.status===404||res.status===410){await this.ctx.storage.delete('push-subscription');return json({error:'Підписка застаріла. Увімкни сповіщення знову.'},410);}
+    return json({ok:res.ok,status:res.status},res.ok?200:502);
+   }catch(e){console.error('Push test failed',e?.name,e?.message);return json({error:'Служба сповіщень не прийняла повідомлення'},503);}
+  }
   if(path==='/internal/widget/state'){
    const pet=tick(await this.ctx.storage.get('pet'));
    if(pet)await this.ctx.storage.put('pet',pet);
@@ -104,6 +146,7 @@ export class PetRoom{
    const outcome=act(pet,body.action,Date.now(),{});
    if(outcome.error)return json({error:outcome.error},400);
    await this.ctx.storage.put('pet',outcome.state);
+   await this.schedule(outcome.state,await this.ctx.storage.get('reminders')||{enabled:false});
    return json({text:outcome.text,...mobilePetSnapshot(outcome.state)});
   });
  }
@@ -159,28 +202,82 @@ export class PetRoom{
  async archive(s,outcome=s.endReason||'death',record=null){
  const key='album:'+String(s.born).padStart(16,'0')+':'+petId(s);if(!await this.ctx.storage.get(key))await this.ctx.storage.put(key,record||snapshot(s,outcome));
  }
+ async vapid(){
+  let pair=await this.ctx.storage.get('push-vapid');
+  if(!pair){pair=await generateVapid();await this.ctx.storage.put('push-vapid',pair);}
+  return pair;
+ }
  async schedule(s,p){
- const planned=planReminder(s,p);await this.ctx.storage.put('reminders',planned.prefs);
- if(planned.next!==null){await this.ctx.storage.setAlarm(Math.max(Date.now()+1000,planned.next));}else if(this.ctx.storage.deleteAlarm){await this.ctx.storage.deleteAlarm();}
+  const now=Date.now();
+  const telegram=planReminder(s,p,now);await this.ctx.storage.put('reminders',telegram.prefs);
+  const pushPrefs=await this.ctx.storage.get('push-reminders')||{enabled:false,timezone:'Europe/Kyiv'};
+  const subscribed=await this.ctx.storage.get('push-subscription');
+  if(!subscribed)pushPrefs.enabled=false;
+  const push=planReminder(s,pushPrefs,now);await this.ctx.storage.put('push-reminders',push.prefs);
+  const times=[telegram.next,push.next].filter(t=>t!==null&&Number.isFinite(t));
+  if(times.length)await this.ctx.storage.setAlarm(Math.max(now+1000,Math.min(...times)));
+  else if(this.ctx.storage.deleteAlarm)await this.ctx.storage.deleteAlarm();
  }
  async alarm(){
- const delivery=await this.ctx.blockConcurrencyWhile(async()=>{
- const now=Date.now();let s=tick(await this.ctx.storage.get('pet'),now);const p=await this.ctx.storage.get('reminders')||{enabled:false};
- if(s?.dead)await this.archive(s);if(s)await this.ctx.storage.put('pet',s);
- const planned=planReminder(s,p,now);let prefs=planned.prefs;
- if(!planned.key){await this.ctx.storage.put('reminders',prefs);if(planned.next!==null)await this.ctx.storage.setAlarm(Math.max(now+1000,planned.next));return;}
- if(!this.env.BOT_TOKEN){await this.ctx.storage.setAlarm(now+60*60000);return;}
- // Reserve before sending: alarm retries cannot duplicate a reminder.
- prefs.lastSent=now;prefs.day=localClock(now,prefs.timezone).day;prefs.count=(prefs.count||0)+1;prefs.pendingAt=0;
- await this.ctx.storage.put('reminders',prefs);await this.schedule(s,prefs);
- const list=reminderLines[planned.key],text=s.name+': '+list[Math.floor(Math.random()*list.length)];
- const body={chat_id:prefs.userId,text};
- if(prefs.appUrl&&/^https:\/\//.test(prefs.appUrl))body.reply_markup={inline_keyboard:[[{text:'🐾 До пета',web_app:{url:prefs.appUrl}}]]};
- return {body,sentAt:now};
- });
- if(!delivery)return;
- // External network latency must not block requests to this pet.
- try{const response=await fetch('https://api.telegram.org/bot'+this.env.BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(delivery.body),signal:AbortSignal.timeout(10000)});const result=await response.json();if(result.error_code===403||result.error_code===400){await this.ctx.blockConcurrencyWhile(async()=>{const current=await this.ctx.storage.get('reminders');if(current?.lastSent===delivery.sentAt){current.enabled=false;await this.ctx.storage.put('reminders',current);await this.ctx.storage.deleteAlarm();}});}}catch{/* Reserved next window prevents duplicate sends. */}
+  const due=await this.ctx.blockConcurrencyWhile(async()=>{
+   const now=Date.now(),pet=tick(await this.ctx.storage.get('pet'),now);
+   if(pet?.dead)await this.archive(pet);
+   if(pet)await this.ctx.storage.put('pet',pet);
+   const tgPrefs=await this.ctx.storage.get('reminders')||{enabled:false};
+   const pushPrefs=await this.ctx.storage.get('push-reminders')||{enabled:false,timezone:'Europe/Kyiv'};
+   const subscription=await this.ctx.storage.get('push-subscription');
+   const t=planReminder(pet,tgPrefs,now);
+   const p=planReminder(pet,subscription?pushPrefs:{...pushPrefs,enabled:false},now);
+   const reserve=(result)=>{
+    const prefs=result.prefs;
+    prefs.lastSent=now;prefs.day=localClock(now,prefs.timezone).day;
+    prefs.count=(prefs.count||0)+1;prefs.pendingAt=0;
+    return prefs;
+   };
+   const sendTelegram=t.key&&this.env.BOT_TOKEN&&t.prefs.userId;
+   const sendPush=Boolean(p.key&&subscription);
+   const telegram=sendTelegram?{key:t.key,prefs:reserve(t)}:null;
+   const push=sendPush?{key:p.key,prefs:reserve(p)}:null;
+   await this.ctx.storage.put('reminders',telegram?.prefs||t.prefs);
+   await this.ctx.storage.put('push-reminders',push?.prefs||p.prefs);
+   await this.schedule(pet,telegram?.prefs||t.prefs);
+   if(!telegram&&!push)return null;
+   const pick=key=>reminderLines[key][Math.floor(Math.random()*reminderLines[key].length)];
+   return {
+    telegram:telegram?{body:{chat_id:telegram.prefs.userId,text:pet.name+': '+pick(telegram.key)},sentAt:now,appUrl:telegram.prefs.appUrl}:null,
+    push:push?{subscription,payload:{title:'🐾 '+pet.name,body:pick(push.key),url:'/companion.html',kind:push.key},sentAt:now}:null
+   };
+  });
+  if(!due)return;
+  // External HTTP requests run outside blockConcurrencyWhile.
+  if(due.telegram){
+   const msg=due.telegram;
+   if(msg.appUrl&&/^https:\/\//.test(msg.appUrl))msg.body.reply_markup={inline_keyboard:[[{text:'🐾 До пета',web_app:{url:msg.appUrl}}]]};
+   try{
+    const response=await fetch('https://api.telegram.org/bot'+this.env.BOT_TOKEN+'/sendMessage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(msg.body),signal:AbortSignal.timeout(10000)});
+    const result=await response.json();
+    if(result.error_code===403||result.error_code===400)await this.ctx.blockConcurrencyWhile(async()=>{
+     const prefs=await this.ctx.storage.get('reminders');
+     if(prefs?.lastSent===msg.sentAt){prefs.enabled=false;await this.schedule(await this.ctx.storage.get('pet'),prefs);}
+    });
+   }catch{/* Reserved window prevents duplicate sends. */}
+  }
+  if(due.push){
+   try{
+    const pair=await this.ctx.storage.get('push-vapid');
+    const res=await pushToDevice(due.push.subscription,pair,due.push.payload,due.push.subscription.origin);
+    if(res.status===404||res.status===410)await this.ctx.blockConcurrencyWhile(async()=>{
+     const saved=await this.ctx.storage.get('push-subscription');
+     if(saved?.endpoint===due.push.subscription.endpoint){
+      await this.ctx.storage.delete('push-subscription');
+      const pp=await this.ctx.storage.get('push-reminders')||{};pp.enabled=false;
+      await this.ctx.storage.put('push-reminders',pp);
+      await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
+     }
+    });
+   }catch(e){console.error('Web Push delivery failure',e?.name,e?.message);}
+  }
  }
+
 
 }
