@@ -71,7 +71,7 @@ export default {async fetch(req,env){
  const id=env.PETS.idFromName(String(user.id));
  return env.PETS.get(id).fetch(new Request('https://pet'+url.pathname,{method:'POST',headers:{'X-Pet-Owner':String(user.id),'X-Pet-App':url.origin,'X-Request-ID':req.headers.get('X-Request-ID')||''},body:await req.text()}));
  }
- const asset=await env.ASSETS.fetch(req);if(url.pathname==='/'||url.pathname==='/index.html'){const headers=new Headers(asset.headers);headers.set('Cache-Control','no-store');return new Response(asset.body,{status:asset.status,headers});}return asset;
+ const asset=await env.ASSETS.fetch(req);if(url.pathname==='/'||url.pathname==='/index.html'||url.pathname==='/companion.html'){const headers=new Headers(asset.headers);headers.set('Cache-Control','no-store');return new Response(asset.body,{status:asset.status,headers});}return asset;
 }};
 export class PetRoom{
  constructor(ctx,env={}){this.ctx=ctx;this.env=env;}
