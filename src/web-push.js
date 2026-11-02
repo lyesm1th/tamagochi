@@ -58,7 +58,7 @@ export async function pushToDevice(subscription,vapid,payload,contact){
  const sig=new Uint8Array(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},key,utf8(data)));
  const jwt=data+'.'+base64(sig);
  const body=await encodePushPayload(subscription,payload);
- return fetch(endpoint.href,{method:'POST',redirect:'error',headers:{
+ return fetch(endpoint.href,{method:'POST',redirect:'manual',headers:{
   'Authorization':'vapid t='+jwt+', k='+vapid.publicKey,
   'Content-Encoding':'aes128gcm','Content-Type':'application/octet-stream',
   'TTL':'3600','Urgency':'normal'
