@@ -84,6 +84,11 @@ export class PetRoom{
   const secret=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
   const token=req.headers.get('X-Pet-Owner')+'.'+secret;
   await this.ctx.storage.put('widget-access',{hash:await requestSignature('widget',secret),created:Date.now()});
+  // Pairing a different phone revokes the former phone's notification subscription.
+  await this.ctx.storage.delete('push-subscription');
+  const pushPrefs=await this.ctx.storage.get('push-reminders')||{};pushPrefs.enabled=false;
+  await this.ctx.storage.put('push-reminders',pushPrefs);
+  await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
   return json({token});
  }
  if(path==='/internal/widget/state'||path==='/internal/widget/action'){
@@ -139,6 +144,7 @@ export class PetRoom{
    const outcome=act(pet,body.action,Date.now(),{});
    if(outcome.error)return json({error:outcome.error},400);
    await this.ctx.storage.put('pet',outcome.state);
+   await this.schedule(outcome.state,await this.ctx.storage.get('reminders')||{enabled:false});
    return json({text:outcome.text,...mobilePetSnapshot(outcome.state)});
   });
  }
