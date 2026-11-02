@@ -21,3 +21,13 @@
 - The key exists only in the user's Durable Object storage. All management routes require the same signed widget pairing token. A new pairing disables the previous device and ends its activity. Do not share or commit API keys.
 - The bridge makes server-to-server requests only to `https://api.pushward.app`. Cloudflare actions and game progress stay on the original Worker and Durable Object.
 - GitHub CI proves code and image builds; **real iPhone/PushWard delivery must be tested manually**. Cloudflare deployment is separate from merging GitHub.
+
+## Native care buttons (interactive Steps template)
+
+The adapter now uses PushWard's `steps` Live Activity template. On iPhone, **touch and hold Dynamic Island** to expand it. The Lock Screen card also has action buttons. In the expanded view, **🍗 Годувати** and **❤️ Погладити** issue silent POST requests to the same Cloudflare pet Durable Object; the first action becomes **🧹 Прибрати** when cleanliness is critically low or **☀️ Розбудити** while the pet sleeps. Actions apply existing education, affection, mood, refusal and aging rules in `act()`. They are not fake client-side counters.
+
+PushWard native webhook support is version-dependent. Update the iOS PushWard app to a release that supports `url_action` / `secondary_url_action` for `steps` in expanded Dynamic Island. If buttons do not render, verify the activity's API state and the installed PushWard version.
+
+No Telegram token, web-app pairing token or PushWard provider key is included in the action content. The only embedded credential is a random per-pet care-only token, sent in `X-Pet-Care-Key` on each HTTP POST. It expires after 12 hours (and is rotated on server-side refresh) and is revoked on disconnect or new pairing. It cannot perform shop, wallet, admin, or Telegram operations. The server rate-limits rapid repeats to one care action per 8 seconds. Native actions update the pet immediately; PushWard artwork/status refresh is subject to the existing free-tier budget, so it may lag behind the saved state.
+
+If you previously connected the generic Live Activity, tap **↻ Оновити острівець / 🛠️ Увімкнути кнопки** in the installed companion. The next provider PATCH upgrades it to `steps`, no second PushWard key is needed. Unpairing revokes both care buttons.

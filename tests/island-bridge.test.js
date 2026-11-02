@@ -7,7 +7,9 @@ test('island bridge accepts only scoped format; never leaks keys into picture UR
  assert.equal(validPushWardKey(KEY),true);
  assert.equal(validPushWardKey('hlk_abc'),false);
  const payload=islandContent(pet,'https://pixel-pets.example.workers.dev');
- assert.equal(payload.template,'generic');
+ assert.equal(payload.template,'steps');
+ assert.equal(payload.total_steps,4);
+ assert.equal(payload.current_step,4);
  assert.equal(payload.progress,.23);
  assert.equal(payload.image_url,'https://pixel-pets.example.workers.dev/assets/island/adult/dog.png');
  assert.equal(payload.compact_trailing_label,'23%');
@@ -40,6 +42,7 @@ test('PushWard REST integration starts, updates and ends an activity without lea
   const pushed=JSON.parse(calls[2].options.body);
   assert.equal(pushed.state,'ongoing');
   assert.equal(pushed.content.image_url,'https://pixel-pets.example.workers.dev/assets/island/adult/dog.png');
+  assert.equal(pushed.content.template,'steps');
   assert.equal((await endIsland(KEY)).ok,true);
   assert.equal(JSON.parse(calls.at(-1).options.body).state,'ended');
   assert.equal((await updateIsland(KEY,{...pet,dead:true},'https://pixel-pets.example.workers.dev')).ok,true);
@@ -93,4 +96,14 @@ test('PushWard provider redirects never forward integration token to another hos
    {url:'https://api.pushward.app/auth/me',redirect:'manual'}
   ]);
  }finally{globalThis.fetch=original}
+});
+
+test('Steps Live Activity accepts two native background webhook action objects',async()=>{
+ const primary={url:'https://pets.example/api/island/care/777',method:'POST',foreground:false,headers:{'X-Pet-Care-Key':'x'},body:'{"action":"feed"}',title:'Годувати',icon:'fork.knife'};
+ const secondary={...primary,body:'{"action":"pet"}',title:'Погладити'};
+ const content=islandContent(pet,'https://pets.example',{primary,secondary});
+ assert.equal(content.template,'steps');
+ assert.deepEqual(content.url_action,primary);
+ assert.deepEqual(content.secondary_url_action,secondary);
+ assert.equal(content.tap_action.url,'https://pets.example/companion.html');
 });

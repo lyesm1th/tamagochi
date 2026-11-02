@@ -24,6 +24,8 @@ assert.ok(js.includes("api('island/connect'"),'native activity connection goes t
 assert.ok(js.includes("api('island/disconnect'"),'user can revoke the external bridge');
 assert.ok(js.includes("api('island/status'"),'UI reads live connection status');
 assert.ok(js.includes("api('island/diagnostics'"),'paired iPhone can safely check PushWard connection');
+assert.ok(html.includes('Затисни Dynamic Island'),'explain long-press native care action discovery');
+assert.ok(js.includes("status.interactive"),'detect whether older activities need interactive upgrade');
 assert.ok(html.includes('id="islandDiagnostic"'),'iPhone has diagnostic button');
 assert.ok(html.includes('id="installDirections"'),'browser-only iPhone install instructions exist');
 const pushInitializer=js.slice(js.indexOf('async function registerPush(){'),js.indexOf("$('enablePush').onclick"));
