@@ -1,13 +1,15 @@
 import {readFileSync} from 'node:fs';
 import {Script} from 'node:vm';
+import {transformSync} from 'esbuild';
 import assert from 'node:assert/strict';
 const html=readFileSync(new URL('../public/companion.html',import.meta.url),'utf8');
 const js=html.split('<script type="module">')[1]?.split('</script>')[0];
 assert.ok(js,'companion module exists');
-new Script(js,{filename:'public/companion.html'});
+transformSync(js,{sourcefile:'public/companion.html',loader:'js',format:'esm',target:'es2022'});
 for(const name of ['feed','clean','pet','sleep'])assert.ok(html.includes('data-action="'+name+'"'),'missing '+name);
 assert.ok(js.includes('api(\'action\''),'actions use server API');
 assert.ok(js.includes('ctx.drawImage(img,x,y,w,h'),'atlas source crop is explicit');
+assert.ok(js.includes("detailedArt[key]"),'pet art comes from the game atlas manifest');
 assert.ok(html.includes('companion.webmanifest'),'install manifest is linked');
 const manifest=JSON.parse(readFileSync(new URL('../public/companion.webmanifest',import.meta.url),'utf8'));
 assert.equal(manifest.start_url,'/companion.html');
