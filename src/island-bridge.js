@@ -13,19 +13,21 @@ function serviceOrigin(origin){
  if(url.protocol!=='https:'||url.username||url.password)throw Error('HTTPS is required for Live Activities');
  return url.origin;
 }
-export function islandContent(pet,origin){
+export function islandContent(pet,origin,buttons=null){
  const host=serviceOrigin(origin);
  const v=pet.mood||{},name=clean(pet.name||'Пет');
  const p=pct(v.happy),sleeping=Boolean(pet.sleeping);
  const state=sleeping?'💤 Дрімаю':p<30?'🥺 Сумую':pct(v.hunger)<40?'🍗 Хочу їсти':'🐾 Я тут!';
  const visual=sleeping?'sleep':stage(pet.age);
  const species=String(pet.species||'dino').replace(/[^a-z]/g,'');
- return {
-  template:'generic',state,subtitle:'🍗 '+pct(v.hunger)+'% · 🧹 '+pct(v.clean)+'% · ❤️ '+p+'%',
+ const content={
+  template:'steps',current_step:({'Малюк':1,'Дитина':2,'Підліток':3,'Дорослий':4,'Старенький':4})[pet.age]||3,total_steps:4,step_labels:['Малюк','Дитина','Підліток','Дорослий'],state,subtitle:'🍗 '+pct(v.hunger)+'% · 🧹 '+pct(v.clean)+'% · ❤️ '+p+'%',
   progress:p/100,accent_color:p<35?'orange':'green',
   image_url:host+'/assets/island/'+visual+'/'+species+'.png',
   image_shape:'square',compact_trailing_label:sleeping?'💤':p+'%'
  };
+ if(buttons){content.url_action=buttons.primary;content.secondary_url_action=buttons.secondary;content.tap_action={url:host+'/companion.html',foreground:true};}
+ return content;
 }
 // Surface safe diagnostic categories only. Never reflect keys, full URLs or remote response bodies.
 export class PushWardTransportError extends Error {
@@ -62,19 +64,19 @@ export async function checkPushWardHealth(){
   return {ok:false,stage:e.stage||'health',reason:e.reason||'unknown'};
  }
 }
-export async function activateIsland(key,pet,origin){
+export async function activateIsland(key,pet,origin,buttons=null){
  if(!validPushWardKey(key))return {ok:false,status:400,detail:'Недійсний формат ключа PushWard'};
  if(!pet||pet.dead)return {ok:false,status:400,detail:'Немає активного пета'};
  const profile=await send(key,'/auth/me','GET');
  if(!profile.ok)return {ok:false,status:profile.status,stage:'authentication',code:profile.code,detail:profile.status===401?'PushWard відхилив ключ (401). Спробуй створити новий у застосунку.':profile.status===403?'Ключ PushWard не має необхідних дозволів (403).':profile.detail||'Не вдалось підтвердити ключ PushWard'};
  const created=await send(key,'/activities','POST',{slug:SLUG,name:clean(pet.name)});
  if(!created.ok&&created.status!==409)return {ok:false,status:created.status,stage:'create_activity',code:created.code,detail:created.detail||'Не вдалось створити Live Activity'};
- return updateIsland(key,pet,origin);
+ return updateIsland(key,pet,origin,buttons);
 }
-export async function updateIsland(key,pet,origin){
+export async function updateIsland(key,pet,origin,buttons=null){
  if(!validPushWardKey(key))return {ok:false,status:400,detail:'Invalid PushWard key'};
  if(!pet)return {ok:false,status:400,detail:'No active pet'};
- const result=await send(key,'/activities/'+SLUG,'PATCH',pet.dead?{state:'ended'}:{state:'ongoing',content:islandContent(pet,origin)});
+ const result=await send(key,'/activities/'+SLUG,'PATCH',pet.dead?{state:'ended'}:{state:'ongoing',content:islandContent(pet,origin,buttons)});
  return {...result,stage:'update_activity'};
 }
 export async function endIsland(key){
