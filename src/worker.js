@@ -292,10 +292,11 @@ export class PetRoom{
   if(!config?.enabled)return;
   const quota=islandQuota(config);
   if(!quota.allowed&&!(interactive&&quota.count<6&&Date.now()-config.lastSent>=12000))return;
-  await this.ctx.storage.put('island-bridge',{...config,day:quota.day,count:quota.count+1,lastSent:Date.now()});
-  const snapshot=mobilePetSnapshot(pet).pet;
-  const freshToken=config.careToken&&Date.now()<(config.careTokenExpiresAt||0)?config.careToken:newIslandCareToken();
-  if(freshToken!==config.careToken){await this.ctx.storage.put('island-bridge',{...config,careToken:freshToken,careHash:await requestSignature('island-care',freshToken),careTokenExpiresAt:Date.now()+12*3600000});}
+  const now=Date.now(),snapshot=mobilePetSnapshot(pet).pet;
+  const freshToken=config.careToken&&now<(config.careTokenExpiresAt||0)?config.careToken:newIslandCareToken();
+  const next={...config,day:quota.day,count:quota.count+1,lastSent:now};
+  if(freshToken!==config.careToken){next.careToken=freshToken;next.careHash=await requestSignature('island-care',freshToken);next.careTokenExpiresAt=now+12*3600000;}
+  await this.ctx.storage.put('island-bridge',next);
   const buttons=config.ownerId?careButtons(config.origin,config.ownerId,freshToken,snapshot):null;
   this.ctx.waitUntil(updateIsland(config.key,snapshot,config.origin,buttons).then(result=>{
    if(!result.ok)console.error('Island update declined',result.status);
