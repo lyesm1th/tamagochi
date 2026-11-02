@@ -104,9 +104,11 @@ export class PetRoom{
    const appOrigin=req.headers.get('X-Companion-Origin')||'';
    if(!/^https:\/\/[^/]+$/.test(appOrigin))return json({error:'Invalid app origin'},400);
    await this.vapid();
+   const previous=await this.ctx.storage.get('push-subscription');
+   const unchanged=previous?.endpoint===body.subscription.endpoint&&previous?.keys?.p256dh===body.subscription.keys.p256dh;
    await this.ctx.storage.put('push-subscription',{endpoint:body.subscription.endpoint,keys:{p256dh:body.subscription.keys.p256dh,auth:body.subscription.keys.auth},origin:appOrigin});
    const prefs=await this.ctx.storage.get('push-reminders')||{enabled:false,timezone:'Europe/Kyiv'};
-   prefs.enabled=true;prefs.timezone=safeZone(body.timezone||prefs.timezone||'Europe/Kyiv');prefs.pendingAt=0;
+   prefs.enabled=true;prefs.timezone=safeZone(body.timezone||prefs.timezone||'Europe/Kyiv');if(!unchanged)prefs.pendingAt=0;
    await this.ctx.storage.put('push-reminders',prefs);
    await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
    return json({ok:true,enabled:true});
