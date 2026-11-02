@@ -1,4 +1,4 @@
-// РААААРРРАГОЧІ • free Scriptable iOS Home Screen widget, v0.3
+// РААААРРРАГОЧІ • free Scriptable iOS Home Screen widget, v0.4
 // Install: Scriptable > + > paste this script > save > add a Scriptable widget.
 // In Edit Widget, assign this script; set Parameter to e.g. "dino" or "cat|teen".
 // This first version is a read-only visual companion, NOT a live synchronized game.
@@ -43,6 +43,32 @@ try{
 }catch(e){
   if(fm.fileExists(cache))source=fm.readImage(cache);
 }
+// Lock Screen: compact rectangular widget using Scriptable's accessory family.
+// Keep the same original actor, without inventing a second game state.
+const family=config.widgetFamily||"";
+if(family==="accessoryRectangular"||family==="accessoryCircular"||family==="accessoryInline"){
+  const lock=new ListWidget();
+  if(family==="accessoryInline"){
+    lock.addText("🐾 "+names[id]);
+  }else{
+    const lay=lock.addStack();lay.centerAlignContent();lay.spacing=5;
+    if(source){
+      const crop=new DrawContext();crop.size=new Size(cell[2],cell[3]);crop.opaque=false;
+      crop.respectScreenScale=false;crop.drawImageAtPoint(source,new Point(-cell[0],-cell[1]));
+      const actor=crop.getImage();const side=family==="accessoryCircular"?44:48;
+      const factor=Math.min(side/cell[2],side/cell[3]);
+      const pic=lay.addImage(actor);pic.imageSize=new Size(Math.round(cell[2]*factor),Math.round(cell[3]*factor));
+    }
+    if(family==="accessoryRectangular"){
+      const txt=lay.addStack();txt.layoutVertically();
+      txt.addText(names[id]).font=Font.semiboldSystemFont(12);
+      txt.addText("РААААРРРАГОЧІ").font=Font.systemFont(9);
+    }
+  }
+  lock.refreshAfterDate=new Date(Date.now()+CONFIG.refreshMinutes*60000);
+  if(config.runsInWidget)Script.setWidget(lock);else await lock.presentAccessoryRectangular();
+  Script.complete();
+}else{
 const w=new ListWidget();
 w.backgroundColor=new Color("#16202c");
 w.setPadding(10,10,10,10);
@@ -76,3 +102,4 @@ w.refreshAfterDate=new Date(Date.now()+CONFIG.refreshMinutes*60000);
 if(config.runsInWidget)Script.setWidget(w);
 else await w.presentSmall();
 Script.complete();
+}
