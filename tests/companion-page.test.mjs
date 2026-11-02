@@ -11,4 +11,11 @@ assert.ok(js.includes('ctx.drawImage(img,x,y,w,h'),'atlas source crop is explici
 assert.ok(html.includes('companion.webmanifest'),'install manifest is linked');
 const manifest=JSON.parse(readFileSync(new URL('../public/companion.webmanifest',import.meta.url),'utf8'));
 assert.equal(manifest.start_url,'/companion.html');
-console.log('Companion page: syntax and route checks passed');
+const serviceWorker=readFileSync(new URL('../public/companion-sw.js',import.meta.url),'utf8');
+new Script(serviceWorker,{filename:'public/companion-sw.js'});
+assert.ok(serviceWorker.includes('showNotification'),'push handler shows visible notifications');
+assert.ok(js.includes("api('push-subscribe'"),'PWA subscribes to server push');
+assert.ok(js.includes('navigator.serviceWorker.register'),'PWA registers service worker');
+assert.ok(js.includes("Notification.requestPermission"),'permission requires explicit user action');
+assert.ok(manifest.icons?.[0]?.src==='/companion-icon.png','iOS web app icon');
+console.log('Companion page: syntax, offline shell and push hook checks passed');
