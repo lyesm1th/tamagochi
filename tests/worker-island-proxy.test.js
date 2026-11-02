@@ -108,7 +108,7 @@ test('native PushWard buttons change actual persistent pet state and reject repl
      storage:{get:async k=>data.get(k),put:async(k,v)=>data.set(k,v),delete:async k=>data.delete(k),setAlarm:async()=>{},deleteAlarm:async()=>{}},
      blockConcurrencyWhile:fn=>fn(),waitUntil:()=>{}
     },{}).fetch(r)
-   };}}}});
+   };}}});
    return {status:reply.status,data:await reply.json()};
   }
   assert.equal((await press(second,'b'.repeat(64))).status,401);
