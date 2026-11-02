@@ -11,13 +11,12 @@
 <div class="push" id="push-controls"><strong>🔔 Чуча на заблокованому екрані</strong><div class="push-actions"><button id="enablePush">Увімкнути сповіщення</button><button id="testPush" hidden>Надіслати тест</button><button id="disablePush" hidden>Вимкнути</button></div><small id="pushStatus" role="status">Сповіщення підтримуються у встановленій на домашній екран вебапці iPhone.</small></div><p role="status" id="status" class="muted"></p><button id="refresh">↻ Оновити стан</button></section>
 <footer class="muted">Той самий пет, що й у Telegram · 2D pixel art</footer></main>
 <script type="module">
+import {detailedArt} from '/detailed-art-manifest.js';
 const $=id=>document.getElementById(id),safe=()=>{try{return JSON.parse(localStorage.getItem('raaarrr-companion-v1'))}catch{return null}};
 let auth=safe(),current=null,busy=false,frame=0;
-const original={chicken:[419,11,121,181],cat:[192,11,182,176],corgi:[49,192,142,182],frog:[594,30,122,162],bear:[235,193,134,181],dog:[43,10,149,182],dino:[416,192,141,184],bunny:[600,192,115,184]};
 const newer=['pig','sheep','fox','monkey','duck','penguin'];
-const sets={baby:'babies.8683ba45b4dd.webp',child:'children.265722c3934d.webp',teen:'teens.6bb3b431b38e.webp',adult:'adults.803745932f0c.webp'};
-const newSets={baby:'new-babies.e475fff12b09.webp',child:'new-children.173bdbe3aabf.webp',teen:'new-teens.766f713547bf.webp',adult:'new-adults.fe3130d195c1.webp'};
 const imageCache=new Map();
+let actionPose='',poseUntil=0;
 let pushPublicKey=null,pushReady=null;
 function installed(){return window.navigator.standalone===true||matchMedia('(display-mode: standalone)').matches}
 function keyBytes(key){const raw=atob(key.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-key.length%4)%4));return Uint8Array.from(raw,x=>x.charCodeAt(0))}
@@ -71,14 +70,28 @@ function setView(){const linked=!!auth?.token;$('connect').style.display=linked?
 async function api(path,body={}){const requestId='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,14);const response=await fetch('/api/widget/'+path,{method:'POST',headers:{'Authorization':'Bearer '+auth.token,'Content-Type':'application/json','X-Request-ID':requestId},body:JSON.stringify({...body,requestId})});const data=await response.json().catch(()=>({error:'Некоректна відповідь сервера'}));if(!response.ok||data.error)throw Error(data.error||'Помилка сервера');return data}
 function stats(p){const rows=[['🍗 Голод','hunger'],['🧹 Чистота','clean'],['❤️ Настрій','happy'],['⚡ Енергія','energy']];$('stats').replaceChildren();for(const [label,key] of rows){const el=document.createElement('div');el.className='stat';const t=document.createElement('span');t.textContent=label+': '+p.mood[key]+'%';const bar=document.createElement('div');bar.className='bar';const fill=document.createElement('span');fill.style.width=p.mood[key]+'%';bar.append(fill);el.append(t,bar);$('stats').append(el)}}
 function stage(p){return {'Малюк':'baby','Дитина':'child','Підліток':'teen','Дорослий':'adult','Старенький':'adult'}[p.age]||'teen'}
-async function sprite(p){const fresh=newer.includes(p.species),age=stage(p);const name=fresh?newSets[age]:sets.teen,cell=fresh?[newer.indexOf(p.species)*192,0,192,192]:(original[p.species]||original.dino);if(!imageCache.has(name)){const img=new Image();img.src='/art/detailed/'+name;await img.decode();imageCache.set(name,img)}return {img:imageCache.get(name),cell}}
+async function sprite(p){
+ const isNew=newer.includes(p.species);
+ const age=stage(p);
+ const pose=p.sleeping?'sleep':Date.now()<poseUntil?actionPose:'';
+ const group=pose||(age==='baby'?'babies':age==='child'?'children':age==='adult'?'adults':'teens');
+ const key=isNew?'new_'+(pose||age):group;
+ const atlas=detailedArt[key]||detailedArt[isNew?'new_teens':'teens'];
+ const cell=atlas.cells[p.species];
+ if(!cell)throw Error('Немає спрайта для '+p.species+' · '+key);
+ if(!imageCache.has(atlas.src)){
+  const img=new Image();img.src=atlas.src;
+  await img.decode();imageCache.set(atlas.src,img);
+ }
+ return {img:imageCache.get(atlas.src),cell};
+}
 async function draw(){if(!current)return;const c=$('pet'),ctx=c.getContext('2d');ctx.clearRect(0,0,220,220);try{const {img,cell}=await sprite(current);const [x,y,w,h]=cell;const scale=Math.min(198/w,198/h),dw=w*scale,dh=h*scale;const bob=current.sleeping?0:Math.sin(frame/4)*3;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x,y,w,h,(220-dw)/2,(220-dh)/2+bob,dw,dh)}catch(e){$('status').textContent='Графіка: '+e.message}}
 function show(p){current=p;$('name').textContent=p.name;$('age').textContent=p.age+(p.sleeping?' · 💤 Спить':'');stats(p);draw()}
 async function refresh(){try{const res=await api('state');if(!res.pet)throw Error('Пета ще не створено в Telegram');show(res.pet);$('status').textContent='✅ Синхронізовано з Telegram'}catch(e){$('status').textContent='❌ '+e.message}}
 $('pair').onclick=async()=>{try{auth=parse($('code').value);await api('state');localStorage.setItem('raaarrr-companion-v1',JSON.stringify(auth));$('code').value='';setView();await refresh();await registerPush()}catch(e){$('connectError').textContent='❌ '+e.message;auth=null}};
 $('settings').onclick=()=>{if(confirm('Відв’язати цей iPhone від пета?')){auth=null;localStorage.removeItem('raaarrr-companion-v1');setView()}};
 $('refresh').onclick=refresh;
-document.querySelectorAll('[data-action]').forEach(button=>button.onclick=async()=>{if(busy)return;busy=true;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=true);try{const res=await api('action',{action:button.dataset.action});if(res.pet)show(res.pet);$('bubble').textContent=res.text||'Готово!';$('status').textContent='✅ Зміни збережено в Telegram'}catch(e){$('status').textContent='❌ '+e.message}finally{busy=false;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=false)}});
+document.querySelectorAll('[data-action]').forEach(button=>button.onclick=async()=>{if(busy)return;busy=true;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=true);try{const res=await api('action',{action:button.dataset.action});if(res.pet)show(res.pet);actionPose=({feed:'eating',pet:'happy',clean:'happy'})[button.dataset.action]||'';poseUntil=Date.now()+6000;await draw();$('bubble').textContent=res.text||'Готово!';$('status').textContent='✅ Зміни збережено в Telegram'}catch(e){$('status').textContent='❌ '+e.message}finally{busy=false;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=false)}});
 setView();if(auth?.token)refresh();void registerPush();setInterval(()=>{frame++;if(current)draw()},900);setInterval(()=>{if(auth?.token&&!document.hidden&&!busy)refresh()},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&auth?.token)refresh()});
 </script></body></html>
