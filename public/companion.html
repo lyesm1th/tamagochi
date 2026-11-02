@@ -8,7 +8,7 @@
 <section class="panel" id="connect"><h2>Підключити твого пета</h2><p class="muted">У Telegram-грі натисни «📱 Підключити віджет iPhone», скопіюй рядок із адресою та ключем. Встав його сюди один раз.</p><label for="code">Код прив'язки</label><input id="code" type="password" autocomplete="off" placeholder="https://…|123456.abcdef…"><button id="pair">🔗 Підключити Чучу</button><p id="connectError" role="status"></p></section>
 <section class="panel" id="game"><div class="scene"><div class="bubble" id="bubble" aria-live="polite">Я тут!</div><canvas id="pet" width="220" height="220" aria-label="Твій піксельний пет"></canvas></div><div class="name" id="name"></div><div class="muted" id="age"></div><div class="stats" id="stats"></div>
 <div class="actions"><button data-action="feed">🍗 Погодувати</button><button data-action="clean">🧹 Прибрати</button><button data-action="pet">❤️ Погладити</button><button data-action="sleep">💤 Сон / прокинутись</button></div>
-<div class="push" id="island-controls"><strong>🏝️ Чуча в Dynamic Island</strong><small>Справжня Live Activity через безкоштовний PushWard. Потрібно встановити <a href="https://apps.apple.com/app/id6759689999" target="_blank" rel="noopener">PushWard</a> (iOS 26+), увімкнути Live Activities та створити окремий API-ключ із правом activity:manage. До 6 наших оновлень на день для економії безкоштовного ліміту. Ключ зберігається лише в персональному сховищі твого пета на Cloudflare.</small><label for="islandKey" id="islandKeyLabel">Ключ PushWard (тільки для першого підключення)</label><input id="islandKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="hlk_…" ><div class="push-actions"><button id="islandConnect">🐮 Показати Чучу</button><button id="islandSync" hidden>↻ Оновити острівець</button><button id="islandStop" hidden>Прибрати з острова</button></div><small role="status" id="islandStatus">Чуча ще не підключена до Dynamic Island.</small></div>
+<div class="push" id="island-controls"><strong>🏝️ Чуча в Dynamic Island</strong><small>Справжня Live Activity через безкоштовний PushWard. Потрібно встановити <a href="https://apps.apple.com/app/id6759689999" target="_blank" rel="noopener">PushWard</a> (iOS 26+), увімкнути Live Activities та створити окремий API-ключ із правом activity:manage. До 6 наших оновлень на день для економії безкоштовного ліміту. Ключ зберігається лише в персональному сховищі твого пета на Cloudflare.</small><label for="islandKey" id="islandKeyLabel">Ключ PushWard (тільки для першого підключення)</label><input id="islandKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="hlk_…" ><div class="push-actions"><button id="islandConnect">🐮 Показати Чучу</button><button id="islandDiagnostic">🩺 Перевірити PushWard</button><button id="islandSync" hidden>↻ Оновити острівець</button><button id="islandStop" hidden>Прибрати з острова</button></div><small role="status" id="islandStatus">Чуча ще не підключена до Dynamic Island.</small></div>
 <div class="push" id="push-controls"><strong>🔔 Чуча на заблокованому екрані</strong><div id="installDirections" class="muted" hidden><p>На iPhone сповіщення працюють лише у встановленій вебапці, а не у вкладці браузера.</p><p><strong>1.</strong> Відкрий цю сторінку в Safari.<br><strong>2.</strong> Натисни «Поділитися» → «На початковий екран» → «Додати».<br><strong>3.</strong> Запусти РАААРРРАГОЧІ через нову іконку на екрані.<br><strong>4.</strong> Тут з’явиться кнопка «Увімкнути сповіщення».</p></div><div class="push-actions"><button id="enablePush">Увімкнути сповіщення</button><button id="testPush" hidden>Надіслати тест</button><button id="disablePush" hidden>Вимкнути</button></div><small id="pushStatus" role="status">Сповіщення підтримуються у встановленій на домашній екран вебапці iPhone.</small></div><p role="status" id="status" class="muted"></p><button id="refresh">↻ Оновити стан</button></section>
 <footer class="muted">Той самий пет, що й у Telegram · 2D pixel art</footer></main>
 <script type="module">
@@ -20,6 +20,17 @@ const imageCache=new Map();
 let actionPose='',poseUntil=0;
 let pushPublicKey=null,pushReady=null;
 const islandStatus=text=>$('islandStatus').textContent=text;
+$('islandDiagnostic').onclick=async()=>{
+ $('islandDiagnostic').disabled=true;
+ islandStatus('Перевіряю зв’язок Cloudflare → PushWard…');
+ try{
+  const result=await api('island/diagnostics');
+  const c=result.connection;
+  islandStatus(c.ok?'✅ Cloudflare бачить PushWard (HTTP '+c.status+'). Якщо підключення не вдається, перевіримо ключ та дозвіл Activities: Full management.':'❌ Немає з’єднання з PushWard: '+(c.reason||'невідомо')+(c.status?' · HTTP '+c.status:'')+'. Надішли скриншот цього статусу, без ключів.');
+ }catch(e){islandStatus('❌ Діагностика: '+e.message)}
+ finally{$('islandDiagnostic').disabled=false}
+};
+
 async function refreshIsland(){
  if(!auth?.token)return;
  try{
@@ -36,7 +47,7 @@ $('islandConnect').onclick=async()=>{
  try{
   const data=await api('island/connect',{key});$('islandKey').value='';
   islandStatus(data.note||'✅ Live Activity запущена');await refreshIsland();
- }catch(e){islandStatus('❌ '+e.message)}
+ }catch(e){islandStatus('❌ '+e.message+' Натисни «Перевірити PushWard», щоб визначити джерело помилки.')}
  finally{$('islandConnect').disabled=false}
 };
 $('islandSync').onclick=async()=>{try{await api('island/sync');await refreshIsland()}catch(e){islandStatus('❌ '+e.message)}};
@@ -101,7 +112,7 @@ $('disablePush').onclick=async()=>{
 
 function parse(text){const match=String(text).trim().match(/(https:\/\/[^\s|]+)\s*\|\s*([0-9]+[.][a-fA-F0-9]{64})/);if(!match)throw Error('Скопіюй повний рядок з Telegram: адреса | ключ');const origin=new URL(match[1]).origin;if(origin!==location.origin)throw Error('Відкрий компаньйон на тій самій адресі, що й Telegram-гра.');return {token:match[2].toLowerCase()}}
 function setView(){const linked=!!auth?.token;$('connect').style.display=linked?'none':'block';$('game').style.display=linked?'block':'none'}
-async function api(path,body={}){const requestId='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,14);const response=await fetch('/api/widget/'+path,{method:'POST',headers:{'Authorization':'Bearer '+auth.token,'Content-Type':'application/json','X-Request-ID':requestId},body:JSON.stringify({...body,requestId})});const data=await response.json().catch(()=>({error:'Некоректна відповідь сервера'}));if(!response.ok||data.error)throw Error(data.error||'Помилка сервера');return data}
+async function api(path,body={}){const requestId='w'+Date.now().toString(36)+Math.random().toString(36).slice(2,14);const response=await fetch('/api/widget/'+path,{method:'POST',headers:{'Authorization':'Bearer '+auth.token,'Content-Type':'application/json','X-Request-ID':requestId},body:JSON.stringify({...body,requestId})});const data=await response.json().catch(()=>({error:'Некоректна відповідь сервера'}));if(!response.ok||data.error){const detail=[data.error||'Помилка сервера',data.stage&&'етап: '+data.stage,data.reason&&'тип: '+data.reason,data.providerStatus&&'HTTP '+data.providerStatus,data.code&&'код: '+data.code].filter(Boolean).join(' · ');throw Error(detail)}return data}
 function stats(p){const rows=[['🍗 Голод','hunger'],['🧹 Чистота','clean'],['❤️ Настрій','happy'],['⚡ Енергія','energy']];$('stats').replaceChildren();for(const [label,key] of rows){const el=document.createElement('div');el.className='stat';const t=document.createElement('span');t.textContent=label+': '+p.mood[key]+'%';const bar=document.createElement('div');bar.className='bar';const fill=document.createElement('span');fill.style.width=p.mood[key]+'%';bar.append(fill);el.append(t,bar);$('stats').append(el)}}
 function stage(p){return {'Малюк':'baby','Дитина':'child','Підліток':'teen','Дорослий':'adult','Старенький':'adult'}[p.age]||'teen'}
 async function sprite(p){
