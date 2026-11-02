@@ -1,4 +1,4 @@
-// РААААРРРАГОЧІ • Scriptable v1.1: real Telegram synced pet and care.
+// РААААРРРАГОЧІ • Scriptable v1.2: real Telegram synced pet and care.
 // Setup: Run inside Scriptable once, paste pairing from Telegram game button.
 const fm=FileManager.local(),file=fm.joinPath(fm.documentsDirectory(),"raaarrragochi-pairing.json");
 const names={chicken:"Курочка",cat:"Котик",corgi:"Коргі",frog:"Жабка",bear:"Ведмедик",dog:"Корівка",dino:"Динозаврик",bunny:"Кролик",pig:"Порося",sheep:"Вівця",fox:"Лисичка",monkey:"Мавпа",duck:"Качка",penguin:"Пінгвін"};
@@ -23,7 +23,7 @@ async function call(path,body={},requestId=null){
  r.method="POST";r.timeoutInterval=15;
  r.headers={"Authorization":"Bearer "+cfg.token,"Content-Type":"application/json"};
  if(requestId)r.headers["X-Request-ID"]=requestId;
- r.body=JSON.stringify(body);
+ r.body=JSON.stringify(requestId?{...body,requestId}:body);
  const json=await r.loadJSON();
  if(!json||json.error)throw Error(json?.error||"Сервер не відповів");
  return json;
@@ -46,13 +46,30 @@ function atlasFor(p){
  return extra?{file:newNames[age],cell:[six.indexOf(p.species)*192,0,192,192]}:{file:oldNames.teen,cell:old[p.species]||old.dino};
 }
 async function portrait(p){
- const a=atlasFor(p),cache=fm.joinPath(fm.documentsDirectory(),"pet-"+a.file+"-"+p.species+".png");
+ const a=atlasFor(p);
+ // v2 cache: older Scriptable drawings could contain neighboring sprites.
+ const cache=fm.joinPath(fm.documentsDirectory(),"pet-canvas-v2-"+a.file+"-"+p.species+".png");
  if(fm.fileExists(cache))return fm.readImage(cache);
- const r=new Request(assets+a.file);r.timeoutInterval=12;
- const source=await r.loadImage(),c=new DrawContext();c.size=new Size(a.cell[2],a.cell[3]);
- c.opaque=false;c.respectScreenScale=false;
- c.drawImageAtPoint(source,new Point(-a.cell[0],-a.cell[1]));
- const img=c.getImage();fm.writeImage(cache,img);return img;
+ const r=new Request(assets+a.file);r.timeoutInterval=20;
+ const data=await r.load();
+ const dataURI="data:image/webp;base64,"+data.toBase64String();
+ const browser=new WebView();
+ await browser.loadHTML("<html><body></body></html>");
+ const script=`(async()=>{
+  const image=new Image();
+  image.src=${JSON.stringify(dataURI)};
+  await image.decode();
+  const [x,y,w,h]=${JSON.stringify(a.cell)};
+  const canvas=document.createElement('canvas');
+  canvas.width=w;canvas.height=h;
+  canvas.getContext('2d').drawImage(image,x,y,w,h,0,0,w,h);
+  return canvas.toDataURL('image/png').split(',')[1];
+ })()`;
+ const base64=await browser.evaluateJavaScript(script,false);
+ if(!base64||typeof base64!=="string")throw Error("Не вдалося вирізати спрайт");
+ const image=Image.fromData(Data.fromBase64String(base64));
+ fm.writeImage(cache,image);
+ return image;
 }
 async function show(){
  let status;try{status=await call("state");}catch(e){return notice("З'єднання",e.message);}
