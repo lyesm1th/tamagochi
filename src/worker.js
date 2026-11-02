@@ -44,7 +44,7 @@ export default {async fetch(req,env){
   if(url.pathname==='/api/widget/pair'){
    const u=await validate(req.headers.get('X-Telegram-Init-Data'),env.BOT_TOKEN);
    if(!u)return json({error:'Telegram auth required'},401);
-   return env.PETS.get(env.PETS.idFromName(String(u.id))).fetch(new Request('https://pet/internal/widget/pair',{method:'POST'}));
+   return env.PETS.get(env.PETS.idFromName(String(u.id))).fetch(new Request('https://pet/internal/widget/pair',{method:'POST',headers:{'X-Pet-Owner':String(u.id)}}));
   }
   const token=req.headers.get('Authorization')?.replace(/^Bearer /i,'')||'';
   const match=/^(\\d+)\\.([a-f0-9]{64})$/.exec(token);
@@ -81,7 +81,7 @@ export class PetRoom{
  if(path==='/internal/widget/pair'){
   const bytes=crypto.getRandomValues(new Uint8Array(32));
   const secret=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
-  const token=this.ctx.id.name+'.'+secret;
+  const token=req.headers.get('X-Pet-Owner')+'.'+secret;
   await this.ctx.storage.put('widget-access',{hash:await requestSignature('widget',secret),created:Date.now()});
   return json({token});
  }
