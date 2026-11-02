@@ -1,5 +1,6 @@
 import {generateVapid,validateSubscription,pushToDevice} from './web-push.js';
 import {activateIsland,updateIsland,endIsland,validPushWardKey,islandQuota,islandSlug,checkPushWardHealth} from './island-bridge.js';
+import {newIslandCareToken,careButtons} from './island-care.js';
 import {mobilePetSnapshot} from '../public/mobile-pet-snapshot.js';
 import {petInitiative} from '../public/pet-initiative.js';
 import {requestOnce,requestSignature,protectedRequest,validRequestId} from './request-receipts.js';
@@ -40,6 +41,18 @@ export default {async fetch(req,env){
  let user;try{user=await validate(raw?decodeURIComponent(raw):'',env.BOT_TOKEN);}catch{}
  if(!user||!String(env.OWNER_TELEGRAM_ID||'').trim()||String(user.id)!==String(env.OWNER_TELEGRAM_ID).trim())return json({error:'Тестова кімната доступна лише овнеру через Telegram.'},403);
  const asset=await env.ASSETS.fetch(req),headers=new Headers(asset.headers);headers.set('Cache-Control','private, no-store');headers.set('Vary','Cookie');return new Response(asset.body,{status:asset.status,headers});
+ }
+ if(url.pathname.startsWith('/api/island/care/')){
+  if(req.method!=='POST')return json({error:'Method not allowed'},405);
+  const owner=url.pathname.slice('/api/island/care/'.length);
+  const secret=req.headers.get('X-Pet-Care-Key')||'';
+  if(!/^[0-9]{1,18}$/.test(owner))return json({error:'Not found'},404);
+  if(!/^[a-f0-9]{64}$/.test(secret))return json({error:'Not authorized'},401);
+  let raw;
+  try{raw=await req.text();if(raw.length>256)return json({error:'Too large'},413);}catch{return json({error:'Bad request'},400);}
+  let action;try{action=JSON.parse(raw).action;}catch{return json({error:'Bad JSON'},400);}
+  if(!['feed','pet','clean','sleep'].includes(action))return json({error:'Unsupported action'},400);
+  return env.PETS.get(env.PETS.idFromName(owner)).fetch(new Request('https://pet/internal/island/care',{method:'POST',headers:{'X-Pet-Care-Key':secret},body:JSON.stringify({action})}));
  }
  if(url.pathname.startsWith('/api/widget/')){
   if(req.method!=='POST')return json({error:'Method not allowed'},405);
@@ -96,6 +109,23 @@ export class PetRoom{
   await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
   return json({token});
  }
+ if(path==='/internal/island/care'){
+  const config=await this.ctx.storage.get('island-bridge');
+  const secret=req.headers.get('X-Pet-Care-Key')||'';
+  if(!config?.enabled||!/^[a-f0-9]{64}$/.test(secret)||!config.careToken||await requestSignature('island-care',secret)!==config.careHash)return json({error:'Care action has expired. Reconnect PushWard.'},401);
+  const now=Date.now();
+  if(now-(await this.ctx.storage.get('island-care-last')||0)<8000)return json({error:'Wait a moment before another action'},429);
+  if(!['feed','pet','clean','sleep'].includes(body.action))return json({error:'Unsupported action'},400);
+  const pet=tick(await this.ctx.storage.get('pet'),now);
+  if(!pet||pet.dead)return json({error:'No active pet'},400);
+  const result=act(pet,body.action,now,{});
+  if(result.error)return json({error:result.error},400);
+  await this.ctx.storage.put('island-care-last',now);
+  await this.ctx.storage.put('pet',result.state);
+  await this.queueIslandUpdate(result.state,true);
+  await this.schedule(result.state,await this.ctx.storage.get('reminders')||{enabled:false});
+  return json({ok:true,text:result.text});
+ }
  if(['/internal/widget/state','/internal/widget/action','/internal/widget/push-key','/internal/widget/push-subscribe','/internal/widget/push-unsubscribe','/internal/widget/push-test','/internal/widget/island/connect','/internal/widget/island/status','/internal/widget/island/sync','/internal/widget/island/disconnect','/internal/widget/island/diagnostics'].includes(path)){
   const token=req.headers.get('X-Widget-Token')||'';
   const secret=token.split('.')[1]||'';
@@ -149,7 +179,9 @@ export class PetRoom{
    if(!validPushWardKey(body.key))return json({error:'Неправильний ключ PushWard. Створи окремий ключ із правом activity:manage.'},400);
    const pet=tick(await this.ctx.storage.get('pet'));if(!pet||pet.dead)return json({error:'Спочатку потрібен живий пет'},400);
    const origin=req.headers.get('X-Companion-Origin')||'';
-   let outcome;try{outcome=await activateIsland(body.key,mobilePetSnapshot(pet).pet,origin);}
+   const ownerId=token.split('.')[0],careToken=newIslandCareToken();
+   const buttons=careButtons(origin,ownerId,careToken,mobilePetSnapshot(pet).pet);
+   let outcome;try{outcome=await activateIsland(body.key,mobilePetSnapshot(pet).pet,origin,buttons);}
    catch(e){
     console.error('Island connect failed',{stage:e?.stage||'unknown',reason:e?.reason||'unknown',type:e?.name||'Error'});
     const stage=typeof e?.stage==='string'?e.stage:'unknown';
@@ -158,7 +190,8 @@ export class PetRoom{
    }
    if(!outcome.ok)return json({error:outcome.detail||'PushWard відхилив підключення',providerStatus:outcome.status,stage:outcome.stage||'provider',code:outcome.code||null},502);
    const quota=islandQuota({});
-   await this.ctx.storage.put('island-bridge',{enabled:true,key:body.key,origin,slug:islandSlug,day:quota.day,count:1,lastSent:Date.now()});
+   await this.ctx.storage.put('island-bridge',{enabled:true,key:body.key,origin,slug:islandSlug,day:quota.day,count:1,lastSent:Date.now(),ownerId,careToken,careHash:await requestSignature('island-care',careToken)});
+   await this.ctx.storage.delete('island-care-last');
    return json({enabled:true,provider:'PushWard',note:'Live Activity запущено. Якщо острівець порожній, відкрий PushWard і дозволь Live Activities.'});
   }
   if(path==='/internal/widget/island/sync'){
@@ -166,10 +199,12 @@ export class PetRoom{
    if(!config?.enabled)return json({error:'Спершу підключи PushWard'},400);
    const quota=islandQuota(config);if(!quota.allowed)return json({error:'Наступне оновлення доступне пізніше. Ліміт безкоштовного тарифу: 6 на день.',updatesToday:quota.count},429);
    const pet=tick(await this.ctx.storage.get('pet'));if(!pet)return json({error:'Немає пета'},400);
-   let result;try{result=await updateIsland(config.key,mobilePetSnapshot(pet).pet,config.origin);}
+   const activePet=mobilePetSnapshot(pet).pet,careToken=config.careToken||newIslandCareToken(),ownerId=config.ownerId||token.split('.')[0];
+   const buttons=careButtons(config.origin,ownerId,careToken,activePet);
+   let result;try{result=await updateIsland(config.key,activePet,config.origin,buttons);}
    catch(e){console.error('Island sync failed',e?.name);return json({error:'PushWard недоступний'},503);}
    if(!result.ok)return json({error:'PushWard не прийняв оновлення',providerStatus:result.status},502);
-   await this.ctx.storage.put('island-bridge',{...config,day:quota.day,count:quota.count+1,lastSent:Date.now()});
+   await this.ctx.storage.put('island-bridge',{...config,ownerId,careToken,careHash:await requestSignature('island-care',careToken),day:quota.day,count:quota.count+1,lastSent:Date.now()});
    return json({ok:true,updatesToday:quota.count+1});
   }
   if(path==='/internal/widget/island/disconnect'){
@@ -252,13 +287,15 @@ export class PetRoom{
  async archive(s,outcome=s.endReason||'death',record=null){
  const key='album:'+String(s.born).padStart(16,'0')+':'+petId(s);if(!await this.ctx.storage.get(key))await this.ctx.storage.put(key,record||snapshot(s,outcome));
  }
- async queueIslandUpdate(pet){
+ async queueIslandUpdate(pet,interactive=false){
   const config=await this.ctx.storage.get('island-bridge');
   if(!config?.enabled)return;
-  const quota=islandQuota(config);if(!quota.allowed)return;
+  const quota=islandQuota(config);
+  if(!quota.allowed&&!(interactive&&quota.count<6&&Date.now()-config.lastSent>=12000))return;
   await this.ctx.storage.put('island-bridge',{...config,day:quota.day,count:quota.count+1,lastSent:Date.now()});
   const snapshot=mobilePetSnapshot(pet).pet;
-  this.ctx.waitUntil(updateIsland(config.key,snapshot,config.origin).then(result=>{
+  const buttons=config.careToken&&config.ownerId?careButtons(config.origin,config.ownerId,config.careToken,snapshot):null;
+  this.ctx.waitUntil(updateIsland(config.key,snapshot,config.origin,buttons).then(result=>{
    if(!result.ok)console.error('Island update declined',result.status);
   }).catch(e=>console.error('Island update failed',e?.name)));
  }
