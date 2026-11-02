@@ -65,3 +65,21 @@ test('legacy flat widget routes remain available',async()=>{
  assert.equal(push.status,200);
  assert.match(push.data.publicKey,/^[A-Za-z0-9_-]+$/);
 });
+
+test('health diagnostics route is authenticated and does not disclose API or pairing secrets',async()=>{
+ const {call}=await createHarness(),original=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>Response.json({status:'ok'});
+  const health=await call('island/diagnostics');
+  assert.equal(health.status,200);assert.equal(health.data.connection.ok,true);
+  assert.ok(!JSON.stringify(health).includes(key));
+  assert.ok(!JSON.stringify(health).includes(secret));
+  assert.equal((await call('island/diagnostics',{},owner+'.'+'b'.repeat(64))).status,401);
+  globalThis.fetch=async()=>{throw new TypeError('connection failed')};
+  const failed=await call('island/connect',{key});
+  assert.equal(failed.status,503);
+  assert.equal(failed.data.stage,'authentication');
+  assert.equal(failed.data.reason,'network');
+  assert.ok(!JSON.stringify(failed).includes(key));
+ }finally{globalThis.fetch=original}
+});
