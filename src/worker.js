@@ -1,5 +1,5 @@
 import {generateVapid,validateSubscription,pushToDevice} from './web-push.js';
-import {activateIsland,updateIsland,endIsland,validPushWardKey,islandQuota,islandSlug} from './island-bridge.js';
+import {activateIsland,updateIsland,endIsland,validPushWardKey,islandQuota,islandSlug,checkPushWardHealth} from './island-bridge.js';
 import {mobilePetSnapshot} from '../public/mobile-pet-snapshot.js';
 import {petInitiative} from '../public/pet-initiative.js';
 import {requestOnce,requestSignature,protectedRequest,validRequestId} from './request-receipts.js';
@@ -51,7 +51,7 @@ export default {async fetch(req,env){
   const token=req.headers.get('Authorization')?.replace(/^Bearer /i,'')||'';
   const match=/^([0-9]+)[.]([a-f0-9]{64})$/.exec(token);
   if(!match)return json({error:'Pair the widget in Telegram first'},401);
-  if(!['/api/widget/state','/api/widget/action','/api/widget/push-key','/api/widget/push-subscribe','/api/widget/push-unsubscribe','/api/widget/push-test','/api/widget/island/connect','/api/widget/island/status','/api/widget/island/sync','/api/widget/island/disconnect'].includes(url.pathname))return json({error:'Not found'},404);
+  if(!['/api/widget/state','/api/widget/action','/api/widget/push-key','/api/widget/push-subscribe','/api/widget/push-unsubscribe','/api/widget/push-test','/api/widget/island/connect','/api/widget/island/status','/api/widget/island/sync','/api/widget/island/disconnect','/api/widget/island/diagnostics'].includes(url.pathname))return json({error:'Not found'},404);
   let body;try{body=await req.text();if(body.length>8192)return json({error:'Too large'},413);}catch{return json({error:'Bad request'},400);}
   const uid=match[1];
   return env.PETS.get(env.PETS.idFromName(uid)).fetch(new Request('https://pet/internal/widget/'+url.pathname.slice('/api/widget/'.length),{method:'POST',headers:{'X-Widget-Token':token,'X-Companion-Origin':url.origin,'X-Request-ID':req.headers.get('X-Request-ID')||''},body}));
@@ -96,7 +96,7 @@ export class PetRoom{
   await this.schedule(await this.ctx.storage.get('pet'),await this.ctx.storage.get('reminders')||{enabled:false});
   return json({token});
  }
- if(['/internal/widget/state','/internal/widget/action','/internal/widget/push-key','/internal/widget/push-subscribe','/internal/widget/push-unsubscribe','/internal/widget/push-test','/internal/widget/island/connect','/internal/widget/island/status','/internal/widget/island/sync','/internal/widget/island/disconnect'].includes(path)){
+ if(['/internal/widget/state','/internal/widget/action','/internal/widget/push-key','/internal/widget/push-subscribe','/internal/widget/push-unsubscribe','/internal/widget/push-test','/internal/widget/island/connect','/internal/widget/island/status','/internal/widget/island/sync','/internal/widget/island/disconnect','/internal/widget/island/diagnostics'].includes(path)){
   const token=req.headers.get('X-Widget-Token')||'';
   const secret=token.split('.')[1]||'';
   const record=await this.ctx.storage.get('widget-access');
@@ -137,6 +137,9 @@ export class PetRoom{
     return json({ok:res.ok,status:res.status},res.ok?200:502);
    }catch(e){console.error('Push test failed',e?.name,e?.message);return json({error:'Служба сповіщень не прийняла повідомлення'},503);}
   }
+  if(path==='/internal/widget/island/diagnostics'){
+   return json({provider:'PushWard',connection:await checkPushWardHealth()});
+  }
   if(path==='/internal/widget/island/status'){
    const config=await this.ctx.storage.get('island-bridge');
    const quota=config?islandQuota(config):null;
@@ -147,8 +150,13 @@ export class PetRoom{
    const pet=tick(await this.ctx.storage.get('pet'));if(!pet||pet.dead)return json({error:'Спочатку потрібен живий пет'},400);
    const origin=req.headers.get('X-Companion-Origin')||'';
    let outcome;try{outcome=await activateIsland(body.key,mobilePetSnapshot(pet).pet,origin);}
-   catch(e){console.error('Island connect failed',e?.name);return json({error:'Не вдалося підключити PushWard. Перевір інтернет і дозвіл Live Activities.'},503);}
-   if(!outcome.ok)return json({error:outcome.detail||'PushWard відхилив підключення',providerStatus:outcome.status},502);
+   catch(e){
+    console.error('Island connect failed',{stage:e?.stage||'unknown',reason:e?.reason||'unknown',type:e?.name||'Error'});
+    const stage=typeof e?.stage==='string'?e.stage:'unknown';
+    const reason=e?.reason==='timeout'?'timeout':e?.reason==='network'?'network':'runtime';
+    return json({error:reason==='timeout'?'PushWard не відповів за 8 секунд.':reason==='network'?'Cloudflare не зміг зв’язатися з PushWard.':'Помилка виконання на сервері РАААРРРАГОЧІ.',stage,reason},503);
+   }
+   if(!outcome.ok)return json({error:outcome.detail||'PushWard відхилив підключення',providerStatus:outcome.status,stage:outcome.stage||'provider',code:outcome.code||null},502);
    const quota=islandQuota({});
    await this.ctx.storage.put('island-bridge',{enabled:true,key:body.key,origin,slug:islandSlug,day:quota.day,count:1,lastSent:Date.now()});
    return json({enabled:true,provider:'PushWard',note:'Live Activity запущено. Якщо острівець порожній, відкрий PushWard і дозволь Live Activities.'});

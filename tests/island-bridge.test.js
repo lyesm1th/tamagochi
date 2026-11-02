@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {validPushWardKey,islandContent,islandQuota,activateIsland,updateIsland,endIsland} from '../src/island-bridge.js';
+import {validPushWardKey,islandContent,islandQuota,activateIsland,updateIsland,endIsland,checkPushWardHealth,PushWardTransportError} from '../src/island-bridge.js';
 const KEY='hlk_'+'B'.repeat(32);
 const pet={name:'Чуча',species:'dog',age:'Дорослий',sleeping:false,dead:false,mood:{happy:23,hunger:96,clean:97,energy:78}};
 test('island bridge accepts only scoped format; never leaks keys into picture URL',()=>{
@@ -43,5 +43,32 @@ test('PushWard REST integration starts, updates and ends an activity without lea
   assert.equal(JSON.parse(calls.at(-1).options.body).state,'ended');
   assert.equal((await updateIsland(KEY,{...pet,dead:true},'https://pixel-pets.example.workers.dev')).ok,true);
   assert.equal(JSON.parse(calls.at(-1).options.body).state,'ended');
+ }finally{globalThis.fetch=original}
+});
+
+test('PushWard health probe safely reports success, timeout and transport errors without credentials',async()=>{
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>Response.json({status:'ok'});
+  assert.deepEqual(await checkPushWardHealth(),{ok:true,status:200,reason:null});
+  globalThis.fetch=async()=>{throw new DOMException('request aborted','TimeoutError')};
+  const timeout=await checkPushWardHealth();
+  assert.equal(timeout.ok,false);assert.equal(timeout.reason,'timeout');assert.equal(timeout.stage,'health');
+  globalThis.fetch=async()=>{throw Error('upstream debug detail may contain secrets')};
+  const result=await checkPushWardHealth();
+  assert.equal(result.reason,'network');
+  assert.ok(!JSON.stringify(result).includes('debug detail'));
+ }finally{globalThis.fetch=original}
+});
+test('PushWard auth failure identifies which provider step failed without reflecting bearer token',async()=>{
+ const original=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>Response.json({code:'integration_key.permission_denied',detail:'requires activities:manage'}, {status:403});
+  const error=await activateIsland(KEY,pet,'https://pixel-pets.example.workers.dev');
+  assert.equal(error.ok,false);assert.equal(error.stage,'authentication');
+  assert.equal(error.status,403);assert.ok(!JSON.stringify(error).includes(KEY));
+  globalThis.fetch=async()=>{throw new TypeError('failed to fetch')};
+  await assert.rejects(()=>activateIsland(KEY,pet,'https://pixel-pets.example.workers.dev'),e=>
+   e instanceof PushWardTransportError&&e.stage==='authentication'&&e.reason==='network');
  }finally{globalThis.fetch=original}
 });
