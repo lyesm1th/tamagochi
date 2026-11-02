@@ -47,7 +47,7 @@ export default {async fetch(req,env){
    return env.PETS.get(env.PETS.idFromName(String(u.id))).fetch(new Request('https://pet/internal/widget/pair',{method:'POST',headers:{'X-Pet-Owner':String(u.id)}}));
   }
   const token=req.headers.get('Authorization')?.replace(/^Bearer /i,'')||'';
-  const match=/^(\\d+)\\.([a-f0-9]{64})$/.exec(token);
+  const match=/^([0-9]+)[.]([a-f0-9]{64})$/.exec(token);
   if(!match)return json({error:'Pair the widget in Telegram first'},401);
   if(!['/api/widget/state','/api/widget/action'].includes(url.pathname))return json({error:'Not found'},404);
   let body;try{body=await req.text();if(body.length>2048)return json({error:'Too large'},413);}catch{return json({error:'Bad request'},400);}
