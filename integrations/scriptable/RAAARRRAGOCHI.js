@@ -1,105 +1,66 @@
-// РААААРРРАГОЧІ • free Scriptable iOS Home Screen widget, v0.4
-// Install: Scriptable > + > paste this script > save > add a Scriptable widget.
-// In Edit Widget, assign this script; set Parameter to e.g. "dino" or "cat|teen".
-// This first version is a read-only visual companion, NOT a live synchronized game.
-const BASE = "https://raw.githubusercontent.com/lyesm1th/tamagochi/64be0f7913e0070d40afffa4d9b52dc3ce0ffc67/public/art/detailed/";
-const CONFIG = { species: "dino", age: "teen", refreshMinutes: 45 };
-const originals = {
-  chicken:[419,11,121,181], cat:[192,11,182,176], corgi:[49,192,142,182],
-  frog:[594,30,122,162], bear:[235,193,134,181], dog:[43,10,149,182],
-  dino:[416,192,141,184], bunny:[600,192,115,184]
+// РААААРРРАГОЧІ Scriptable v0.5 (zero-cost interactive launcher).
+// Scriptable cannot directly run WidgetKit App Intents. This is an honest interactive menu,
+// not a second offline pet save. To link your actual game, set GAME_URL to your existing
+// Telegram Mini App URL (the URL you already use, no credentials).
+const GAME_URL = ""; // example format only: https://t.me/YOUR_BOT/app (don't use this sample)
+const SOURCE="https://raw.githubusercontent.com/lyesm1th/tamagochi/64be0f7913e0070d40afffa4d9b52dc3ce0ffc67/public/art/detailed/";
+const old = {
+ chicken:[419,11,121,181],cat:[192,11,182,176],corgi:[49,192,142,182],
+ frog:[594,30,122,162],bear:[235,193,134,181],dog:[43,10,149,182],
+ dino:[416,192,141,184],bunny:[600,192,115,184]
 };
-const newer = ["pig","sheep","fox","monkey","duck","penguin"];
-const names = {chicken:"Квочка",cat:"Пан Сраколап",corgi:"Батон",frog:"Квасик",bear:"Буркотун",dog:"Мукалка",dino:"Кусьозавр",bunny:"Вухань",pig:"Хрюндель",sheep:"Хмаринка",fox:"Хитруля",monkey:"Бананич",duck:"Крякуша",penguin:"Плюх"};
-const atlasNames={
- teen:"teens.6bb3b431b38e.webp", baby:"babies.8683ba45b4dd.webp",
- child:"children.265722c3934d.webp", adult:"adults.803745932f0c.webp",
-};
-const newAtlasNames={
- teen:"new-teens.766f713547bf.webp", baby:"new-babies.e475fff12b09.webp",
- child:"new-children.173bdbe3aabf.webp", adult:"new-adults.fe3130d195c1.webp"
-};
-// Original cell coordinates vary by age; v0.1 pins first 8 species to the verified teen atlas.
-// The new six species share a 192px-cell grid across the four age atlases.
-const param=(args.widgetParameter||"").split("|").map(x=>x.trim().toLowerCase());
-const id=names[param[0]]?param[0]:CONFIG.species;
-const requestedAge=["teen","baby","child","adult"].includes(param[1])?param[1]:CONFIG.age;
-const freshSpecies=newer.includes(id);
-const age=freshSpecies?requestedAge:"teen";
-const asset=freshSpecies?newAtlasNames[age]:atlasNames.teen;
-const cell=freshSpecies?[newer.indexOf(id)*192,0,192,192]:originals[id];
-const fm=FileManager.local(),dir=fm.joinPath(fm.documentsDirectory(),"raaarrragochi");
-if(!fm.fileExists(dir))fm.createDirectory(dir,true);
-const cache=fm.joinPath(dir,asset);
-let source;
-try{
-  if(!fm.fileExists(cache)){
-    const request=new Request(BASE+asset);
-    request.timeoutInterval=12;
-    const image=await request.loadImage();
-    fm.writeImage(cache,image);
-  }
-  source=fm.readImage(cache);
-}catch(e){
-  if(fm.fileExists(cache))source=fm.readImage(cache);
+const six=["pig","sheep","fox","monkey","duck","penguin"];
+const labels={chicken:"Квочка",cat:"Пан Сраколап",corgi:"Батон",frog:"Квасик",bear:"Буркотун",dog:"Мукалка",dino:"Кусьозавр",bunny:"Вухань",pig:"Хрюндель",sheep:"Хмаринка",fox:"Хитруля",monkey:"Бананич",duck:"Крякуша",penguin:"Плюх"};
+const params=(args.widgetParameter||"dino").split("|").map(s=>s.trim().toLowerCase());
+const id=labels[params[0]]?params[0]:"dino";
+const hasNew=six.includes(id);
+const atlas=hasNew?"new-teens.766f713547bf.webp":"teens.6bb3b431b38e.webp";
+const rect=hasNew?[192*six.indexOf(id),0,192,192]:old[id];
+const fm=FileManager.local(),folder=fm.joinPath(fm.documentsDirectory(),"raaarrragochi-v05");
+if(!fm.fileExists(folder))fm.createDirectory(folder,true);
+const imageFile=fm.joinPath(folder,id+"-teen.png");
+async function actor(){
+ if(fm.fileExists(imageFile))return fm.readImage(imageFile);
+ const img=await new Request(SOURCE+atlas).loadImage();
+ // The source atlas is drawn without scaling onto its own crop canvas.
+ const crop=new DrawContext();crop.size=new Size(rect[2],rect[3]);crop.opaque=false;
+ crop.respectScreenScale=false;
+ crop.drawImageAtPoint(img,new Point(-rect[0],-rect[1]));
+ const out=crop.getImage();fm.writeImage(imageFile,out);return out;
 }
-// Lock Screen: compact rectangular widget using Scriptable's accessory family.
-// Keep the same original actor, without inventing a second game state.
-const family=config.widgetFamily||"";
-if(family==="accessoryRectangular"||family==="accessoryCircular"||family==="accessoryInline"){
-  const lock=new ListWidget();
-  if(family==="accessoryInline"){
-    lock.addText("🐾 "+names[id]);
-  }else{
-    const lay=lock.addStack();lay.centerAlignContent();lay.spacing=5;
-    if(source){
-      const crop=new DrawContext();crop.size=new Size(cell[2],cell[3]);crop.opaque=false;
-      crop.respectScreenScale=false;crop.drawImageAtPoint(source,new Point(-cell[0],-cell[1]));
-      const actor=crop.getImage();const side=family==="accessoryCircular"?44:48;
-      const factor=Math.min(side/cell[2],side/cell[3]);
-      const pic=lay.addImage(actor);pic.imageSize=new Size(Math.round(cell[2]*factor),Math.round(cell[3]*factor));
-    }
-    if(family==="accessoryRectangular"){
-      const txt=lay.addStack();txt.layoutVertically();
-      txt.addText(names[id]).font=Font.semiboldSystemFont(12);
-      txt.addText("РААААРРРАГОЧІ").font=Font.systemFont(9);
-    }
+const runningAsWidget=config.runsInWidget;
+if(!runningAsWidget){
+ const m=new Alert();m.title=labels[id]+" 🐾";m.message="Вибери дію. Прогрес пета змінюється тільки в Telegram-грі.";
+ ["🍗 Погодувати","🧹 Прибрати","❤️ Погладити","🎮 Погратися","🐾 Відкрити гру"].forEach(x=>m.addAction(x));
+ m.addCancelAction("Закрити");
+ const choice=await m.presentSheet();
+ if(choice>=0){
+  if(GAME_URL&&/^https:\/\//i.test(GAME_URL))Safari.open(GAME_URL);
+  else {
+   const alert=new Alert();alert.title="Підключення гри";alert.message="У скрипті заповни GAME_URL посиланням на нашу Telegram Mini App. Поки що без нього кнопки не змінюють стан пета.";
+   alert.addAction("Гаразд");await alert.present();
   }
-  lock.refreshAfterDate=new Date(Date.now()+CONFIG.refreshMinutes*60000);
-  if(config.runsInWidget)Script.setWidget(lock);else await lock.presentAccessoryRectangular();
-  Script.complete();
+ }
+ Script.complete();
 }else{
-const w=new ListWidget();
-w.backgroundColor=new Color("#16202c");
-w.setPadding(10,10,10,10);
-w.addSpacer();
-if(source){
-  // Crop the committed transparent atlas without changing the pet's original face.
-  // First crop at source pixel coordinates, then let Scriptable fit the cropped actor.
-  // Drawing the whole atlas into a scaled Rect caused clipping on real iPhones.
-  const ctx=new DrawContext();
-  ctx.size=new Size(cell[2],cell[3]);
-  ctx.opaque=false;
-  ctx.respectScreenScale=false;
-  ctx.drawImageAtPoint(source,new Point(-cell[0],-cell[1]));
-  const actor=ctx.getImage();
-  const maxWidth=116,maxHeight=112;
-  const factor=Math.min(maxWidth/cell[2],maxHeight/cell[3]);
-  const pet=w.addImage(actor);
-  pet.imageSize=new Size(Math.round(cell[2]*factor),Math.round(cell[3]*factor));
-  pet.centerAlignImage();
-}else{
-  const t=w.addText("🐾 Немає з'єднання");t.textColor=Color.white();
-}
-const caption=w.addText(names[id]);
-caption.centerAlignText();caption.font=Font.semiboldSystemFont(13);
-caption.textColor=Color.white();
-w.addSpacer();
-// The small Scriptable widget has strict height; do not add extra title/status rows.
-
-
-w.refreshAfterDate=new Date(Date.now()+CONFIG.refreshMinutes*60000);
-if(config.runsInWidget)Script.setWidget(w);
-else await w.presentSmall();
-Script.complete();
+ const w=new ListWidget();w.backgroundColor=new Color("#16202c");
+ w.setPadding(8,8,8,8);
+ const family=config.widgetFamily||"small";
+ const title=w.addText("🐾 "+labels[id]);title.font=Font.semiboldSystemFont(12);title.textColor=Color.white();
+ if(family!=="accessoryInline"){
+  try{
+   const pic=w.addImage(await actor());pic.centerAlignImage();
+   const compact=family.startsWith("accessory");
+   pic.imageSize=compact?new Size(38,46):new Size(110,110);
+  }catch(e){const fail=w.addText("🐾");fail.textColor=Color.white();}
+ }
+ if(!family.startsWith("accessory")){
+  const note=w.addText("Торкнись: їжа · гра · турбота");
+  note.font=Font.systemFont(10);note.textColor=new Color("#c9d5dd");
+ }
+ // Actual tap launches THIS script with an actions sheet rather than its editor.
+ const script=encodeURIComponent(Script.name());
+ w.url="scriptable:///run?scriptName="+script+"&widgetParameter="+encodeURIComponent(id);
+ w.refreshAfterDate=new Date(Date.now()+45*60000);
+ Script.setWidget(w);Script.complete();
 }
