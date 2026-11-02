@@ -1,4 +1,4 @@
-// РААААРРРАГОЧІ • Scriptable v1.0: real Telegram synced pet and care.
+// РААААРРРАГОЧІ • Scriptable v1.1: real Telegram synced pet and care.
 // Setup: Run inside Scriptable once, paste pairing from Telegram game button.
 const fm=FileManager.local(),file=fm.joinPath(fm.documentsDirectory(),"raaarrragochi-pairing.json");
 const names={chicken:"Курочка",cat:"Котик",corgi:"Коргі",frog:"Жабка",bear:"Ведмедик",dog:"Корівка",dino:"Динозаврик",bunny:"Кролик",pig:"Порося",sheep:"Вівця",fox:"Лисичка",monkey:"Мавпа",duck:"Качка",penguin:"Пінгвін"};
@@ -8,12 +8,15 @@ const assets="https://raw.githubusercontent.com/lyesm1th/tamagochi/64be0f7913e00
 let cfg={};try{const saved=JSON.parse(fm.readString(file));if(saved&&typeof saved==="object"&&!Array.isArray(saved))cfg=saved;}catch{}
 const delay=ms=>new Promise(resolve=>Timer.schedule(ms,false,resolve));
 function parsePairing(value){
- const i=value.indexOf("|");if(i<0)throw Error("Скопіюй повний код із Telegram, разом із адресою.");
- const origin=value.slice(0,i),token=value.slice(i+1);
- let validOrigin=false;
- try{const parsed=new URL(origin);validOrigin=parsed.protocol==="https:"&&parsed.origin===origin;}catch{}
- if(!validOrigin||!/^[0-9]+[.][a-f0-9]{64}$/.test(token))throw Error("Неправильний код прив'язки");
- return {origin,token};
+ // Scriptable's JavaScriptCore does not consistently expose the browser URL API.
+ // Accept the raw code or the entire line copied from the Telegram game.
+ const cleaned=String(value||"").replace(/[\u200B-\u200D\uFEFF]/g,"").trim();
+ const found=cleaned.match(/(https:\/\/[^\s|"'<>]+)\s*\|\s*([0-9]+[.][a-fA-F0-9]{64})/);
+ if(!found){
+  if(cleaned.indexOf("|")<0)throw Error("Потрібен ПОВНИЙ код: адреса сайту | токен. Натисни кнопку прив'язки у Telegram ще раз.");
+  throw Error("Код неповний або спотворений. Скопіюй рядок повністю через кнопку в Telegram.");
+ }
+ return {origin:found[1].replace(/\/$/,""),token:found[2].toLowerCase()};
 }
 async function call(path,body={},requestId=null){
  const r=new Request(cfg.origin+"/api/widget/"+path);
