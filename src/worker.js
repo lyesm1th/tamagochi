@@ -1,3 +1,4 @@
+import {mobilePetSnapshot} from '../public/mobile-pet-snapshot.js';
 import {petInitiative} from '../public/pet-initiative.js';
 import {requestOnce,requestSignature,protectedRequest,validRequestId} from './request-receipts.js';
 import {walletAction,bankAction} from './wallet.js';
@@ -38,6 +39,21 @@ export default {async fetch(req,env){
  if(!user||!String(env.OWNER_TELEGRAM_ID||'').trim()||String(user.id)!==String(env.OWNER_TELEGRAM_ID).trim())return json({error:'Тестова кімната доступна лише овнеру через Telegram.'},403);
  const asset=await env.ASSETS.fetch(req),headers=new Headers(asset.headers);headers.set('Cache-Control','private, no-store');headers.set('Vary','Cookie');return new Response(asset.body,{status:asset.status,headers});
  }
+ if(url.pathname.startsWith('/api/widget/')){
+  if(req.method!=='POST')return json({error:'Method not allowed'},405);
+  if(url.pathname==='/api/widget/pair'){
+   const u=await validate(req.headers.get('X-Telegram-Init-Data'),env.BOT_TOKEN);
+   if(!u)return json({error:'Telegram auth required'},401);
+   return env.PETS.get(env.PETS.idFromName(String(u.id))).fetch(new Request('https://pet/internal/widget/pair',{method:'POST'}));
+  }
+  const token=req.headers.get('Authorization')?.replace(/^Bearer /i,'')||'';
+  const match=/^(\\d+)\\.([a-f0-9]{64})$/.exec(token);
+  if(!match)return json({error:'Pair the widget in Telegram first'},401);
+  if(!['/api/widget/state','/api/widget/action'].includes(url.pathname))return json({error:'Not found'},404);
+  let body;try{body=await req.text();if(body.length>2048)return json({error:'Too large'},413);}catch{return json({error:'Bad request'},400);}
+  const uid=match[1];
+  return env.PETS.get(env.PETS.idFromName(uid)).fetch(new Request('https://pet/internal/widget/'+url.pathname.split('/').at(-1),{method:'POST',headers:{'X-Widget-Token':token,'X-Request-ID':req.headers.get('X-Request-ID')||''},body}));
+ }
  if(url.pathname==='/api/health')return json({ok:true});
  if(url.pathname.startsWith('/api/')){
  if(req.method!=='POST')return json({error:'Method not allowed'},405);
@@ -62,6 +78,35 @@ export class PetRoom{
  let body;try{const raw=await req.text();if(raw.length>8192)return json({error:'Too large'},413);body=JSON.parse(raw||'{}');}catch{return json({error:'Bad JSON'},400);}
  if(!body||typeof body!=='object'||Array.isArray(body))return json({error:'Bad JSON'},400);
  const path=new URL(req.url).pathname,id=req.headers.get('X-Request-ID');
+ if(path==='/internal/widget/pair'){
+  const bytes=crypto.getRandomValues(new Uint8Array(32));
+  const secret=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
+  const token=this.ctx.id.name+'.'+secret;
+  await this.ctx.storage.put('widget-access',{hash:await requestSignature('widget',secret),created:Date.now()});
+  return json({token});
+ }
+ if(path==='/internal/widget/state'||path==='/internal/widget/action'){
+  const token=req.headers.get('X-Widget-Token')||'';
+  const secret=token.split('.')[1]||'';
+  const record=await this.ctx.storage.get('widget-access');
+  if(!record||Date.now()-record.created>90*86400000||await requestSignature('widget',secret)!==record.hash)return json({error:'Widget access expired; pair again'},401);
+  if(path==='/internal/widget/state'){
+   const pet=tick(await this.ctx.storage.get('pet'));
+   if(pet)await this.ctx.storage.put('pet',pet);
+   return json(mobilePetSnapshot(pet));
+  }
+  if(!id||!validRequestId(id))return json({error:'X-Request-ID required'},400);
+  if(!['feed','clean','pet','sleep'].includes(body.action))return json({error:'Unsupported widget action'},400);
+  return requestOnce(this.ctx.storage,id,await requestSignature(path,body),async()=>{
+   let pet=tick(await this.ctx.storage.get('pet'));
+   if(!pet||pet.dead)return json({error:'No active pet'},400);
+   const outcome=act(pet,body.action,Date.now(),{});
+   if(outcome.error)return json({error:outcome.error},400);
+   await this.ctx.storage.put('pet',outcome.state);
+   return json({text:outcome.text,...mobilePetSnapshot(outcome.state)});
+  });
+ }
+
  if(id&&!validRequestId(id))return json({error:'Некоректний ідентифікатор запиту.'},400);
  if(id&&protectedRequest(path,body))return requestOnce(this.ctx.storage,id,await requestSignature(path,body),()=>this.execute(req,body));
  return this.execute(req,body);
