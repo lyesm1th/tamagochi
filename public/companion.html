@@ -90,7 +90,18 @@ async function draw(){if(!current)return;const c=$('pet'),ctx=c.getContext('2d')
 function show(p){current=p;$('name').textContent=p.name;$('age').textContent=p.age+(p.sleeping?' · 💤 Спить':'');stats(p);draw()}
 async function refresh(){try{const res=await api('state');if(!res.pet)throw Error('Пета ще не створено в Telegram');show(res.pet);$('status').textContent='✅ Синхронізовано з Telegram'}catch(e){$('status').textContent='❌ '+e.message}}
 $('pair').onclick=async()=>{try{auth=parse($('code').value);await api('state');localStorage.setItem('raaarrr-companion-v1',JSON.stringify(auth));$('code').value='';setView();await refresh();await registerPush()}catch(e){$('connectError').textContent='❌ '+e.message;auth=null}};
-$('settings').onclick=()=>{if(confirm('Відв’язати цей iPhone від пета?')){auth=null;localStorage.removeItem('raaarrr-companion-v1');setView()}};
+$('settings').onclick=async()=>{
+ if(!confirm('Відв’язати цей iPhone від пета й вимкнути сповіщення?'))return;
+ try{
+  if(auth?.token)await api('push-unsubscribe');
+  if('serviceWorker' in navigator){
+   const reg=await navigator.serviceWorker.ready;
+   const sub=await reg.pushManager?.getSubscription();
+   if(sub)await sub.unsubscribe();
+  }
+ }catch(e){$('status').textContent='Не вдалося відкликати підписку: '+e.message;return;}
+ auth=null;localStorage.removeItem('raaarrr-companion-v1');setView();pushMessage('iPhone відв’язано.');
+};
 $('refresh').onclick=refresh;
 document.querySelectorAll('[data-action]').forEach(button=>button.onclick=async()=>{if(busy)return;busy=true;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=true);try{const res=await api('action',{action:button.dataset.action});if(res.pet)show(res.pet);actionPose=({feed:'eating',pet:'happy',clean:'happy'})[button.dataset.action]||'';poseUntil=Date.now()+6000;await draw();$('bubble').textContent=res.text||'Готово!';$('status').textContent='✅ Зміни збережено в Telegram'}catch(e){$('status').textContent='❌ '+e.message}finally{busy=false;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=false)}});
 setView();if(auth?.token)refresh();void registerPush();setInterval(()=>{frame++;if(current)draw()},900);setInterval(()=>{if(auth?.token&&!document.hidden&&!busy)refresh()},60000);
