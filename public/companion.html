@@ -8,6 +8,7 @@
 <section class="panel" id="connect"><h2>Підключити твого пета</h2><p class="muted">У Telegram-грі натисни «📱 Підключити віджет iPhone», скопіюй рядок із адресою та ключем. Встав його сюди один раз.</p><label for="code">Код прив'язки</label><input id="code" type="password" autocomplete="off" placeholder="https://…|123456.abcdef…"><button id="pair">🔗 Підключити Чучу</button><p id="connectError" role="status"></p></section>
 <section class="panel" id="game"><div class="scene"><div class="bubble" id="bubble" aria-live="polite">Я тут!</div><canvas id="pet" width="220" height="220" aria-label="Твій піксельний пет"></canvas></div><div class="name" id="name"></div><div class="muted" id="age"></div><div class="stats" id="stats"></div>
 <div class="actions"><button data-action="feed">🍗 Погодувати</button><button data-action="clean">🧹 Прибрати</button><button data-action="pet">❤️ Погладити</button><button data-action="sleep">💤 Сон / прокинутись</button></div>
+<div class="push" id="island-controls"><strong>🏝️ Чуча в Dynamic Island</strong><small>Справжня Live Activity через безкоштовний PushWard. Потрібно встановити <a href="https://apps.apple.com/app/id6759689999" target="_blank" rel="noopener">PushWard</a> (iOS 26+), увімкнути Live Activities та створити окремий API-ключ із правом activity:manage. До 6 наших оновлень на день для економії безкоштовного ліміту. Ключ зберігається лише в персональному сховищі твого пета на Cloudflare.</small><label for="islandKey" id="islandKeyLabel">Ключ PushWard (тільки для першого підключення)</label><input id="islandKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="hlk_…" ><div class="push-actions"><button id="islandConnect">🐮 Показати Чучу</button><button id="islandSync" hidden>↻ Оновити острівець</button><button id="islandStop" hidden>Прибрати з острова</button></div><small role="status" id="islandStatus">Чуча ще не підключена до Dynamic Island.</small></div>
 <div class="push" id="push-controls"><strong>🔔 Чуча на заблокованому екрані</strong><div id="installDirections" class="muted" hidden><p>На iPhone сповіщення працюють лише у встановленій вебапці, а не у вкладці браузера.</p><p><strong>1.</strong> Відкрий цю сторінку в Safari.<br><strong>2.</strong> Натисни «Поділитися» → «На початковий екран» → «Додати».<br><strong>3.</strong> Запусти РАААРРРАГОЧІ через нову іконку на екрані.<br><strong>4.</strong> Тут з’явиться кнопка «Увімкнути сповіщення».</p></div><div class="push-actions"><button id="enablePush">Увімкнути сповіщення</button><button id="testPush" hidden>Надіслати тест</button><button id="disablePush" hidden>Вимкнути</button></div><small id="pushStatus" role="status">Сповіщення підтримуються у встановленій на домашній екран вебапці iPhone.</small></div><p role="status" id="status" class="muted"></p><button id="refresh">↻ Оновити стан</button></section>
 <footer class="muted">Той самий пет, що й у Telegram · 2D pixel art</footer></main>
 <script type="module">
@@ -18,6 +19,29 @@ const newer=['pig','sheep','fox','monkey','duck','penguin'];
 const imageCache=new Map();
 let actionPose='',poseUntil=0;
 let pushPublicKey=null,pushReady=null;
+const islandStatus=text=>$('islandStatus').textContent=text;
+async function refreshIsland(){
+ if(!auth?.token)return;
+ try{
+  const status=await api('island/status');
+  $('islandKey').hidden=status.enabled;$('islandKeyLabel').hidden=status.enabled;
+  $('islandConnect').hidden=status.enabled;$('islandSync').hidden=!status.enabled;$('islandStop').hidden=!status.enabled;
+  islandStatus(status.enabled?'✅ PushWard підключено. Оновлень сьогодні: '+status.updatesToday+'/'+status.limit+'. Живі дії можуть відображатися у Dynamic Island.':'Не підключено. Це окремий нативний Live Activity, не Web Push.');
+ }catch(e){islandStatus('❌ '+e.message)}
+}
+$('islandConnect').onclick=async()=>{
+ const key=$('islandKey').value.trim();
+ if(!/^hlk_[a-zA-Z0-9]{32}$/.test(key)){islandStatus('Перевір ключ PushWard: hlk_ і 32 символи. Не надсилай його в чат.');return;}
+ $('islandConnect').disabled=true;islandStatus('Налаштовую Live Activity…');
+ try{
+  const data=await api('island/connect',{key});$('islandKey').value='';
+  islandStatus(data.note||'✅ Live Activity запущена');await refreshIsland();
+ }catch(e){islandStatus('❌ '+e.message)}
+ finally{$('islandConnect').disabled=false}
+};
+$('islandSync').onclick=async()=>{try{await api('island/sync');await refreshIsland()}catch(e){islandStatus('❌ '+e.message)}};
+$('islandStop').onclick=async()=>{if(!confirm('Завершити Чучину Live Activity?'))return;try{await api('island/disconnect');await refreshIsland()}catch(e){islandStatus('❌ '+e.message)}};
+
 function installed(){return window.navigator.standalone===true||matchMedia('(display-mode: standalone)').matches}
 function keyBytes(key){const raw=atob(key.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-key.length%4)%4));return Uint8Array.from(raw,x=>x.charCodeAt(0))}
 function pushMessage(text){$('pushStatus').textContent=text}
@@ -98,7 +122,7 @@ async function sprite(p){
 async function draw(){if(!current)return;const c=$('pet'),ctx=c.getContext('2d');ctx.clearRect(0,0,220,220);try{const {img,cell}=await sprite(current);const [x,y,w,h]=cell;const scale=Math.min(198/w,198/h),dw=w*scale,dh=h*scale;const bob=current.sleeping?0:Math.sin(frame/4)*3;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,x,y,w,h,(220-dw)/2,(220-dh)/2+bob,dw,dh)}catch(e){$('status').textContent='Графіка: '+e.message}}
 function show(p){current=p;$('name').textContent=p.name;$('age').textContent=p.age+(p.sleeping?' · 💤 Спить':'');stats(p);draw()}
 async function refresh(){try{const res=await api('state');if(!res.pet)throw Error('Пета ще не створено в Telegram');show(res.pet);$('status').textContent='✅ Синхронізовано з Telegram'}catch(e){$('status').textContent='❌ '+e.message}}
-$('pair').onclick=async()=>{try{auth=parse($('code').value);await api('state');localStorage.setItem('raaarrr-companion-v1',JSON.stringify(auth));$('code').value='';setView();await refresh();await registerPush()}catch(e){$('connectError').textContent='❌ '+e.message;auth=null}};
+$('pair').onclick=async()=>{try{auth=parse($('code').value);await api('state');localStorage.setItem('raaarrr-companion-v1',JSON.stringify(auth));$('code').value='';setView();await refresh();await registerPush();await refreshIsland()}catch(e){$('connectError').textContent='❌ '+e.message;auth=null}};
 $('settings').onclick=async()=>{
  if(!confirm('Відв’язати цей iPhone від пета й вимкнути сповіщення?'))return;
  try{
@@ -112,7 +136,7 @@ $('settings').onclick=async()=>{
  auth=null;localStorage.removeItem('raaarrr-companion-v1');setView();pushMessage('iPhone відв’язано.');
 };
 $('refresh').onclick=refresh;
-document.querySelectorAll('[data-action]').forEach(button=>button.onclick=async()=>{if(busy)return;busy=true;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=true);try{const res=await api('action',{action:button.dataset.action});if(res.pet)show(res.pet);actionPose=({feed:'eating',pet:'happy',clean:'happy'})[button.dataset.action]||'';poseUntil=Date.now()+6000;await draw();$('bubble').textContent=res.text||'Готово!';$('status').textContent='✅ Зміни збережено в Telegram'}catch(e){$('status').textContent='❌ '+e.message}finally{busy=false;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=false)}});
-setView();if(auth?.token)refresh();void registerPush();setInterval(()=>{frame++;if(current)draw()},900);setInterval(()=>{if(auth?.token&&!document.hidden&&!busy)refresh()},60000);
+document.querySelectorAll('[data-action]').forEach(button=>button.onclick=async()=>{if(busy)return;busy=true;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=true);try{const res=await api('action',{action:button.dataset.action});if(res.pet)show(res.pet);if(auth?.token)void refreshIsland();actionPose=({feed:'eating',pet:'happy',clean:'happy'})[button.dataset.action]||'';poseUntil=Date.now()+6000;await draw();$('bubble').textContent=res.text||'Готово!';$('status').textContent='✅ Зміни збережено в Telegram'}catch(e){$('status').textContent='❌ '+e.message}finally{busy=false;document.querySelectorAll('[data-action]').forEach(b=>b.disabled=false)}});
+setView();if(auth?.token){refresh();void refreshIsland();}void registerPush();setInterval(()=>{frame++;if(current)draw()},900);setInterval(()=>{if(auth?.token&&!document.hidden&&!busy)refresh()},60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&auth?.token)refresh()});
 </script></body></html>
