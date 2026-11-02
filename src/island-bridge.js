@@ -43,7 +43,7 @@ async function requestProvider(path,method,body,key=null){
   response=await fetch(BASE+path,{
    method,headers:key?{'Authorization':'Bearer '+key,'Content-Type':method==='PATCH'?'application/merge-patch+json':'application/json'}:{'Accept':'application/json'},
    body:body===undefined?undefined:JSON.stringify(body),
-   signal:AbortSignal.timeout(8000),redirect:'error'
+   signal:AbortSignal.timeout(8000),redirect:'manual'
   });
  }catch(e){throw new PushWardTransportError(stage,e);}
  let data;try{data=await response.json();}catch{data={};}
