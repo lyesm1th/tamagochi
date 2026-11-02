@@ -50,7 +50,7 @@ test('VAPID keys and RFC8291 aes128gcm push payload round-trip',async()=>{
   assert.equal(res.status,201);
   assert.equal(sent.url,subscription.endpoint);
   assert.equal(sent.opts.headers['Content-Encoding'],'aes128gcm');
-  assert.equal(sent.opts.redirect,'error');
+  assert.equal(sent.opts.redirect,'manual');
   const jwt=sent.opts.headers.Authorization.match(/t=([^, ]+)/)[1];
   const chunks=jwt.split('.');
   assert.equal(chunks.length,3);
@@ -60,4 +60,20 @@ test('VAPID keys and RFC8291 aes128gcm push payload round-trip',async()=>{
   const pub=await crypto.subtle.importKey('raw',from64(vapid.publicKey),{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
   assert.equal(await crypto.subtle.verify({name:'ECDSA',hash:'SHA-256'},pub,from64(chunks[2]),enc.encode(chunks[0]+'.'+chunks[1])),true);
  }finally{globalThis.fetch=nativeFetch;}
+});
+
+test('Apple Web Push rejects redirects without forwarding VAPID credentials to a second host',async()=>{
+ const {subscription}=await receiver();
+ const vapid=await generateVapid();
+ const original=globalThis.fetch,requests=[];
+ try{
+  globalThis.fetch=async(url,opts)=>{
+   requests.push({url,redirect:opts.redirect});
+   return new Response(null,{status:302,headers:{Location:'https://malicious.example/redirect'}});
+  };
+  const result=await pushToDevice(subscription,vapid,{title:'Чуча'},'https://example.com');
+  assert.equal(result.status,302);
+  assert.equal(result.ok,false);
+  assert.deepEqual(requests,[{url:subscription.endpoint,redirect:'manual'}]);
+ }finally{globalThis.fetch=original}
 });
