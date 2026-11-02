@@ -54,7 +54,7 @@ export default {async fetch(req,env){
   if(!['/api/widget/state','/api/widget/action','/api/widget/push-key','/api/widget/push-subscribe','/api/widget/push-unsubscribe','/api/widget/push-test','/api/widget/island/connect','/api/widget/island/status','/api/widget/island/sync','/api/widget/island/disconnect'].includes(url.pathname))return json({error:'Not found'},404);
   let body;try{body=await req.text();if(body.length>8192)return json({error:'Too large'},413);}catch{return json({error:'Bad request'},400);}
   const uid=match[1];
-  return env.PETS.get(env.PETS.idFromName(uid)).fetch(new Request('https://pet/internal/widget/'+url.pathname.split('/').at(-1),{method:'POST',headers:{'X-Widget-Token':token,'X-Companion-Origin':url.origin,'X-Request-ID':req.headers.get('X-Request-ID')||''},body}));
+  return env.PETS.get(env.PETS.idFromName(uid)).fetch(new Request('https://pet/internal/widget/'+url.pathname.slice('/api/widget/'.length),{method:'POST',headers:{'X-Widget-Token':token,'X-Companion-Origin':url.origin,'X-Request-ID':req.headers.get('X-Request-ID')||''},body}));
  }
  if(url.pathname==='/api/health')return json({ok:true});
  if(url.pathname.startsWith('/api/')){
