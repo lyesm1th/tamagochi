@@ -47,6 +47,8 @@ $('enablePush').onclick=async()=>{
   if(permission!=='granted')throw Error('Дозвіл на сповіщення не надано в iOS');
   const reg=await navigator.serviceWorker.ready;
   const key=pushPublicKey||(await api('push-key')).publicKey;
+  const previous=await reg.pushManager.getSubscription();
+  if(previous)await previous.unsubscribe();
   const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:keyBytes(key)});
   await api('push-subscribe',{subscription:sub.toJSON(),timezone:'Europe/Kyiv'});
   pushMessage('✅ Увімкнено! Натисни «Надіслати тест».');
