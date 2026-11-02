@@ -12,7 +12,7 @@ function parsePairing(value){
  const origin=value.slice(0,i),token=value.slice(i+1);
  let validOrigin=false;
  try{const parsed=new URL(origin);validOrigin=parsed.protocol==="https:"&&parsed.origin===origin;}catch{}
- if(!validOrigin||!/^\\d+\\.[a-f0-9]{64}$/.test(token))throw Error("Неправильний код прив'язки");
+ if(!validOrigin||!/^[0-9]+[.][a-f0-9]{64}$/.test(token))throw Error("Неправильний код прив'язки");
  return {origin,token};
 }
 async function call(path,body={},requestId=null){
