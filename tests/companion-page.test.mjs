@@ -23,6 +23,8 @@ assert.ok(html.includes('id="island-controls"'),'Dynamic Island UI is available'
 assert.ok(js.includes("api('island/connect'"),'native activity connection goes through paired server route');
 assert.ok(js.includes("api('island/disconnect'"),'user can revoke the external bridge');
 assert.ok(js.includes("api('island/status'"),'UI reads live connection status');
+assert.ok(js.includes("api('island/diagnostics'"),'paired iPhone can safely check PushWard connection');
+assert.ok(html.includes('id="islandDiagnostic"'),'iPhone has diagnostic button');
 assert.ok(html.includes('id="installDirections"'),'browser-only iPhone install instructions exist');
 const pushInitializer=js.slice(js.indexOf('async function registerPush(){'),js.indexOf("$('enablePush').onclick"));
 assert.ok(pushInitializer.indexOf("if(!installed())")<pushInitializer.indexOf("if(!('serviceWorker'"),'install check comes before browser push support check');
