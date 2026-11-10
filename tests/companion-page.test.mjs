@@ -19,16 +19,11 @@ assert.ok(serviceWorker.includes('showNotification'),'push handler shows visible
 assert.ok(js.includes("api('push-subscribe'"),'PWA subscribes to server push');
 assert.ok(js.includes('navigator.serviceWorker.register'),'PWA registers service worker');
 assert.ok(js.includes("Notification.requestPermission"),'permission requires explicit user action');
-assert.ok(html.includes('id="island-controls"'),'Dynamic Island UI is available');
-assert.ok(js.includes("api('island/connect'"),'native activity connection goes through paired server route');
-assert.ok(js.includes("api('island/disconnect'"),'user can revoke the external bridge');
-assert.ok(js.includes("api('island/status'"),'UI reads live connection status');
-assert.ok(js.includes("api('island/diagnostics'"),'paired iPhone can safely check PushWard connection');
-assert.ok(html.includes('Затисни Dynamic Island'),'explain long-press native care action discovery');
-assert.ok(js.includes("status.interactive"),'detect whether older activities need interactive upgrade');
-assert.ok(html.includes('id="islandDiagnostic"'),'iPhone has diagnostic button');
 assert.ok(html.includes('id="installDirections"'),'browser-only iPhone install instructions exist');
 const pushInitializer=js.slice(js.indexOf('async function registerPush(){'),js.indexOf("$('enablePush').onclick"));
 assert.ok(pushInitializer.indexOf("if(!installed())")<pushInitializer.indexOf("if(!('serviceWorker'"),'install check comes before browser push support check');
 assert.ok(manifest.icons?.[0]?.src==='/companion-icon.png','iOS web app icon');
 console.log('Companion page: syntax, offline shell and push hook checks passed');
+
+assert.ok(!html.includes('id="island-controls"'),'retired Dynamic Island UI is absent');
+assert.ok(!js.includes('refreshIsland'),'retired integration no longer runs');
