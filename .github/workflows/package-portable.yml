@@ -1,0 +1,25 @@
+name: Build portable Tamagotchi source archive
+on:
+  push:
+    branches:
+      - "release/deployment-2026-11-10"
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package tracked source and deployment manual
+        run: |
+          mkdir -p dist
+          git archive --format=zip --prefix=RAAARRRAGOCHI/ HEAD -o dist/RAAARRRAGOCHI-2026-11-10.zip
+          unzip -t dist/RAAARRRAGOCHI-2026-11-10.zip
+          unzip -l dist/RAAARRRAGOCHI-2026-11-10.zip | grep 'START-HERE-UA.md'
+          unzip -l dist/RAAARRRAGOCHI-2026-11-10.zip | grep 'wrangler.jsonc'
+          unzip -l dist/RAAARRRAGOCHI-2026-11-10.zip | grep 'public/assets/'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RAAARRRAGOCHI-2026-11-10
+          path: dist/RAAARRRAGOCHI-2026-11-10.zip
+          retention-days: 30
