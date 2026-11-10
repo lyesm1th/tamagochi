@@ -206,8 +206,10 @@ export class PetRoom{
  }
  async cleanupRetiredIntegration(){
   if(this.retiredIntegrationCleaned)return;
-  await this.ctx.storage.delete('island-bridge');
-  await this.ctx.storage.delete('island-care-last');
+  // Most rooms never used the retired feature; avoid unnecessary storage writes.
+  for(const key of ['island-bridge','island-care-last']){
+   if(await this.ctx.storage.get(key)!==undefined)await this.ctx.storage.delete(key);
+  }
   this.retiredIntegrationCleaned=true;
  }
  async vapid(){
