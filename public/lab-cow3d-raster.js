@@ -85,11 +85,11 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
  // Pigment family from the original Detailed reference: ivory coat needs a
  // warm cocoa line; charcoal patches and hooves need *near-black* ink; pink
  // cheeks and muzzle need a muted berry line rather than dark brown.
- const darkEdge=[18,17,25],warmEdge=[62,41,40],roseEdge=[110,55,68],charcoalSeam=[95,88,98];
+ const darkEdge=[205,211,217],warmEdge=[62,41,40],roseEdge=[110,55,68],charcoalSeam=[162,174,187];
  const materialFamily=i=>{
   if(!adaptiveOutlines||i<0)return 'legacy';
   const p=i*4,r=basePigments[p],g=basePigments[p+1],b=basePigments[p+2];
-  if(Math.max(r,g,b)<108)return 'dark';
+  if((r*.299+g*.587+b*.114)<112)return 'dark';
   if(r>g+25&&Math.abs(g-b)<30&&g>98&&g<215)return 'rose';
   return 'ivory';
  };
@@ -106,9 +106,9 @@ export function renderCowMeshPixels(ctx,faces,{width,height,pigment,uvPigment,te
  // rank surface, preserving the muzzle, eyes, horns and original detail pixels.
  const rank=part=>{
   if(part==='body')return 1;
-  if(part==='head'||part==='tail'||/^leg[0-3]$/.test(part))return 2;
-  if(part==='ear'||part==='fringe'||/^hoof[0-3]$/.test(part))return 3;
-  if(['innerEar','muzzle','horn','cheek','eyeBorder','foreheadMark','tailTuft','fringeDetail'].includes(part))return 4;
+  if(part==='head'||part==='tail'||/^leg[0-3]$/.test(part)||/^thigh[0-3]$/.test(part))return 2;
+  if(part==='ear'||part==='fringe'||/^(hoof|foot|wing|flipper|hand|arm)[0-3]?$/.test(part))return 3;
+  if(['innerEar','muzzle','horn','cheek','eyeBorder','foreheadMark','tailTuft','fringeDetail','backSpine','spike','beak','belly','chest','snoutRim','lowerJaw'].includes(part))return 4;
   if(['muzzleHighlight','fringeLock','brow'].includes(part))return 5;
   return protectedParts.has(part)?6:0;
  };

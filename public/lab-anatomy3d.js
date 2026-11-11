@@ -59,21 +59,21 @@ function penguinBiped(out,pose,cfg,ball){
 function dinoBiped(out,pose,cfg,ball,cone,link){
  // Dinosaur silhouette: compact forward-leaning pear and coherent long tapered
  // counterbalancing tail. No stacked torso "snowman" spheres.
- ball(out,'body',[0,1.04,-.40],[.70,.66,.89],cfg.coat,'pear',22,28);
- ball(out,'belly',[0,.97,.17],[.43,.42,.20],cfg.light,'flat');
+ ball(out,'body',[0,1.06,-.43],[.59,.70,.72],cfg.coat,'pear',22,28);
+ ball(out,'belly',[0,.97,.15],[.34,.43,.18],cfg.light,'flat');
  legs(out,pose,cfg,2,'dino',ball);
  for(const sign of [-1,1]){
   const dy=pose.action==='wave'&&sign===1?[0,.08,.18,.08][Math.floor((pose.time||0)/125)%4]:0;
-  ball(out,'arm',[sign*.73,1.15,.27],[.15,.22,.16],cfg.coat);
-  ball(out,'hand',[sign*.83,1.00+dy,.41],[.13,.11,.13],cfg.coat);
-  for(const j of [-1,1])ball(out,'claw',[sign*.83+j*.048,.97+dy,.53],[.035,.055,.045],cfg.light,'round',8,10);
+  ball(out,'arm',[sign*.62,1.24,.24],[.14,.23,.15],cfg.coat);
+  ball(out,'hand',[sign*.71,1.07+dy,.42],[.12,.10,.12],cfg.coat);
+  for(const j of [-1,1])ball(out,'claw',[sign*.71+j*.048,1.04+dy,.52],[.035,.055,.045],cfg.light,'round',8,10);
  }
- const nodes=[[0,.99,-1.01],[.24,1.03,-1.37],[.48,1.12,-1.76],[.71,1.19,-2.04]];
+ const nodes=[[0,.99,-.99],[.18,1.01,-1.33],[.38,1.07,-1.74],[.58,1.14,-2.11],[.70,1.21,-2.35]];
  for(let i=1;i<nodes.length;i++)link(out,'tail',nodes[i-1],nodes[i],.19-i*.035,cfg.coat);
- for(let i=0;i<5;i++){
+ for(let i=0;i<6;i++){
   // Move ridge partly to camera-right so scales are readable in portrait,
   // without compromising rotation or the tail's 3D depth.
-  const x=.34-i*.045;
+  const x=.27-i*.035;
   cone(out,'backSpine',[x,1.57-i*.23,-.76-i*.23],[x+.19,1.77-i*.23,-.86-i*.25],.12,cfg.accent);
  }
  return 1.55;
